@@ -1,0 +1,94 @@
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold">Tablero de tareas</h4>
+    <button class="btn btn-primary" (click)="createLista()">
+      <i class="fa-solid fa-plus me-2"></i> Añadir lista
+    </button>
+  </div>
+
+  <div class="kanban-container pb-3">
+    <div *ngFor="let LISTA of LISTAS; let i = index" cdkDrag class="kanban-list me-3 flex-shrink-0" style="width: 320px;">
+      <div class="card bg-light border-0 shadow-sm h-100">
+        
+        <!-- 🧩 HEADER DE LISTA -->
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+          
+          <h5 class="fw-bold text-dark mb-0">{{ LISTA.name }}</h5>
+
+          <!-- Nuevo botón con menú desplegable -->
+          <div class="card-toolbar position-relative">
+            <button
+              class="btn btn-sm btn-icon btn-color-primary btn-active-light-primary"
+              (click)="toggleMenu(i, $event)">
+              <i class="fa-solid fa-list"></i>
+            </button>
+
+            <!-- Menú desplegable -->
+            <div *ngIf="openMenuId === i"
+              class="menu-dropdown bg-white border rounded shadow position-absolute end-0 mt-2 p-3 zindex-dropdown">
+              <div class="fs-6 fw-bold text-gray-900 mb-2">Opciones</div>
+              <ul class="list-unstyled mb-0">
+                <li class="mb-2">
+                  <a class="text-decoration-none fw-bold text-dark d-block">
+                    <i class="fa-solid fa-star me-2"></i> Marcar
+                  </a>
+                </li>
+                <li class="mb-2">
+                  <a class=" text-decoration-none fw-bold text-dark d-block" (click)="closeMenuAnd('editLista', LISTA)">
+                    <i class="fa-solid fa-pen-to-square me-2"></i> Editar lista
+                  </a>
+                </li>
+                <li>
+                  <a class=" text-decoration-none fw-bold text-dark d-block" (click)="closeMenuAnd('deleteLista', LISTA)">
+                    <i class="fa-solid fa-trash me-2"></i> Eliminar lista
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🧩 SECCIÓN DE AGREGAR TAREA -->
+        <div class="card-body border-0 shadow-sm p-3 bg-white">
+          <a
+            class="text-decoration-none fw-bold text-dark d-block text-center py-2 border rounded bg-light hover:bg-secondary"
+            (click)="createTarea(LISTA.id)">
+            <i class="fa-solid fa-plus me-2"></i> Agregar Tarea
+          </a>
+        </div>
+
+        <!-- 🧩 CONTENEDOR DE TAREAS -->
+        <div
+          cdkDropList
+          [cdkDropListData]="LISTA.tareas"
+          class="card-body"
+          style="min-height: 300px;"
+          (cdkDropListDropped)="onTaskDrop($event, LISTA)"
+        >
+          <!-- Tareas arrastrables -->
+          <div
+            *ngFor="let TAREA of LISTA.tareas"
+            cdkDrag
+            class="card mb-3 border-0 shadow-sm p-3 bg-white"
+          >
+            <div class="d-flex justify-content-between align-items-start">
+              <a class="text-decoration-none fw-bold text-dark d-block" (click)="editTarea(TAREA)">
+                <h6 class="fw-bold">{{ TAREA.name }}</h6>
+                <p class="text-muted small">{{ TAREA.description }}</p>
+              </a>
+
+              <a class="text-decoration-none fw-bold text-dark d-block" (click)="deleteTarea(TAREA)">
+                <i class="fa-solid fa-trash-can"></i>
+              </a>
+            </div>
+          </div>
+
+          <div *ngIf="LISTA.tareas.length === 0" class="text-center text-muted mt-4">
+            <i class="fa-solid fa-inbox fa-2x mb-2"></i>
+            <p>Sin tareas</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

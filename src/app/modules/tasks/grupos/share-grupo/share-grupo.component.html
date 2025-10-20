@@ -1,0 +1,144 @@
+<div class="modal-content">
+  <div class="modal-header">
+    <h2 class="fw-bolder">Compartir Grupo: {{ GRUPO_SELECTED?.name }}</h2>
+    <div class="btn btn-icon btn-sm btn-active-icon-primary" (click)="modal.dismiss()">
+      <span class="svg-icon svg-icon-1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <rect opacity="0.5" x="6" y="17.3137" width="16" height="2" rx="1" transform="rotate(-45 6 17.3137)" fill="currentColor" />
+          <rect x="7.41422" y="6" width="16" height="2" rx="1" transform="rotate(45 7.41422 6)" fill="currentColor" />
+        </svg>
+      </span>
+    </div>
+  </div>
+
+  <div class="modal-body scroll-y mx-5 my-7">
+    <!-- Buscador de usuarios -->
+    <div class="mb-5">
+      <label class="fw-bold fs-6 mb-2">Buscar usuarios por correo electrónico</label>
+      <div class="input-group">
+        <span class="input-group-text">
+          <i class="fa-solid fa-search"></i>
+        </span>
+        <input 
+          type="email" 
+          class="form-control form-control-solid" 
+          placeholder="ejemplo@correo.com" 
+          [(ngModel)]="searchTerm"
+          (input)="onSearchChange()"
+          (keyup.enter)="performSearch(searchTerm)"
+        />
+        <button 
+          class="btn btn-primary" 
+          type="button"
+          (click)="performSearch(searchTerm)"
+          [disabled]="!searchTerm || searchTerm.length < 3">
+          Buscar
+        </button>
+      </div>
+      <small class="text-muted">Ingresa al menos 3 caracteres para buscar</small>
+    </div>
+
+    <!-- Resultados de búsqueda -->
+    <div *ngIf="searchResults.length > 0" class="mb-5">
+      <label class="fw-bold fs-6 mb-3">Resultados de búsqueda:</label>
+      <div class="list-group">
+        <div 
+          *ngFor="let user of searchResults" 
+          class="list-group-item d-flex justify-content-between align-items-center hover-bg-light cursor-pointer"
+          [class.bg-light-primary]="isUserSelected(user.id)"
+          [class.disabled]="isUserAlreadyShared(user.id)"
+          (click)="!isUserAlreadyShared(user.id) && toggleUserSelection(user)">
+          <div class="d-flex align-items-center">
+            <img 
+              [src]="user.avatar || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'" 
+              class="rounded-circle me-3" 
+              style="width: 40px; height: 40px; object-fit: cover;"
+              alt="Avatar">
+            <div>
+              <div class="fw-bold">{{ user.name }}</div>
+              <div class="text-muted small">{{ user.email }}</div>
+            </div>
+          </div>
+          <div>
+            <span *ngIf="isUserAlreadyShared(user.id)" class="badge bg-secondary">
+              Ya compartido
+            </span>
+            <i *ngIf="isUserSelected(user.id) && !isUserAlreadyShared(user.id)" 
+               class="fa-solid fa-check-circle text-primary fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje cuando no hay resultados -->
+    <div *ngIf="searchPerformed && searchResults.length === 0 && searchTerm" class="alert alert-info">
+      <i class="fa-solid fa-info-circle me-2"></i>
+      No se encontraron usuarios con ese correo electrónico
+    </div>
+
+    <!-- Usuarios seleccionados para compartir (chips) -->
+    <div *ngIf="selectedUsers.length > 0" class="mb-5">
+      <label class="fw-bold fs-6 mb-3">
+        Usuarios seleccionados para compartir ({{ selectedUsers.length }}):
+      </label>
+      <div class="d-flex flex-wrap gap-2">
+        <span 
+          *ngFor="let user of selectedUsers" 
+          class="badge badge-lg bg-primary d-flex align-items-center gap-2 py-2 px-3">
+          <img 
+            [src]="user.avatar || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'" 
+            class="rounded-circle" 
+            style="width: 24px; height: 24px; object-fit: cover;"
+            alt="Avatar">
+          <span>{{ user.name }}</span>
+          <i 
+            class="fa-solid fa-times cursor-pointer hover-scale" 
+            (click)="removeUser(user.id)"
+            title="Quitar usuario"></i>
+        </span>
+      </div>
+    </div>
+
+    <!-- Ya compartido con (chips) -->
+    <div *ngIf="sharedUsers.length > 0" class="mb-5">
+      <label class="fw-bold fs-6 mb-3 text-muted">
+        Ya compartido con ({{ sharedUsers.length }}):
+      </label>
+      <div class="d-flex flex-wrap gap-2">
+        <span 
+          *ngFor="let user of sharedUsers" 
+          class="badge badge-lg bg-secondary d-flex align-items-center gap-2 py-2 px-3">
+          <img 
+            [src]="user.avatar || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'" 
+            class="rounded-circle" 
+            style="width: 24px; height: 24px; object-fit: cover;"
+            alt="Avatar">
+          <span>{{ user.name }}</span>
+          <i 
+            class="fa-solid fa-times cursor-pointer text-danger hover-scale" 
+            (click)="unshareUser(user.id)"
+            title="Dejar de compartir"></i>
+        </span>
+      </div>
+    </div>
+
+    <!-- Botones -->
+    <div class="text-center pt-4 border-top">
+      <button type="button" class="btn btn-light me-3" (click)="modal.dismiss()">
+        <i class="fa-solid fa-times me-2"></i>
+        Cancelar
+      </button>
+      <button 
+        type="button" 
+        (click)="shareGrupo()" 
+        class="btn btn-primary"
+        [disabled]="selectedUsers.length === 0 || (isLoading | async)">
+        <span class="indicator-label">
+          <i class="fa-solid fa-share-nodes me-2"></i>
+          Compartir con {{ selectedUsers.length }} usuario(s)
+        </span>
+        <span class="spinner-border spinner-border-sm align-middle ms-2" *ngIf="isLoading | async"></span>
+      </button>
+    </div>
+  </div>
+</div>
