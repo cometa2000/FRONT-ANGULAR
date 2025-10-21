@@ -24,14 +24,15 @@
         <!--begin::Form-->
         <form id="kt_modal_add_user_form" class="form" action="#">
             <p>
-                ¿ESTAS SEGURO DE ELIMINAR ESTA GRUPO?
+                ¿ESTAS SEGURO DE ELIMINAR ESTE GRUPO?
             </p>
             <div class="text-center pt-15">
                 <button type="reset" class="btn btn-light me-3" (click)="modal.dismiss()">Cerrar</button>
                 <button type="button" (click)="delete()" class="btn btn-danger" data-kt-users-modal-action="submit">
                     <span class="indicator-label">ELIMINAR</span>
 
-                    <span class="spinner-border spinner-border-sm align-middle ms-2" *ngIf="isLoading | async"></span>
+                    <!-- ✅ CORRECCIÓN: Usar isLoading$ en lugar de isLoading -->
+                    <span class="spinner-border spinner-border-sm align-middle ms-2" *ngIf="isLoading$ | async"></span>
                 </button>
             </div>
         </form>

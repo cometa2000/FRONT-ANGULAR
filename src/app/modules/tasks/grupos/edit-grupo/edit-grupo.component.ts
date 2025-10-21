@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { GrupoService } from '../service/grupo.service';
 import { ToastrService } from 'ngx-toastr';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-edit-grupo',
@@ -13,13 +14,18 @@ export class EditGrupoComponent {
   @Input() GRUPO_SELECTED: any;
 
   name: string = '';
-  isLoading:any;
+  
+  // ✅ CORRECCIÓN: Usar el Observable del servicio
+  isLoading$: Observable<boolean>;
 
   constructor(
     public modal: NgbActiveModal,
     private grupoService: GrupoService,
     private toast: ToastrService,
-  ) {}
+  ) {
+    // ✅ Asignar el Observable del servicio
+    this.isLoading$ = this.grupoService.isLoading$;
+  }
 
   ngOnInit(): void {
     if (this.GRUPO_SELECTED) {
@@ -34,10 +40,13 @@ export class EditGrupoComponent {
     }
 
     const data = { name: this.name };
-    this.isLoading = true;
+    
+    // ✅ Ya NO asignamos isLoading manualmente, el servicio lo maneja
 
     this.grupoService.updateGrupo(this.GRUPO_SELECTED.id, data).subscribe({
       next: (resp: any) => {
+        console.log('✅ Respuesta del servidor:', resp); // Debug
+        
         if (resp.message == 403) {
           this.toast.error(resp.message_text, 'Error');
         } else {
@@ -46,8 +55,10 @@ export class EditGrupoComponent {
           this.modal.close();
         }
       },
-      error: () => this.toast.error('Error al editar el grupo', 'Error'),
-      complete: () => this.isLoading = false
+      error: (err) => {
+        console.error('❌ Error al editar:', err); // Debug
+        this.toast.error('Error al editar el grupo', 'Error');
+      }
     });
   }
 }
