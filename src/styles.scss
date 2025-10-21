@@ -954,3 +954,15 @@ span.menu-title {
     min-width: 280px;
   }
 }
+
+
+// ============================================
+// SCROLL de tarea
+// ============================================
+.card-body.pt-0 {
+  max-height: 480px; /* Ajusta la altura para mostrar ~3 tareas */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 19px; /* espacio para el scroll */
+  max-height: calc((var(--tarea-height, 100px) * 3) + (0.75rem * 2)); 
+}

@@ -22,12 +22,12 @@
         <div class="col-xxl-4">
             <div class="card card-xxl-stretch mb-xl-3 position-relative">
                 
-                <!-- ⭐ Estrella de favorito (solo visible cuando está marcada) -->
+                <!-- ⭐ Estrella de favorito con espacio -->
                 <div 
                     *ngIf="GRUPO.is_starred"
                     class="position-absolute top-0 start-0 m-3"
                     style="z-index: 10;">
-                    <i class="fa-solid fa-star fs-2 text-warning"></i>
+                    <i class="fa-solid fa-star fs-2 text-warning me-2"></i>
                 </div>
 
                 <div class="card-header border-0">
@@ -69,20 +69,14 @@
                             style="min-width: 200px; z-index: 1000;">
                             
                             <div class="fs-6 fw-bold text-gray-900 mb-2">Opciones</div>
-                            
                             <ul class="list-unstyled mb-0">
-                                <!-- Marcar -->
+                                <!-- Marcar/Desmarcar -->
                                 <li class="mb-2">
                                     <button 
                                         type="button"
                                         class="btn btn-link text-decoration-none fw-bold text-dark d-block w-100 text-start p-2 rounded"
                                         (click)="closeMenuAnd('marcarGrupo', GRUPO)">
-                                        <i 
-                                            class="fa-star me-2"
-                                            [class.fa-solid]="GRUPO.is_starred"
-                                            [class.fa-regular]="!GRUPO.is_starred"
-                                            [class.text-warning]="GRUPO.is_starred">
-                                        </i> 
+                                        <i class="fa-solid fa-star me-2 text-warning"></i> 
                                         {{ GRUPO.is_starred ? 'Desmarcar' : 'Marcar' }}
                                     </button>
                                 </li>
@@ -92,7 +86,7 @@
                                     <button 
                                         type="button"
                                         class="btn btn-link text-decoration-none fw-bold text-dark d-block w-100 text-start p-2 rounded"
-                                        (click)="closeMenuAnd('compartirGrupo', GRUPO)">
+                                        (click)="closeMenuAnd('shareGrupo', GRUPO)">
                                         <i class="fa-solid fa-share-nodes me-2 text-info"></i> 
                                         Compartir
                                     </button>
@@ -126,13 +120,58 @@
                 
                 <img src="assets/media/fondos/fondo1.jpg" alt="" class="mw-40 mh-110px" />
                 
-                <!-- Info de usuarios compartidos -->
+                <!-- ✅ Info de usuarios compartidos (solo para el propietario) -->
                 <div 
-                    *ngIf="GRUPO.shared_with && GRUPO.shared_with.length > 0" 
+                    *ngIf="GRUPO.is_owner && GRUPO.shared_with && GRUPO.shared_with.length > 0" 
                     class="card-footer border-0 pt-2">
-                    <small class="text-muted">
-                        <i class="fa-solid fa-users me-1"></i>
-                        Compartido con: {{ GRUPO.shared_with.join(', ') }}
+                    <small class="text-muted d-flex align-items-center">
+                        <i class="fa-solid fa-users me-2"></i>
+                        
+                        <!-- Si son 1 o 2 personas: mostrar nombres completos -->
+                        <ng-container *ngIf="GRUPO.shared_with.length <= 2">
+                            Compartido con: 
+                            <span class="ms-1">
+                                <ng-container *ngFor="let person of GRUPO.shared_with; let last = last">
+                                    {{ person.name }} {{ person.surname }}<ng-container *ngIf="!last"> y </ng-container>
+                                </ng-container>
+                            </span>
+                        </ng-container>
+                        
+                        <!-- Si son más de 2: mostrar cantidad con tooltip -->
+                        <ng-container *ngIf="GRUPO.shared_with.length > 2">
+                            Compartido con: {{ GRUPO.shared_with.length }} personas
+                            <i 
+                                class="fa-regular fa-circle-exclamation ms-2 cursor-pointer text-info"
+                                [id]="'tooltip-' + GRUPO.id"
+                                (mouseenter)="showTooltip(GRUPO.id)"
+                                (mouseleave)="hideTooltip(GRUPO.id)"></i>
+                            
+                            <!-- Tooltip personalizado -->
+                            <div 
+                                *ngIf="activeTooltip === GRUPO.id"
+                                class="custom-tooltip position-absolute bg-white border rounded shadow-lg p-3"
+                                style="z-index: 1001; min-width: 200px; max-width: 300px;">
+                                <div class="fw-bold mb-2 text-dark">Compartido con:</div>
+                                <div class="tooltip-users-list">
+                                    <div 
+                                        *ngFor="let person of GRUPO.shared_with; let idx = index"
+                                        class="py-1 text-dark"
+                                        [class.d-none]="idx >= 7 && !showAllUsers[GRUPO.id]">
+                                        <i class="fa-solid fa-user-circle me-2 text-primary"></i>
+                                        {{ person.name }} {{ person.surname }}
+                                    </div>
+                                    
+                                    <!-- Scroll si hay más de 7 usuarios -->
+                                    <div 
+                                        *ngIf="GRUPO.shared_with.length > 7"
+                                        class="text-center mt-2 pt-2 border-top">
+                                        <small class="text-muted">
+                                            {{ GRUPO.shared_with.length - 7 }} más...
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </ng-container>
                     </small>
                 </div>
             </div>

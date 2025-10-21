@@ -21,6 +21,10 @@ export class ListGrupoComponent {
   currentPage: number = 1;
 
   openMenuId: number | null = null;
+  
+  // ✅ NUEVO: Control de tooltip
+  activeTooltip: number | null = null;
+  showAllUsers: { [key: number]: boolean } = {};
 
   constructor(
     public modalService: NgbModal,
@@ -70,6 +74,14 @@ export class ListGrupoComponent {
     });
   }
 
+  shareGrupo(grupo: any) {
+    const modalRef = this.modalService.open(ShareGrupoComponent, { centered: true, size: 'md' });
+    modalRef.componentInstance.GRUPO_SELECTED = grupo;
+    modalRef.componentInstance.GrupoShared.subscribe(() => {
+      this.listGrupos(this.currentPage);
+    });
+  }
+
   // ⭐ Marcar/Desmarcar grupo
   marcarGrupo(grupo: any, event?: MouseEvent) {
     if (event) event.stopPropagation();
@@ -88,28 +100,21 @@ export class ListGrupoComponent {
           });
         }
       },
-      error: (err) => {
-        console.error('Error al marcar grupo:', err);
-        this.toast.error('Error al marcar el grupo', 'Error');
+      error: (error) => {
+        console.error('Error al marcar grupo:', error);
+        this.toast.error('No se pudo marcar el grupo', 'Error');
       }
     });
   }
 
-  // 📤 Compartir grupo
-  compartirGrupo(grupo: any, event?: MouseEvent) {
-    if (event) event.stopPropagation();
-    
-    const modalRef = this.modalService.open(ShareGrupoComponent, { 
-      centered: true, 
-      size: 'lg' 
-    });
-    modalRef.componentInstance.GRUPO_SELECTED = grupo;
-    modalRef.componentInstance.GrupoShared.subscribe((sharedUsers: any) => {
-      const index = this.GRUPOS.findIndex((g: any) => g.id === grupo.id);
-      if (index !== -1) {
-        this.GRUPOS[index].shared_with = sharedUsers.map((u: any) => u.name);
-      }
-    });
+  // ✅ NUEVO: Mostrar tooltip
+  showTooltip(grupoId: number) {
+    this.activeTooltip = grupoId;
+  }
+
+  // ✅ NUEVO: Ocultar tooltip
+  hideTooltip(grupoId: number) {
+    this.activeTooltip = null;
   }
 
   toggleMenu(id: number, event: MouseEvent) {
@@ -125,21 +130,21 @@ export class ListGrupoComponent {
     }
   }
 
-  closeMenuAnd(actionName: string, data?: any) {
+  closeMenuAnd(action: string, grupo: any) {
     this.openMenuId = null;
-
-    switch (actionName) {
+    
+    switch(action) {
       case 'marcarGrupo':
-        this.marcarGrupo(data);
+        this.marcarGrupo(grupo);
         break;
-      case 'compartirGrupo':
-        this.compartirGrupo(data);
+      case 'shareGrupo':
+        this.shareGrupo(grupo);
         break;
       case 'editGrupo':
-        this.editGrupo(data);
+        this.editGrupo(grupo);
         break;
       case 'deleteGrupo':
-        this.deleteGrupo(data);
+        this.deleteGrupo(grupo);
         break;
     }
   }
