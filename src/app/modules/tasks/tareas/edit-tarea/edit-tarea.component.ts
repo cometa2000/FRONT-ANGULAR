@@ -53,17 +53,19 @@ export class EditTareaComponent implements OnInit, OnChanges {
     
     this.isLoading = this.tareaService.isLoading$;
     
-    // Obtener usuario actual del localStorage
+    // ✅ CORREGIDO: Cargar usuario actual primero
     this.loadCurrentUser();
     
-    // Cargar datos iniciales si la tarea está disponible
+    // Luego cargar datos de la tarea
     if (this.TAREA_SELECTED?.id) {
       this.loadTareaData();
-      this.loadTimelineData();
+      // ✅ CRÍTICO: Agregar pequeño delay para asegurar que el servicio esté listo
+      setTimeout(() => {
+        this.loadTimelineData();
+      }, 100);
     }
   }
 
-  // ✅ NUEVO: Detectar cambios en TAREA_SELECTED
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['TAREA_SELECTED'] && !changes['TAREA_SELECTED'].firstChange) {
       console.log('🔄 TAREA_SELECTED cambió:', this.TAREA_SELECTED);
@@ -74,24 +76,36 @@ export class EditTareaComponent implements OnInit, OnChanges {
     }
   }
 
-  // ✅ NUEVO: Cargar datos del usuario actual
+  // ✅ MEJORADO: Cargar datos del usuario actual desde localStorage
   private loadCurrentUser(): void {
-    const userDataString = localStorage.getItem('user');
-    if (userDataString) {
-      try {
-        const userData = JSON.parse(userDataString);
-        this.currentUserId = userData.id || 0;
-        this.currentUserName = userData.full_name || userData.name || 'Usuario';
-        this.currentUserAvatar = userData.avatar || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
-        console.log('👤 Usuario actual cargado:', {
-          id: this.currentUserId,
-          name: this.currentUserName
-        });
-      } catch (error) {
-        console.error('❌ Error al parsear datos del usuario:', error);
+    try {
+      const userDataString = localStorage.getItem('user');
+      
+      if (!userDataString) {
+        console.warn('⚠️ No hay datos de usuario en localStorage');
         this.setDefaultUser();
+        return;
       }
-    } else {
+
+      const userData = JSON.parse(userDataString);
+      
+      // ✅ Intentar múltiples formas de obtener el ID
+      this.currentUserId = userData.id || userData.user_id || 0;
+      this.currentUserName = userData.full_name || userData.name || 'Usuario';
+      this.currentUserAvatar = userData.avatar || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+      
+      console.log('👤 Usuario actual cargado:', {
+        id: this.currentUserId,
+        name: this.currentUserName,
+        avatar: this.currentUserAvatar
+      });
+
+      if (this.currentUserId === 0) {
+        console.error('❌ No se pudo obtener ID de usuario válido');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error al parsear datos del usuario:', error);
       this.setDefaultUser();
     }
   }
@@ -102,7 +116,6 @@ export class EditTareaComponent implements OnInit, OnChanges {
     this.currentUserAvatar = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
   }
 
-  // ✅ NUEVO: Cargar datos de la tarea
   private loadTareaData(): void {
     if (!this.TAREA_SELECTED) return;
 
@@ -122,7 +135,7 @@ export class EditTareaComponent implements OnInit, OnChanges {
     console.log('✅ Datos de tarea cargados');
   }
 
-  // ✅ REFACTORIZADO: Método separado para cargar timeline
+  // ✅ REFACTORIZADO: Método mejorado para cargar timeline
   private loadTimelineData(): void {
     if (!this.TAREA_SELECTED?.id) {
       console.warn('⚠️ No se puede cargar timeline: falta ID de tarea');
@@ -133,44 +146,74 @@ export class EditTareaComponent implements OnInit, OnChanges {
     console.log('📥 Tarea ID:', this.TAREA_SELECTED.id);
     
     this.isLoadingTimeline = true;
+    this.timeline = []; // ✅ Limpiar timeline antes de cargar
     
     this.tareaService.getTimeline(this.TAREA_SELECTED.id)
       .pipe(finalize(() => {
         this.isLoadingTimeline = false;
+        console.log('🏁 Carga de timeline finalizada');
         this.cdr.detectChanges();
       }))
       .subscribe({
         next: (resp: any) => {
-          console.log('✅ Respuesta recibida:', resp);
+          console.log('✅ Respuesta completa recibida:', resp);
           
-          if (!resp || !resp.timeline) {
-            console.warn('⚠️ Respuesta sin timeline');
+          if (!resp) {
+            console.warn('⚠️ Respuesta vacía');
             this.timeline = [];
             return;
           }
 
-          // Mapear y preparar timeline
-          this.timeline = resp.timeline.map((item: any) => ({
-            ...item,
-            isEditing: false,
-            editContent: item.type === 'comentario' ? (item.content || '') : ''
-          }));
+          // ✅ Verificar estructura de respuesta
+          if (!resp.timeline || !Array.isArray(resp.timeline)) {
+            console.warn('⚠️ Respuesta sin timeline válido:', resp);
+            this.timeline = [];
+            return;
+          }
+
+          // ✅ Mapear y preparar timeline
+          this.timeline = resp.timeline.map((item: any) => {
+            const mappedItem = {
+              ...item,
+              isEditing: false,
+              editContent: item.type === 'comentario' ? (item.content || '') : '',
+              // ✅ Asegurar que user existe
+              user: item.user || {
+                id: 0,
+                name: 'Usuario Desconocido',
+                avatar: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+              }
+            };
+            
+            console.log('📝 Item mapeado:', mappedItem);
+            return mappedItem;
+          });
           
-          console.log('✅ Timeline procesado:', {
+          console.log('✅ Timeline procesado exitosamente:', {
             total: this.timeline.length,
             comentarios: this.timeline.filter(i => i.type === 'comentario').length,
-            actividades: this.timeline.filter(i => i.type === 'actividad').length
+            actividades: this.timeline.filter(i => i.type === 'actividad').length,
+            items: this.timeline
           });
+
+          // ✅ Forzar detección de cambios
+          this.cdr.detectChanges();
         },
         error: (err) => {
           console.error('❌ Error al cargar timeline:', err);
+          console.error('❌ Detalles del error:', {
+            status: err.status,
+            statusText: err.statusText,
+            message: err.message,
+            error: err.error
+          });
           this.toast.error('Error al cargar comentarios y actividades', 'Error');
           this.timeline = [];
+          this.cdr.detectChanges();
         }
       });
   }
 
-  // ✅ REFACTORIZADO: Recargar timeline (método público)
   loadTimeline(): void {
     this.loadTimelineData();
   }
@@ -179,7 +222,6 @@ export class EditTareaComponent implements OnInit, OnChanges {
     this.openMenu = this.openMenu === menu ? null : menu;
   }
   
-  // ✅ MEJORADO: Agregar comentario con mejor manejo de sincronización
   addComment() {
     console.log('💬 ===== Agregando comentario =====');
     
@@ -208,7 +250,7 @@ export class EditTareaComponent implements OnInit, OnChanges {
             this.toast.success('Comentario agregado', 'Éxito');
             this.newComment = '';
             
-            // ✅ Recargar inmediatamente sin setTimeout
+            // ✅ Recargar timeline después de agregar comentario
             this.loadTimelineData();
           } else {
             this.toast.error('Error al agregar comentario', 'Error');
@@ -264,7 +306,6 @@ export class EditTareaComponent implements OnInit, OnChanges {
         next: (resp: any) => {
           if (resp.message === 200) {
             this.toast.success('Comentario eliminado', 'Éxito');
-            // Eliminar del timeline local
             this.timeline = this.timeline.filter(item => item.id !== comentarioId);
             this.cdr.detectChanges();
           }
@@ -277,7 +318,6 @@ export class EditTareaComponent implements OnInit, OnChanges {
     }
   }
 
-  // ✅ MEJORADO: Guardar cambios con recarga de timeline
   store() {
     if (!this.name || this.name.trim().length === 0) {
       this.toast.error('El nombre de la tarea es requerido', 'Validación');
@@ -308,7 +348,7 @@ export class EditTareaComponent implements OnInit, OnChanges {
             this.toast.success('La tarea se editó correctamente', 'Éxito');
             this.TareaE.emit(resp.tarea);
             
-            // ✅ Recargar timeline para mostrar actividades de actualización
+            // ✅ Recargar timeline para mostrar actividades
             this.loadTimelineData();
           }
         },
@@ -319,7 +359,6 @@ export class EditTareaComponent implements OnInit, OnChanges {
       });
   }
 
-  // ✅ TrackBy function para optimizar *ngFor
   trackByFn(index: number, item: any): any {
     return item.id || index;
   }
