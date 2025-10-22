@@ -25,6 +25,7 @@ export class ListGrupoComponent {
   // ✅ NUEVO: Control de tooltip
   activeTooltip: number | null = null;
   showAllUsers: { [key: number]: boolean } = {};
+  
 
   constructor(
     public modalService: NgbModal,

@@ -12,6 +12,18 @@ import { Observable } from 'rxjs';
 export class CreateGrupoComponent {
   @Output() GrupoC: EventEmitter<any> = new EventEmitter();
   name: string = '';
+  selectedBackground: string = 'assets/media/fondos/fondo1.jpg';
+  selectedBackgroundName: string = 'fondo1.jpg';
+  
+  // ✅ Lista de fondos predeterminados
+  backgrounds = [
+    { url: 'assets/media/fondos/fondo1.jpg', name: 'fondo1.jpg' },
+    { url: 'assets/media/fondos/fondo2.png', name: 'fondo2.png' },
+    { url: 'assets/media/fondos/fondo3.png', name: 'fondo3.png' },
+    { url: 'assets/media/fondos/fondo4.jpg', name: 'fondo4.jpg' },
+    { url: 'assets/media/fondos/fondo5.jpg', name: 'fondo5.jpg' },
+    { url: 'assets/media/fondos/fondo6.jpg', name: 'fondo6.jpg' },
+  ];
   
   // ✅ CORRECCIÓN: Usar el Observable del servicio
   isLoading$: Observable<boolean>;
@@ -25,19 +37,31 @@ export class CreateGrupoComponent {
     this.isLoading$ = this.grupoService.isLoading$;
   }
 
+  /**
+   * Seleccionar fondo
+   */
+  selectBackground(url: string, name: string) {
+    this.selectedBackground = url;
+    this.selectedBackgroundName = name;
+  }
+
+  /**
+   * Guardar grupo
+   */
   store() {
     if (!this.name.trim()) {
       this.toast.error('El nombre del grupo es requerido', 'Validación');
       return;
     }
 
-    const data = { name: this.name };
-    
-    // ✅ Ya NO asignamos isLoading manualmente, el servicio lo maneja
+    const data = { 
+      name: this.name,
+      image: this.selectedBackgroundName  // ✅ Enviar solo el nombre del archivo
+    };
 
     this.grupoService.registerGrupo(data).subscribe({
       next: (resp: any) => {
-        console.log('✅ Respuesta del servidor:', resp); // Debug
+        console.log('✅ Respuesta del servidor:', resp);
         
         if (resp.message == 403) {
           this.toast.error(resp.message_text, 'Error');
@@ -48,7 +72,7 @@ export class CreateGrupoComponent {
         }
       },
       error: (err) => {
-        console.error('❌ Error al registrar:', err); // Debug
+        console.error('❌ Error al registrar:', err);
         this.toast.error('Error al registrar el grupo', 'Error');
       }
     });

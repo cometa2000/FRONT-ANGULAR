@@ -7,9 +7,9 @@
     <div class="col-md-4">
         <div class="card h-md-100">
             <div class="card-body d-flex flex-center">
-                <button type="button" class="btn btn-clear d-flex flex-column flex-center" data-action="create">
+                <button type="button" class="btn btn-clear d-flex flex-column flex-center" data-action="create" (click)="createGrupo()">
                     <img src="assets/media/illustrations/sketchy-1/17.png" alt="" class="mw-100 mh-150px mb-7" />
-                    <button type="button" class="btn" (click)="createGrupo()">
+                    <button type="button" class="btn">
                         <div class="fw-bold fs-3 text-gray-600 text-hover-primary">Agregar Grupo</div>
                     </button>
                 </button>
@@ -118,7 +118,8 @@
                     </div>
                 </div>
                 
-                <img src="assets/media/fondos/fondo1.jpg" alt="" class="mw-40 mh-110px" />
+                
+                <img [src]="'assets/media/fondos/' + (GRUPO.image || 'fondo1.jpg')" alt="" class="mw-40 mh-110px grupo-thumbnail" />
                 
                 <!-- ✅ Info de usuarios compartidos (solo para el propietario) -->
                 <div 
