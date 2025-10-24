@@ -1,193 +1,310 @@
-<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-5 g-xl-9">
+<!-- Contenedor principal con estructura de flex column -->
+<div class="d-flex flex-column min-vh-100">
     
     <!-- Loading spinner -->
     <span class="spinner-border spinner-border-sm align-middle ms-2" *ngIf="isLoading$ | async"></span>
     
-    <!-- Botón para crear nuevo grupo -->
-    <div class="col-md-4">
-        <div class="card h-md-100">
-            <div class="card-body d-flex flex-center">
-                <button type="button" class="btn btn-clear d-flex flex-column flex-center" data-action="create" (click)="createGrupo()">
-                    <img src="assets/media/illustrations/sketchy-1/17.png" alt="" class="mw-100 mh-150px mb-7" />
-                    <button type="button" class="btn">
-                        <div class="fw-bold fs-3 text-gray-600 text-hover-primary">Agregar Grupo</div>
-                    </button>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Lista de grupos -->
-    <ng-container *ngFor="let GRUPO of GRUPOS; let i = index">
-        <div class="col-xxl-4">
-            <div class="card card-xxl-stretch mb-xl-3 position-relative">
-                
-                <!-- ⭐ Estrella de favorito con espacio -->
-                <div 
-                    *ngIf="GRUPO.is_starred"
-                    class="position-absolute top-0 start-0 m-3"
-                    style="z-index: 10;">
-                    <i class="fa-solid fa-star fs-2 text-warning me-2"></i>
-                </div>
-
-                <div class="card-header border-0">
-                    <a [routerLink]="['/tasks/tareas/tablero', GRUPO.id]">
-                        <div class="card-toolbar">  
-                            <h3 class="card-title fw-bolder text-gray-900">
-                                {{ GRUPO.name }}
-                                
-                                <!-- Badge de compartido -->
-                                <span 
-                                    *ngIf="GRUPO.shared_with && GRUPO.shared_with.length > 0" 
-                                    class="badge badge-sm bg-light-primary text-primary ms-2"
-                                    title="Compartido con {{ GRUPO.shared_with.length }} persona(s)">
-                                    <i class="fa-solid fa-users fa-xs"></i>
-                                </span>
-
-                                <!-- Badge de propietario -->
-                                <span 
-                                    *ngIf="GRUPO.is_owner" 
-                                    class="badge badge-sm bg-light-success text-success ms-2"
-                                    title="Eres el propietario">
-                                    <i class="fa-solid fa-crown fa-xs"></i>
-                                </span>
-                            </h3>
-                        </div>
-                    </a>
-                    
-                    <div class="card-toolbar position-relative">
-                        <button
-                            class="btn btn-sm btn-icon btn-color-primary btn-active-light-primary"
-                            (click)="toggleMenu(i, $event)">
-                            <i class="fa-solid fa-ellipsis-vertical"></i>
+    <!-- Contenedor de grupos con flex-grow para ocupar el espacio disponible -->
+    <div class="flex-grow-1">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-5 g-xl-9">
+            
+            <!-- Botón para crear nuevo grupo -->
+            <div class="col-md-4">
+                <div class="card h-md-100">
+                    <div class="card-body d-flex flex-center">
+                        <button type="button" class="btn btn-clear d-flex flex-column flex-center" data-action="create" (click)="createGrupo()">
+                            <img src="assets/media/illustrations/sketchy-1/17.png" alt="" class="mw-100 mh-150px mb-7" />
+                            <button type="button" class="btn">
+                                <div class="fw-bold fs-3 text-gray-600 text-hover-primary">Agregar Grupo</div>
+                            </button>
                         </button>
+                    </div>
+                </div>
+            </div>
 
-                        <!-- Menú desplegable -->
+            <!-- Lista de grupos -->
+            <ng-container *ngFor="let GRUPO of GRUPOS; let i = index">
+                <div class="col-xxl-4">
+                    <div class="card card-xxl-stretch mb-xl-3 position-relative">
+                        
+                        <!-- ⭐ Estrella de favorito con espacio -->
                         <div 
-                            *ngIf="openMenuId === i"
-                            class="menu-dropdown bg-white border rounded shadow position-absolute end-0 mt-2 p-3 zindex-dropdown"
-                            style="min-width: 200px; z-index: 1000;">
+                            *ngIf="GRUPO.is_starred"
+                            class="position-absolute top-0 start-0 m-3"
+                            style="z-index: 10;">
+                            <i class="fa-solid fa-star fs-2 text-warning me-2"></i>
+                        </div>
+
+                        <div class="card-header border-0">
+                            <a [routerLink]="['/tasks/tareas/tablero', GRUPO.id]">
+                                <div class="card-toolbar">  
+                                    <h3 class="card-title fw-bolder text-gray-900">
+                                        {{ GRUPO.name }}
+                                        
+                                        <!-- Badge de compartido -->
+                                        <span 
+                                            *ngIf="GRUPO.shared_with && GRUPO.shared_with.length > 0" 
+                                            class="badge badge-sm bg-light-primary text-primary ms-2"
+                                            title="Compartido con {{ GRUPO.shared_with.length }} persona(s)">
+                                            <i class="fa-solid fa-users fa-xs"></i>
+                                        </span>
+
+                                        <!-- Badge de propietario -->
+                                        <span 
+                                            *ngIf="GRUPO.is_owner" 
+                                            class="badge badge-sm bg-light-success text-success ms-2"
+                                            title="Eres el propietario">
+                                            <i class="fa-solid fa-crown fa-xs"></i>
+                                        </span>
+                                    </h3>
+                                </div>
+                            </a>
                             
-                            <div class="fs-6 fw-bold text-gray-900 mb-2">Opciones</div>
-                            <ul class="list-unstyled mb-0">
-                                <!-- Marcar/Desmarcar -->
-                                <li class="mb-2">
-                                    <button 
-                                        type="button"
-                                        class="btn btn-link text-decoration-none fw-bold text-dark d-block w-100 text-start p-2 rounded"
-                                        (click)="closeMenuAnd('marcarGrupo', GRUPO)">
-                                        <i class="fa-solid fa-star me-2 text-warning"></i> 
-                                        {{ GRUPO.is_starred ? 'Desmarcar' : 'Marcar' }}
-                                    </button>
-                                </li>
+                            <div class="card-toolbar position-relative">
+                                <button
+                                    class="btn btn-sm btn-icon btn-color-primary btn-active-light-primary"
+                                    (click)="toggleMenu(i, $event)">
+                                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                                </button>
+
+                                <!-- Menú desplegable -->
+                                <div 
+                                    *ngIf="openMenuId === i"
+                                    class="menu-dropdown bg-white border rounded shadow position-absolute end-0 mt-2 p-3 zindex-dropdown"
+                                    style="min-width: 200px; z-index: 1000;">
+                                    
+                                    <div class="fs-6 fw-bold text-gray-900 mb-2">Opciones</div>
+                                    <ul class="list-unstyled mb-0">
+                                        <!-- Marcar/Desmarcar -->
+                                        <li class="mb-2">
+                                            <button 
+                                                type="button"
+                                                class="btn btn-link text-decoration-none fw-bold text-dark d-block w-100 text-start p-2 rounded"
+                                                (click)="closeMenuAnd('marcarGrupo', GRUPO)">
+                                                <i class="fa-solid fa-star me-2 text-warning"></i> 
+                                                {{ GRUPO.is_starred ? 'Desmarcar' : 'Marcar' }}
+                                            </button>
+                                        </li>
+                                        
+                                        <!-- Compartir (solo propietario) -->
+                                        <li class="mb-2" *ngIf="GRUPO.is_owner">
+                                            <button 
+                                                type="button"
+                                                class="btn btn-link text-decoration-none fw-bold text-dark d-block w-100 text-start p-2 rounded"
+                                                (click)="closeMenuAnd('shareGrupo', GRUPO)">
+                                                <i class="fa-solid fa-share-nodes me-2 text-info"></i> 
+                                                Compartir
+                                            </button>
+                                        </li>
+                                        
+                                        <!-- Editar -->
+                                        <li class="mb-2">
+                                            <button 
+                                                type="button"
+                                                class="btn btn-link text-decoration-none fw-bold text-dark d-block w-100 text-start p-2 rounded"
+                                                (click)="closeMenuAnd('editGrupo', GRUPO)">
+                                                <i class="fa-solid fa-pen-to-square me-2 text-primary"></i> 
+                                                Editar
+                                            </button>
+                                        </li>
+                                        
+                                        <!-- Eliminar (solo propietario) -->
+                                        <li *ngIf="GRUPO.is_owner">
+                                            <button 
+                                                type="button"
+                                                class="btn btn-link text-decoration-none fw-bold text-danger d-block w-100 text-start p-2 rounded"
+                                                (click)="closeMenuAnd('deleteGrupo', GRUPO)">
+                                                <i class="fa-solid fa-trash me-2"></i> 
+                                                Eliminar
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        
+                        <img [src]="'assets/media/fondos/' + (GRUPO.image || 'fondo1.png')" alt="" class="mw-40 mh-110px grupo-thumbnail" />
+                        
+                        <!-- ✅ Info de usuarios compartidos (solo para el propietario) -->
+                        <div 
+                            *ngIf="GRUPO.is_owner && GRUPO.shared_with && GRUPO.shared_with.length > 0" 
+                            class="card-footer border-0 pt-2">
+                            <small class="text-muted d-flex align-items-center">
+                                <i class="fa-solid fa-users me-2"></i>
                                 
-                                <!-- Compartir (solo propietario) -->
-                                <li class="mb-2" *ngIf="GRUPO.is_owner">
-                                    <button 
-                                        type="button"
-                                        class="btn btn-link text-decoration-none fw-bold text-dark d-block w-100 text-start p-2 rounded"
-                                        (click)="closeMenuAnd('shareGrupo', GRUPO)">
-                                        <i class="fa-solid fa-share-nodes me-2 text-info"></i> 
-                                        Compartir
-                                    </button>
-                                </li>
-                                
-                                <!-- Editar -->
-                                <li class="mb-2">
-                                    <button 
-                                        type="button"
-                                        class="btn btn-link text-decoration-none fw-bold text-dark d-block w-100 text-start p-2 rounded"
-                                        (click)="closeMenuAnd('editGrupo', GRUPO)">
-                                        <i class="fa-solid fa-pen-to-square me-2 text-primary"></i> 
-                                        Editar
-                                    </button>
-                                </li>
-                                
-                                <!-- Eliminar (solo propietario) -->
-                                <li *ngIf="GRUPO.is_owner">
-                                    <button 
-                                        type="button"
-                                        class="btn btn-link text-decoration-none fw-bold text-danger d-block w-100 text-start p-2 rounded"
-                                        (click)="closeMenuAnd('deleteGrupo', GRUPO)">
-                                        <i class="fa-solid fa-trash me-2"></i> 
-                                        Eliminar
-                                    </button>
-                                </li>
-                            </ul>
+                                <!-- Si son 1 o 2 personas: mostrar nombres completos -->
+                                <ng-container *ngIf="GRUPO.shared_with.length <= 2">
+                                    Compartido con: 
+                                    <span class="ms-1">
+                                        <ng-container *ngFor="let person of GRUPO.shared_with; let last = last">
+                                            {{ person.name }} {{ person.surname }}<ng-container *ngIf="!last"> y </ng-container>
+                                        </ng-container>
+                                    </span>
+                                </ng-container>
+
+                                <!-- Si son 3 o más: mostrar contador CON ÍCONO DE INFO -->
+                                <ng-container *ngIf="GRUPO.shared_with.length > 2">
+                                    <span>Compartido con {{ GRUPO.shared_with.length }} personas</span>
+                                    <!-- ✨ ÍCONO DE INFORMACIÓN CLICKEABLE -->
+                                    <i 
+                                        class="fa-solid fa-circle-info ms-2 text-primary cursor-pointer info-icon" 
+                                        (click)="verMiembros(GRUPO, $event)"
+                                        title="Ver lista de miembros"></i>
+                                </ng-container>
+                            </small>
+                        </div>
+                        
+                        <!-- ✅ Info para usuarios NO propietarios -->
+                        <div 
+                            *ngIf="!GRUPO.is_owner" 
+                            class="card-footer border-0 pt-2">
+                            <small class="text-muted d-flex align-items-center">
+                                <i class="fa-solid fa-user-circle me-2"></i>
+                                Propiedad de: {{ GRUPO.user?.name }} {{ GRUPO.user?.surname }}
+                            </small>
                         </div>
                     </div>
                 </div>
-                
-                
-                <img [src]="'assets/media/fondos/' + (GRUPO.image || 'fondo1.jpg')" alt="" class="mw-40 mh-110px grupo-thumbnail" />
-                
-                <!-- ✅ Info de usuarios compartidos (solo para el propietario) -->
-                <div 
-                    *ngIf="GRUPO.is_owner && GRUPO.shared_with && GRUPO.shared_with.length > 0" 
-                    class="card-footer border-0 pt-2">
-                    <small class="text-muted d-flex align-items-center">
-                        <i class="fa-solid fa-users me-2"></i>
-                        
-                        <!-- Si son 1 o 2 personas: mostrar nombres completos -->
-                        <ng-container *ngIf="GRUPO.shared_with.length <= 2">
-                            Compartido con: 
-                            <span class="ms-1">
-                                <ng-container *ngFor="let person of GRUPO.shared_with; let last = last">
-                                    {{ person.name }} {{ person.surname }}<ng-container *ngIf="!last"> y </ng-container>
-                                </ng-container>
-                            </span>
-                        </ng-container>
-                        
-                        <!-- Si son más de 2: mostrar cantidad con tooltip -->
-                        <ng-container *ngIf="GRUPO.shared_with.length > 2">
-                            Compartido con: {{ GRUPO.shared_with.length }} personas
-                            <i 
-                                class="fa-regular fa-circle-exclamation ms-2 cursor-pointer text-info"
-                                [id]="'tooltip-' + GRUPO.id"
-                                (mouseenter)="showTooltip(GRUPO.id)"
-                                (mouseleave)="hideTooltip(GRUPO.id)"></i>
-                            
-                            <!-- Tooltip personalizado -->
-                            <div 
-                                *ngIf="activeTooltip === GRUPO.id"
-                                class="custom-tooltip position-absolute bg-white border rounded shadow-lg p-3"
-                                style="z-index: 1001; min-width: 200px; max-width: 300px;">
-                                <div class="fw-bold mb-2 text-dark">Compartido con:</div>
-                                <div class="tooltip-users-list">
-                                    <div 
-                                        *ngFor="let person of GRUPO.shared_with; let idx = index"
-                                        class="py-1 text-dark"
-                                        [class.d-none]="idx >= 7 && !showAllUsers[GRUPO.id]">
-                                        <i class="fa-solid fa-user-circle me-2 text-primary"></i>
-                                        {{ person.name }} {{ person.surname }}
-                                    </div>
-                                    
-                                    <!-- Scroll si hay más de 7 usuarios -->
-                                    <div 
-                                        *ngIf="GRUPO.shared_with.length > 7"
-                                        class="text-center mt-2 pt-2 border-top">
-                                        <small class="text-muted">
-                                            {{ GRUPO.shared_with.length - 7 }} más...
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
-                        </ng-container>
-                    </small>
-                </div>
-            </div>
+            </ng-container>
         </div>
-    </ng-container>
-
-    <!-- Paginación -->
-    <div class="card-body d-flex flex-center">
-        <ngb-pagination 
-            [collectionSize]="totalPages" 
-            [(page)]="currentPage" 
-            [pageSize]="25" 
-            [rotate]="true"
-            [boundaryLinks]="true" 
-            (pageChange)="loadPage($event)">
-        </ngb-pagination>
     </div>
+
+    <!-- ✅ Paginación siempre al final -->
+    <div class="pagination-container mt-auto pt-5 pb-3">
+        <div class="d-flex justify-content-center">
+            <ngb-pagination 
+                [collectionSize]="totalPages" 
+                [(page)]="currentPage" 
+                [pageSize]="25"
+                [maxSize]="5"
+                [rotate]="true"
+                [boundaryLinks]="true"
+                (pageChange)="loadPage($event)">
+            </ngb-pagination>
+        </div>
+    </div>
+    
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL DE MIEMBROS DEL GRUPO -->
+<!-- ============================================ -->
+<div class="modal fade miembros-modal" id="miembrosModal" tabindex="-1" aria-labelledby="miembrosModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      
+      <!-- Header del Modal -->
+      <div class="modal-header">
+        <h5 class="modal-title" id="miembrosModalLabel">
+          <i class="fa-solid fa-users"></i>
+          Miembros del Grupo: {{ selectedGrupo?.name }}
+        </h5>
+        <button type="button" class="btn-close" (click)="closeMiembrosModal()" aria-label="Close"></button>
+      </div>
+      
+      <!-- Body del Modal -->
+      <div class="modal-body">
+        
+        <!-- Contador de Miembros -->
+        <div class="miembros-counter" *ngIf="miembrosGrupo && miembrosGrupo.length > 0">
+          <div class="counter-text">
+            <i class="fa-solid fa-users-line"></i>
+            Total de miembros:
+            <span class="counter-number">{{ miembrosGrupo.length }}</span>
+          </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="text-center py-5" *ngIf="loadingMiembros">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="mt-3 text-muted">Cargando miembros...</p>
+        </div>
+
+        <!-- Lista de Miembros -->
+        <div class="miembros-list" *ngIf="!loadingMiembros && miembrosGrupo && miembrosGrupo.length > 0">
+          
+          <!-- Card del Propietario (siempre primero) -->
+          <div class="miembro-card d-flex align-items-center gap-3" *ngIf="selectedGrupo?.user">
+            <img 
+              [src]="selectedGrupo.user.avatar || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'" 
+              alt="Avatar del propietario"
+              class="miembro-avatar">
+            
+            <div class="miembro-info">
+              <div class="miembro-nombre">
+                {{ selectedGrupo.user.name }} {{ selectedGrupo.user.surname }}
+                <span class="badge-owner">
+                  <i class="fa-solid fa-crown"></i>
+                  Propietario
+                </span>
+              </div>
+              
+              <div class="miembro-email">
+                <i class="fa-solid fa-envelope"></i>
+                <span>{{ selectedGrupo.user.email }}</span>
+              </div>
+              
+              <div class="miembro-phone" *ngIf="selectedGrupo.user.phone">
+                <i class="fa-solid fa-phone"></i>
+                <span>{{ selectedGrupo.user.phone }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cards de los Miembros Compartidos -->
+          <div class="miembro-card d-flex align-items-center gap-3" *ngFor="let miembro of miembrosGrupo">
+            <img 
+              [src]="miembro.avatar || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'" 
+              alt="Avatar de {{ miembro.name }}"
+              class="miembro-avatar">
+            
+            <div class="miembro-info">
+              <div class="miembro-nombre">
+                {{ miembro.name }}
+              </div>
+              
+              <div class="miembro-email">
+                <i class="fa-solid fa-envelope"></i>
+                <span>{{ miembro.email }}</span>
+              </div>
+              
+              <div class="miembro-phone" *ngIf="miembro.phone">
+                <i class="fa-solid fa-phone"></i>
+                <span>{{ miembro.phone }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado Vacío -->
+        <div class="empty-state" *ngIf="!loadingMiembros && (!miembrosGrupo || miembrosGrupo.length === 0)">
+          <div class="empty-icon">
+            <i class="fa-solid fa-user-slash"></i>
+          </div>
+          <h4 class="empty-title">No hay miembros compartidos</h4>
+          <p class="empty-text">Este grupo no ha sido compartido con otros usuarios todavía.</p>
+        </div>
+      </div>
+      
+      <!-- Footer del Modal -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeMiembrosModal()">
+          <i class="fa-solid fa-xmark me-1"></i>
+          Cerrar
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-primary" 
+          *ngIf="selectedGrupo?.is_owner"
+          (click)="openShareModal()">
+          <i class="fa-solid fa-user-plus me-1"></i>
+          Agregar Miembros
+        </button>
+      </div>
+      
+    </div>
+  </div>
 </div>

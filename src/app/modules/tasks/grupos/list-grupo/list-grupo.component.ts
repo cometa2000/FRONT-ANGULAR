@@ -1,4 +1,4 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, ChangeDetectorRef } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { GrupoService } from '../service/grupo.service';
 import { CreateGrupoComponent } from '../create-grupo/create-grupo.component';
@@ -22,15 +22,20 @@ export class ListGrupoComponent {
 
   openMenuId: number | null = null;
   
-  // ✅ NUEVO: Control de tooltip
+  // Control de tooltip
   activeTooltip: number | null = null;
   showAllUsers: { [key: number]: boolean } = {};
-  
+
+  // Variables para el modal de miembros
+  selectedGrupo: any = null;
+  miembrosGrupo: any[] = [];
+  loadingMiembros: boolean = false;
 
   constructor(
     public modalService: NgbModal,
     public grupoService: GrupoService,
-    private toast: ToastrService
+    private toast: ToastrService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -108,33 +113,194 @@ export class ListGrupoComponent {
     });
   }
 
-  // ✅ NUEVO: Mostrar tooltip
-  showTooltip(grupoId: number) {
-    this.activeTooltip = grupoId;
+  // 👥 Ver miembros del grupo - ✅ VERSIÓN CORREGIDA
+  verMiembros(grupo: any, event?: MouseEvent) {
+    // Evitar que se propague el evento (para que no abra el link del grupo)
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    console.log('🔍 Ver miembros del grupo:', grupo.id);
+    console.log('📋 Grupo completo:', grupo);
+    
+    // ✅ PASO 1: Establecer el grupo seleccionado (copia completa del objeto)
+    this.selectedGrupo = { ...grupo }; // ← Hacer copia para evitar mutación
+    
+    // ✅ PASO 2: Limpiar miembros anteriores
+    this.miembrosGrupo = [];
+    
+    // ✅ PASO 3: Mostrar loading
+    this.loadingMiembros = true;
+    
+    // ✅ PASO 4: Abrir el modal ANTES de cargar los datos (con loading visible)
+    this.openMiembrosModal();
+    
+    // ✅ PASO 5: Cargar los miembros del grupo desde el backend
+    this.grupoService.getSharedUsers(grupo.id).subscribe({
+      next: (resp: any) => {
+        console.log('✅ Respuesta de miembros:', resp);
+        
+        if (resp.message === 200) {
+          // ✅ Asignar los miembros compartidos
+          this.miembrosGrupo = resp.shared_users || [];
+          
+          // ✅ Actualizar selectedGrupo con la info de shared_with
+          this.selectedGrupo.shared_with = resp.shared_users || [];
+          
+          console.log('👥 Miembros cargados:', this.miembrosGrupo);
+          console.log('📊 Total de miembros:', this.miembrosGrupo.length);
+          console.log('📋 selectedGrupo actualizado:', this.selectedGrupo);
+        } else {
+          console.warn('⚠️ Respuesta inesperada del servidor:', resp);
+          this.toast.warning('No se pudieron cargar los miembros', 'Advertencia');
+        }
+        
+        // ✅ CRÍTICO: Desactivar loading
+        this.loadingMiembros = false;
+        
+        // ✅ SOLUCIÓN: Forzar detección de cambios
+        this.cdr.detectChanges();
+        
+        console.log('✅ Vista actualizada, loading:', this.loadingMiembros);
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar miembros:', error);
+        console.error('Detalles del error:', {
+          status: error.status,
+          statusText: error.statusText,
+          message: error.message,
+          error: error.error
+        });
+        
+        this.loadingMiembros = false;
+        this.cdr.detectChanges(); // ✅ También forzar en error
+        this.toast.error('No se pudieron cargar los miembros del grupo', 'Error');
+        
+        // ✅ Cerrar el modal si hay error
+        this.closeMiembrosModal();
+      }
+    });
   }
 
-  // ✅ NUEVO: Ocultar tooltip
-  hideTooltip(grupoId: number) {
-    this.activeTooltip = null;
+  // ✅ Método mejorado para abrir el modal de miembros
+  openMiembrosModal() {
+    const modalElement = document.getElementById('miembrosModal');
+    
+    if (!modalElement) {
+      console.error('❌ Modal element not found');
+      return;
+    }
+    
+    // Verificar si Bootstrap está disponible
+    if (typeof (window as any).bootstrap !== 'undefined') {
+      // Usar Bootstrap 5 nativo
+      const modal = new (window as any).bootstrap.Modal(modalElement);
+      modal.show();
+      
+      console.log('✅ Modal abierto con Bootstrap 5');
+    } else {
+      // Alternativa: agregar clase show manualmente
+      modalElement.classList.add('show');
+      modalElement.style.display = 'block';
+      document.body.classList.add('modal-open');
+      
+      // Crear backdrop
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop fade show';
+      backdrop.id = 'miembros-backdrop';
+      document.body.appendChild(backdrop);
+      
+      console.log('✅ Modal abierto manualmente');
+    }
   }
 
+  // ✅ Cerrar modal manualmente
+  closeMiembrosModal() {
+    const modalElement = document.getElementById('miembrosModal');
+    const backdrop = document.getElementById('miembros-backdrop');
+    
+    if (modalElement) {
+      // Si Bootstrap está disponible, usarlo
+      if (typeof (window as any).bootstrap !== 'undefined') {
+        const modalInstance = (window as any).bootstrap.Modal.getInstance(modalElement);
+        if (modalInstance) {
+          modalInstance.hide();
+        }
+      } else {
+        // Cerrar manualmente
+        modalElement.classList.remove('show');
+        modalElement.style.display = 'none';
+        document.body.classList.remove('modal-open');
+      }
+    }
+    
+    if (backdrop) {
+      backdrop.remove();
+    }
+    
+    // ✅ Limpiar datos al cerrar
+    setTimeout(() => {
+      this.selectedGrupo = null;
+      this.miembrosGrupo = [];
+      this.loadingMiembros = false;
+    }, 300);
+    
+    console.log('✅ Modal cerrado');
+  }
+
+  // 🔄 Abrir modal de compartir desde el modal de miembros
+  openShareModal() {
+    // ✅ OPCIÓN 1: Buscar el grupo actualizado desde la lista GRUPOS
+    const grupoActualizado = this.GRUPOS.find((g: any) => g.id === this.selectedGrupo.id);
+    
+    // Cerrar el modal de miembros primero
+    this.closeMiembrosModal();
+    
+    if (grupoActualizado) {
+      console.log('✅ Grupo encontrado en GRUPOS, abriendo modal de compartir');
+      
+      // Abrir el modal de compartir con el grupo de la lista
+      setTimeout(() => {
+        this.shareGrupo(grupoActualizado);
+      }, 300);
+    } else {
+      console.warn('⚠️ Grupo no encontrado en GRUPOS, cargando desde servidor...');
+      
+      // ✅ OPCIÓN 2 (FALLBACK): Si no está en la lista, usar el selectedGrupo directamente
+      // Esto puede pasar si el usuario cambió de página en la lista
+      setTimeout(() => {
+        this.shareGrupo(this.selectedGrupo);
+      }, 300);
+    }
+  }
+
+  // ⚙️ Toggle del menú de opciones
   toggleMenu(id: number, event: MouseEvent) {
     event.stopPropagation();
     this.openMenuId = this.openMenuId === id ? null : id;
   }
 
+  // 🚫 Cerrar menú al hacer clic fuera
   @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.menu-dropdown') && !target.closest('.btn-icon')) {
-      this.openMenuId = null;
-    }
+  closeMenu(event: MouseEvent) {
+    this.openMenuId = null;
   }
 
+  // Mostrar tooltip
+  showTooltip(grupoId: number) {
+    this.activeTooltip = grupoId;
+  }
+
+  // Ocultar tooltip
+  hideTooltip(grupoId: number) {
+    this.activeTooltip = null;
+  }
+
+  // Método auxiliar para cerrar menú y ejecutar acción
   closeMenuAnd(action: string, grupo: any) {
     this.openMenuId = null;
-    
-    switch(action) {
+    switch (action) {
       case 'marcarGrupo':
         this.marcarGrupo(grupo);
         break;

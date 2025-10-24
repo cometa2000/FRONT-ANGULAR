@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectorRef } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { GrupoService } from '../service/grupo.service';
@@ -27,6 +27,7 @@ export class ShareGrupoComponent implements OnInit {
     public modal: NgbActiveModal,
     private grupoService: GrupoService,
     private toast: ToastrService,
+    private cdr: ChangeDetectorRef  // ✅ NUEVO: Agregar ChangeDetectorRef
   ) {
     // Debounce para la búsqueda (espera 500ms después de que el usuario deje de escribir)
     this.searchSubject
@@ -47,13 +48,27 @@ export class ShareGrupoComponent implements OnInit {
   }
 
   loadSharedUsers() {
+    console.log('🔄 Cargando usuarios compartidos...');
+    
     // Cargar usuarios ya compartidos
     this.grupoService.getSharedUsers(this.GRUPO_SELECTED.id).subscribe({
       next: (resp: any) => {
+        console.log('✅ Respuesta de usuarios compartidos:', resp);
+        
         this.sharedUsers = resp.shared_users || [];
+        
+        console.log('👥 Usuarios compartidos cargados:', this.sharedUsers.length);
+        console.log('📋 Datos:', this.sharedUsers);
+        
+        // ✅ CRÍTICO: Forzar detección de cambios
+        this.cdr.detectChanges();
+        
+        console.log('✅ Vista actualizada con usuarios compartidos');
       },
       error: (err) => {
-        console.error('Error al cargar usuarios compartidos:', err);
+        console.error('❌ Error al cargar usuarios compartidos:', err);
+        this.sharedUsers = [];
+        this.cdr.detectChanges(); // ✅ También en error
       }
     });
   }
@@ -91,6 +106,9 @@ export class ShareGrupoComponent implements OnInit {
         // Intentar obtener users de diferentes formas
         this.searchResults = resp.users || resp.data || [];
         
+        // ✅ NUEVO: Forzar detección después de buscar
+        this.cdr.detectChanges();
+        
         console.log('👥 Usuarios encontrados:', this.searchResults.length);
         
         if (this.searchResults.length === 0) {
@@ -110,6 +128,7 @@ export class ShareGrupoComponent implements OnInit {
         
         this.toast.error('Error al buscar usuarios. Revisa la consola.', 'Error');
         this.searchResults = [];
+        this.cdr.detectChanges(); // ✅ También en error
       }
     });
   }
@@ -131,24 +150,39 @@ export class ShareGrupoComponent implements OnInit {
       this.selectedUsers.splice(index, 1);
       this.toast.info(`${user.name} removido de la selección`, 'Usuario deseleccionado');
     }
+    
+    // ✅ NUEVO: Forzar detección al seleccionar/deseleccionar
+    this.cdr.detectChanges();
   }
 
   removeUser(userId: number) {
     this.selectedUsers = this.selectedUsers.filter(u => u.id !== userId);
+    
+    // ✅ NUEVO: Forzar detección al remover
+    this.cdr.detectChanges();
   }
 
   unshareUser(userId: number) {
     if (confirm('¿Estás seguro de dejar de compartir este grupo con este usuario?')) {
+      console.log('🗑️ Eliminando usuario compartido:', userId);
+      
       this.grupoService.unshareGrupo(this.GRUPO_SELECTED.id, userId).subscribe({
         next: (resp: any) => {
           if (resp.message === 200) {
+            // Filtrar el usuario eliminado
             this.sharedUsers = this.sharedUsers.filter(u => u.id !== userId);
+            
+            console.log('✅ Usuario eliminado. Quedan:', this.sharedUsers.length);
+            
+            // ✅ CRÍTICO: Forzar detección de cambios
+            this.cdr.detectChanges();
+            
             this.toast.success('Grupo dejado de compartir correctamente', 'Éxito');
             this.GrupoShared.emit(this.sharedUsers);
           }
         },
         error: (err) => {
-          console.error('Error al dejar de compartir:', err);
+          console.error('❌ Error al dejar de compartir:', err);
           this.toast.error('Error al dejar de compartir el grupo', 'Error');
         }
       });
@@ -162,6 +196,8 @@ export class ShareGrupoComponent implements OnInit {
     }
 
     const userIds = this.selectedUsers.map(u => u.id);
+
+    console.log('📤 Compartiendo grupo con usuarios:', userIds);
 
     this.grupoService.shareGrupo(this.GRUPO_SELECTED.id, userIds).subscribe({
       next: (resp: any) => {
@@ -177,6 +213,11 @@ export class ShareGrupoComponent implements OnInit {
           this.searchResults = [];
           this.searchTerm = '';
           
+          console.log('✅ Usuarios compartidos actualizados:', this.sharedUsers.length);
+          
+          // ✅ CRÍTICO: Forzar detección de cambios
+          this.cdr.detectChanges();
+          
           this.GrupoShared.emit(resp.shared_with);
           
           // Cerrar modal después de compartir exitosamente
@@ -186,7 +227,7 @@ export class ShareGrupoComponent implements OnInit {
         }
       },
       error: (err) => {
-        console.error('Error al compartir grupo:', err);
+        console.error('❌ Error al compartir grupo:', err);
         this.toast.error('Error al compartir el grupo', 'Error');
       }
     });

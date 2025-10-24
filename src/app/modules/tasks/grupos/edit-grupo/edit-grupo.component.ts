@@ -19,12 +19,14 @@ export class EditGrupoComponent implements OnInit {
   
   // ✅ Lista de fondos predeterminados
   backgrounds = [
-    { url: 'assets/media/fondos/fondo1.jpg', name: 'fondo1.jpg' },
+    { url: 'assets/media/fondos/fondo1.png', name: 'fondo1.png' },
     { url: 'assets/media/fondos/fondo2.png', name: 'fondo2.png' },
     { url: 'assets/media/fondos/fondo3.png', name: 'fondo3.png' },
-    { url: 'assets/media/fondos/fondo4.jpg', name: 'fondo4.jpg' },
-    { url: 'assets/media/fondos/fondo5.jpg', name: 'fondo5.jpg' },
-    { url: 'assets/media/fondos/fondo6.jpg', name: 'fondo6.jpg' },
+    { url: 'assets/media/fondos/fondo4.png', name: 'fondo4.png' },
+    { url: 'assets/media/fondos/fondo5.png', name: 'fondo5.png' },
+    { url: 'assets/media/fondos/fondo6.png', name: 'fondo6.png' },
+    { url: 'assets/media/fondos/fondo7.png', name: 'fondo7.png' },
+    { url: 'assets/media/fondos/fondo8.png', name: 'fondo8.png' },
   ];
   
   // ✅ Observable del servicio
