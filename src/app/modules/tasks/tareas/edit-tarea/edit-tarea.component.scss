@@ -1,0 +1,901 @@
+/* ========================================
+   EDIT TAREA - ESTILOS TIPO TRELLO
+   ======================================== */
+
+// Variables de colores de Trello
+$trello-bg: #f4f5f7;
+$trello-card-bg: #ffffff;
+$trello-text-primary: #172b4d;
+$trello-text-secondary: #5e6c84;
+$trello-text-light: #6b778c;
+$trello-border: #091e4221;
+$trello-hover: #091e420a;
+$trello-blue: #0079bf;
+$trello-blue-hover: #026aa7;
+$trello-btn-bg: #091e4214;
+$trello-btn-hover: #091e4224;
+$trello-shadow: 0 1px 2px rgba(9, 30, 66, 0.25);
+
+// Variables de etiquetas
+$label-green: #61bd4f;
+$label-yellow: #f2d600;
+$label-orange: #ff9f1a;
+$label-red: #eb5a46;
+$label-purple: #c377e0;
+$label-blue: #0079bf;
+$label-sky: #00c2e0;
+$label-lime: #51e898;
+$label-pink: #ff78cb;
+$label-black: #344563;
+
+/* ========================================
+   LAYOUT PRINCIPAL
+   ======================================== */
+
+.trello-edit-container {
+  width: 100%;
+  max-width: 100%;
+  background: $trello-card-bg;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(9, 30, 66, 0.15);
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid $trello-blue;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  p {
+    margin-top: 20px;
+    color: $trello-text-secondary;
+    font-size: 14px;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ========================================
+   HEADER
+   ======================================== */
+
+.trello-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid $trello-border;
+  min-height: 52px;
+}
+
+/* Status Dropdown */
+.status-dropdown {
+  select {
+    padding: 6px 32px 6px 12px;
+    background-color: $trello-btn-bg;
+    border: none;
+    border-radius: 3px;
+    color: $trello-text-primary;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23172b4d' d='M6 9L1.5 4.5 2.2 3.8 6 7.6 9.8 3.8 10.5 4.5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    transition: background-color 0.15s ease;
+    
+    &:hover {
+      background-color: $trello-btn-hover;
+    }
+    
+    &:focus {
+      outline: 2px solid $trello-blue;
+      outline-offset: 2px;
+    }
+  }
+}
+
+/* Botón cerrar */
+.btn-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: $trello-text-secondary;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  
+  &:hover {
+    background-color: $trello-btn-hover;
+    color: $trello-text-primary;
+  }
+}
+
+/* ========================================
+   SECCIÓN DE NOMBRE Y BOTONES (en el body)
+   ======================================== */
+
+.tarea-header-section {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid $trello-border;
+}
+
+/* Título de la tarea */
+.tarea-title {
+  margin: 0 0 12px 0;
+  margin-left: 25px;
+  padding: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: $trello-text-primary;
+  line-height: 24px;
+  word-break: break-word;
+}
+
+/* Botones de acción de la tarea */
+.tarea-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+/* Botones de acción del header */
+.btn-light {
+  padding: 6px 12px;
+  background-color: $trello-btn-bg;
+  border: none;
+  border-radius: 3px;
+  color: $trello-text-primary;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  
+  i {
+    font-size: 12px;
+  }
+  
+  &:hover {
+    background-color: $trello-btn-hover;
+  }
+  
+  &:active {
+    background-color: #091e4229;
+  }
+}
+
+.btn-blue {
+  padding: 6px 12px;
+  background-color: $trello-blue;
+  border: none;
+  border-radius: 3px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  
+  &:hover {
+    background-color: $trello-blue-hover;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* ========================================
+   BODY - LAYOUT DE DOS COLUMNAS
+   ======================================== */
+
+.trello-body {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 16px;
+  padding: 16px;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========================================
+   COLUMNA PRINCIPAL
+   ======================================== */
+
+.trello-main {
+  min-width: 0; // Importante para que el texto se corte correctamente
+}
+
+/* Nuevo contenedor con scroll */
+.scroll-sections {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+
+  scrollbar-width: thin;
+  scrollbar-color: #ccc transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: #bbb;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: #999;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+/* ========================================
+   SECCIONES
+   ======================================== */
+
+.section {
+  margin-bottom: 24px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  
+  i {
+    color: $trello-text-secondary;
+    font-size: 16px;
+    width: 20px;
+  }
+  
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: $trello-text-primary;
+    line-height: 20px;
+    flex: 1;
+  }
+  
+  .link-btn {
+    padding: 4px 8px;
+    background: transparent;
+    border: none;
+    color: $trello-text-secondary;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 3px;
+    
+    &:hover {
+      background-color: $trello-hover;
+      color: $trello-text-primary;
+    }
+  }
+}
+
+.section-body {
+  padding-left: 28px; // Alineado con el título
+}
+
+/* ========================================
+   ETIQUETAS
+   ======================================== */
+
+.etiquetas-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.etiqueta-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ffffff;
+  gap: 6px;
+  
+  &.green { background-color: $label-green; }
+  &.yellow { background-color: $label-yellow; color: $trello-text-primary; }
+  &.orange { background-color: $label-orange; }
+  &.red { background-color: $label-red; }
+  &.purple { background-color: $label-purple; }
+  &.blue { background-color: $label-blue; }
+  &.sky { background-color: $label-sky; }
+  &.lime { background-color: $label-lime; color: $trello-text-primary; }
+  &.pink { background-color: $label-pink; }
+  &.black { background-color: $label-black; }
+  
+  .remove-btn {
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+    font-size: 14px;
+    opacity: 0.7;
+    transition: opacity 0.15s ease;
+    
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+/* ========================================
+   VENCIMIENTO
+   ======================================== */
+
+.vencimiento-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: $trello-btn-bg;
+  border-radius: 3px;
+  font-size: 14px;
+  color: $trello-text-primary;
+  margin-bottom: 12px;
+  
+  i {
+    color: $trello-text-secondary;
+  }
+  
+  &.overdue {
+    background-color: #eb5a461a;
+    color: $label-red;
+  }
+  
+  &.due-soon {
+    background-color: #f2d6001a;
+    color: #bf8600;
+  }
+}
+
+/* ========================================
+   DESCRIPCIÓN
+   ======================================== */
+
+.desc-text {
+  margin: 0;
+  padding: 8px 12px;
+  color: $trello-text-primary;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background-color: $trello-hover;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  
+  &:hover {
+    background-color: $trello-btn-bg;
+  }
+}
+
+.desc-placeholder {
+  margin: 0;
+  padding: 8px 12px;
+  color: $trello-text-light;
+  font-size: 14px;
+  background-color: $trello-hover;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  
+  &:hover {
+    background-color: $trello-btn-bg;
+  }
+}
+
+textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 3px;
+  background-color: #ffffff;
+  box-shadow: inset 0 0 0 2px #0079bf;
+  font-size: 14px;
+  color: $trello-text-primary;
+  font-family: inherit;
+  resize: vertical;
+  
+  &:focus {
+    outline: none;
+  }
+  
+  &::placeholder {
+    color: $trello-text-light;
+  }
+}
+
+.action-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* ========================================
+   CHECKLISTS
+   ======================================== */
+
+.checklist-container {
+  margin-bottom: 16px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.checklist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  
+  h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: $trello-text-primary;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    
+    i {
+      font-size: 16px;
+    }
+  }
+  
+  .delete-checklist-btn {
+    padding: 4px 8px;
+    background: transparent;
+    border: none;
+    color: $trello-text-secondary;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 3px;
+    
+    &:hover {
+      background-color: $trello-hover;
+      color: $trello-text-primary;
+    }
+  }
+}
+
+.checklist-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  
+  span {
+    font-size: 11px;
+    color: $trello-text-secondary;
+    font-weight: 500;
+    min-width: 30px;
+  }
+  
+  .progress-bar {
+    flex: 1;
+    height: 8px;
+    background-color: $trello-btn-bg;
+    border-radius: 4px;
+    overflow: hidden;
+    
+    .progress-fill {
+      height: 100%;
+      background-color: $trello-blue;
+      transition: width 0.3s ease;
+      
+      &.completed {
+        background-color: $label-green;
+      }
+    }
+  }
+}
+
+.checklist-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  
+  &:hover {
+    background-color: $trello-hover;
+    
+    .item-actions {
+      opacity: 1;
+    }
+  }
+  
+  input[type="checkbox"] {
+    margin-top: 2px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: $trello-blue;
+  }
+  
+  .item-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  
+  .item-name {
+    flex: 1;
+    font-size: 14px;
+    color: $trello-text-primary;
+    
+    &.completed {
+      text-decoration: line-through;
+      color: $trello-text-secondary;
+    }
+  }
+  
+  .item-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    
+    button {
+      padding: 2px 6px;
+      background: transparent;
+      border: none;
+      color: $trello-text-secondary;
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 3px;
+      
+      &:hover {
+        background-color: $trello-btn-bg;
+        color: $trello-text-primary;
+      }
+    }
+  }
+}
+
+.add-item-container {
+  margin-top: 8px;
+  
+  .add-item-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 3px;
+    background-color: #ffffff;
+    box-shadow: inset 0 0 0 2px $trello-blue;
+    font-size: 14px;
+    color: $trello-text-primary;
+    font-family: inherit;
+    
+    &:focus {
+      outline: none;
+    }
+    
+    &::placeholder {
+      color: $trello-text-light;
+    }
+  }
+  
+  .item-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+}
+
+.add-checklist-btn {
+  padding: 6px 12px;
+  background-color: $trello-btn-bg;
+  border: none;
+  border-radius: 3px;
+  color: $trello-text-primary;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  
+  &:hover {
+    background-color: $trello-btn-hover;
+  }
+}
+
+/* ========================================
+   SIDEBAR (Comentarios y Actividad)
+   ======================================== */
+
+.trello-sidebar {
+  background-color: #ffffff;
+  
+  @media (max-width: 768px) {
+    border-top: 1px solid $trello-border;
+    padding-top: 16px;
+  }
+}
+
+.sidebar-section {
+  h3 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: $trello-text-primary;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    
+    i {
+      font-size: 16px;
+    }
+  }
+}
+
+/* ========================================
+   COMENTARIOS
+   ======================================== */
+
+.comment-box {
+  margin-bottom: 16px;
+  
+  textarea {
+    width: 100%;
+    min-height: 60px;
+    padding: 8px 12px;
+    border: 1px solid $trello-border;
+    border-radius: 3px;
+    background-color: #ffffff;
+    font-size: 14px;
+    color: $trello-text-primary;
+    font-family: inherit;
+    resize: vertical;
+    margin-bottom: 8px;
+    
+    &:focus {
+      outline: none;
+      border-color: $trello-blue;
+      box-shadow: 0 0 0 1px $trello-blue;
+    }
+    
+    &::placeholder {
+      color: $trello-text-light;
+    }
+  }
+}
+
+/* ========================================
+   ACTIVITY FEED
+   ======================================== */
+
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 8px;
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: $trello-hover;
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: $trello-btn-bg;
+    border-radius: 4px;
+    
+    &:hover {
+      background: $trello-btn-hover;
+    }
+  }
+}
+
+.activity-item {
+  display: flex;
+  gap: 8px;
+  
+  .avatar {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: $trello-btn-bg;
+    
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+  
+  .activity-content {
+    flex: 1;
+    min-width: 0;
+    
+    p {
+      margin: 0 0 4px 0;
+      font-size: 14px;
+      color: $trello-text-primary;
+      line-height: 20px;
+      
+      strong {
+        font-weight: 600;
+      }
+      
+      span {
+        color: $trello-text-secondary;
+      }
+    }
+    
+    .comment-text {
+      padding: 8px 12px;
+      background-color: $trello-hover;
+      border-radius: 3px;
+      font-size: 14px;
+      color: $trello-text-primary;
+      line-height: 20px;
+      word-break: break-word;
+      margin-bottom: 4px;
+    }
+    
+    .time {
+      font-size: 12px;
+      color: $trello-text-light;
+      display: block;
+    }
+  }
+}
+
+.no-activity {
+  padding: 20px;
+  text-align: center;
+  color: $trello-text-light;
+  font-size: 14px;
+  background-color: $trello-hover;
+  border-radius: 3px;
+}
+
+/* ========================================
+   BOTÓN "MOSTRAR DETALLES"
+   ======================================== */
+
+.show-details-btn {
+  padding: 6px 12px;
+  background-color: transparent;
+  border: 1px solid $trello-border;
+  border-radius: 3px;
+  color: $trello-text-primary;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  
+  &:hover {
+    background-color: $trello-hover;
+    border-color: $trello-text-secondary;
+  }
+}
+
+/* ========================================
+   RESPONSIVO
+   ======================================== */
+
+@media (max-width: 768px) {
+  .tarea-actions {
+    width: 100%;
+  }
+  
+  .section-body {
+    padding-left: 0;
+  }
+}
+
+
+
+
+
+/* ========================================
+   ANIMACIONES
+   ======================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section {
+  animation: fadeIn 0.3s ease;
+}
+
+/* ========================================
+   UTILIDADES
+   ======================================== */
+
+.text-muted {
+  color: $trello-text-secondary;
+}
+
+.text-small {
+  font-size: 12px;
+}
+
+.mt-1 { margin-top: 4px; }
+.mt-2 { margin-top: 8px; }
+.mt-3 { margin-top: 12px; }
+.mt-4 { margin-top: 16px; }
+
+.mb-1 { margin-bottom: 4px; }
+.mb-2 { margin-bottom: 8px; }
+.mb-3 { margin-bottom: 12px; }
+.mb-4 { margin-bottom: 16px; }
+
+.p-0 { padding: 0; }
+.p-1 { padding: 4px; }
+.p-2 { padding: 8px; }
+.p-3 { padding: 12px; }
+.p-4 { padding: 16px; }

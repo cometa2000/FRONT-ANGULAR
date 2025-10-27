@@ -1,0 +1,160 @@
+<div class="fechas-container">
+  <!-- Botón para añadir fecha -->
+  <button 
+    *ngIf="!hasDates" 
+    class="btn-add-fecha"
+    (click)="openModal()"
+  >
+    <i class="far fa-clock"></i>
+    Añadir fecha
+  </button>
+
+  <!-- Display de fechas existentes -->
+  <!-- <div class="fechas-display" *ngIf="hasDates">
+    <div class="fecha-info">
+      <i class="far fa-clock"></i>
+      <div class="fecha-details">
+        <div class="fecha-label">Vencimiento</div>
+        <div class="fecha-values">
+          <span class="fecha-value" *ngIf="currentStartDate">
+            {{ formatDate(currentStartDate) }}
+          </span>
+          <span class="separator" *ngIf="currentStartDate && currentDueDate">-</span>
+          <span 
+            class="fecha-value"
+            [class.overdue]="isOverdue()"
+            [class.due-soon]="isDueSoon()"
+            *ngIf="currentDueDate"
+          >
+            {{ formatDate(currentDueDate) }}
+            <span class="status-badge" *ngIf="isOverdue()">Vencida</span>
+            <span class="status-badge warning" *ngIf="isDueSoon() && !isOverdue()">Próxima</span>
+          </span>
+        </div>
+      </div>
+      <button 
+        class="btn-edit"
+        (click)="openModal()"
+        title="Editar fechas"
+      >
+        <i class="fas fa-pencil-alt"></i>
+      </button>
+    </div>
+  </div> -->
+</div>
+
+<!-- Modal para gestionar fechas -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <i class="far fa-clock"></i>
+        {{ hasDates ? 'Editar Fechas' : 'Añadir Fechas' }}
+      </h3>
+      <button class="btn-close" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <!-- Toggle para habilitar/deshabilitar fechas -->
+      <div class="toggle-section">
+        <label class="toggle-label">
+          <input 
+            type="checkbox" 
+            [(ngModel)]="enableDates"
+            class="toggle-checkbox"
+          >
+          <span class="toggle-slider"></span>
+          <span class="toggle-text">Habilitar fechas</span>
+        </label>
+      </div>
+
+      <!-- Formulario de fechas -->
+      <div class="dates-form" *ngIf="enableDates">
+        <div class="form-group">
+          <label>
+            <i class="fas fa-calendar-alt"></i>
+            Fecha inicial
+          </label>
+          <input 
+            type="date" 
+            class="form-control"
+            [(ngModel)]="startDate"
+          >
+        </div>
+
+        <div class="form-group">
+          <label>
+            <i class="fas fa-calendar-check"></i>
+            Fecha final
+          </label>
+          <input 
+            type="date" 
+            class="form-control"
+            [(ngModel)]="dueDate"
+            [min]="startDate"
+          >
+        </div>
+
+        <!-- Vista previa de las fechas -->
+        <div class="preview-section" *ngIf="startDate || dueDate">
+          <div class="preview-label">Vista previa:</div>
+          <div class="preview-dates">
+            <span *ngIf="startDate">{{ formatDate(startDate) }}</span>
+            <span *ngIf="startDate && dueDate"> - </span>
+            <span *ngIf="dueDate">{{ formatDate(dueDate) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección de notificaciones (UI only) -->
+      <div class="notifications-section">
+        <div class="section-header">
+          <i class="far fa-bell"></i>
+          <span>Notificaciones</span>
+          <span class="badge-ui">UI</span>
+        </div>
+        <label class="toggle-label">
+          <input 
+            type="checkbox" 
+            [(ngModel)]="enableNotifications"
+            class="toggle-checkbox"
+            disabled
+          >
+          <span class="toggle-slider disabled"></span>
+          <span class="toggle-text">Recibir notificaciones (Próximamente)</span>
+        </label>
+        <p class="info-text">
+          <i class="fas fa-info-circle"></i>
+          Esta funcionalidad estará disponible próximamente
+        </p>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button 
+        class="btn btn-danger" 
+        (click)="deleteFechas()"
+        *ngIf="hasDates"
+      >
+        <i class="fas fa-trash"></i>
+        Eliminar
+      </button>
+      <div class="spacer"></div>
+      <button 
+        class="btn btn-secondary" 
+        (click)="closeModal()"
+      >
+        Cancelar
+      </button>
+      <button 
+        class="btn btn-primary" 
+        (click)="saveFechas()"
+      >
+        <i class="fas fa-save"></i>
+        Guardar
+      </button>
+    </div>
+  </div>
+</div>

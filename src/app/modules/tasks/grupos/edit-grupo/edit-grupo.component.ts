@@ -14,8 +14,8 @@ export class EditGrupoComponent implements OnInit {
   @Input() GRUPO_SELECTED: any;
   
   name: string = '';
-  selectedBackground: string = 'assets/media/fondos/fondo1.jpg';
-  selectedBackgroundName: string = 'fondo1.jpg';
+  selectedBackground: string = 'assets/media/fondos/fondo1.png';
+  selectedBackgroundName: string = 'fondo1.png';
   
   // ✅ Lista de fondos predeterminados
   backgrounds = [

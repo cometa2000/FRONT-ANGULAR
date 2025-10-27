@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 
 import { TareasRoutingModule } from './tareas-routing.module';
 import { TareasComponent } from './tareas.component';
@@ -18,6 +19,9 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { EditListaComponent } from './edit-lista/edit-lista.component';
 import { DelteListaComponent } from './delte-lista/delte-lista.component';
 import { TableroTareasComponent } from './tablero-tareas/tablero-tareas.component';
+import { EtiquetasComponent } from './etiquetas/etiquetas.component';
+import { FechasComponent } from './fechas/fechas.component';
+import { ChecklistsComponent } from './checklists/checklists.component';
 
 
 @NgModule({
@@ -31,9 +35,13 @@ import { TableroTareasComponent } from './tablero-tareas/tablero-tareas.componen
     EditListaComponent,
     DelteListaComponent,
     TableroTareasComponent,
+    EtiquetasComponent,
+    FechasComponent,
+    ChecklistsComponent,
   ],
   imports: [
     CommonModule,
+    RouterModule,
     TareasRoutingModule,
     DragDropModule,
 

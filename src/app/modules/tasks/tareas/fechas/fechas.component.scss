@@ -1,0 +1,443 @@
+.fechas-container {
+  margin: 20px 0;
+}
+
+.btn-add-fecha {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #f4f5f7;
+  border: none;
+  border-radius: 3px;
+  color: #172b4d;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #ebecf0;
+  }
+
+  i {
+    font-size: 14px;
+  }
+}
+
+.fechas-display {
+  animation: fadeIn 0.3s ease;
+
+  .fecha-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background-color: #f4f5f7;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #ebecf0;
+
+      .btn-edit {
+        opacity: 1;
+      }
+    }
+
+    > i {
+      color: #5e6c84;
+      font-size: 16px;
+    }
+
+    .fecha-details {
+      flex: 1;
+
+      .fecha-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #5e6c84;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+      }
+
+      .fecha-values {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+
+        .fecha-value {
+          font-size: 14px;
+          color: #172b4d;
+          font-weight: 500;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+
+          &.overdue {
+            color: #EB5A46;
+            font-weight: 600;
+          }
+
+          &.due-soon {
+            color: #F2D600;
+            font-weight: 600;
+          }
+
+          .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: #EB5A46;
+            color: #fff;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+
+            &.warning {
+              background-color: #F2D600;
+              color: #172b4d;
+            }
+          }
+        }
+
+        .separator {
+          color: #5e6c84;
+        }
+      }
+    }
+
+    .btn-edit {
+      padding: 6px 10px;
+      background: none;
+      border: none;
+      color: #5e6c84;
+      cursor: pointer;
+      border-radius: 3px;
+      opacity: 0;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: #dfe1e6;
+        color: #172b4d;
+      }
+    }
+  }
+}
+
+// Modal styles
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 3px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 550px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #dfe1e6;
+
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #172b4d;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      i {
+        color: #5e6c84;
+      }
+    }
+
+    .btn-close {
+      background: none;
+      border: none;
+      color: #6b778c;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 18px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: #f4f5f7;
+        color: #172b4d;
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 20px;
+
+    .toggle-section {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #dfe1e6;
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      user-select: none;
+
+      .toggle-checkbox {
+        display: none;
+      }
+
+      .toggle-slider {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        background-color: #dfe1e6;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+
+        &::before {
+          content: '';
+          position: absolute;
+          width: 18px;
+          height: 18px;
+          background-color: #fff;
+          border-radius: 50%;
+          top: 3px;
+          left: 3px;
+          transition: all 0.3s ease;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        &.disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+
+      .toggle-checkbox:checked + .toggle-slider {
+        background-color: #0079BF;
+
+        &::before {
+          transform: translateX(20px);
+        }
+      }
+
+      .toggle-text {
+        font-size: 14px;
+        font-weight: 500;
+        color: #172b4d;
+      }
+    }
+
+    .dates-form {
+      animation: slideDown 0.3s ease;
+
+      .form-group {
+        margin-bottom: 16px;
+
+        label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 8px;
+          font-size: 12px;
+          font-weight: 600;
+          color: #5e6c84;
+          text-transform: uppercase;
+
+          i {
+            font-size: 14px;
+          }
+        }
+
+        .form-control {
+          width: 100%;
+          padding: 10px 12px;
+          border: 2px solid #dfe1e6;
+          border-radius: 3px;
+          font-size: 14px;
+          transition: all 0.2s ease;
+
+          &:focus {
+            outline: none;
+            border-color: #0079BF;
+            box-shadow: 0 0 0 3px rgba(0, 121, 191, 0.1);
+          }
+        }
+      }
+
+      .preview-section {
+        margin-top: 20px;
+        padding: 16px;
+        background-color: #f4f5f7;
+        border-radius: 3px;
+        border-left: 3px solid #0079BF;
+
+        .preview-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: #5e6c84;
+          text-transform: uppercase;
+          margin-bottom: 8px;
+        }
+
+        .preview-dates {
+          font-size: 14px;
+          color: #172b4d;
+          font-weight: 500;
+        }
+      }
+    }
+
+    .notifications-section {
+      margin-top: 24px;
+      padding: 16px;
+      background-color: #f4f5f7;
+      border-radius: 3px;
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #172b4d;
+
+        i {
+          color: #5e6c84;
+        }
+
+        .badge-ui {
+          display: inline-block;
+          padding: 2px 6px;
+          background-color: #0079BF;
+          color: #fff;
+          border-radius: 3px;
+          font-size: 10px;
+          font-weight: 600;
+          text-transform: uppercase;
+        }
+      }
+
+      .info-text {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #5e6c84;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        i {
+          font-size: 14px;
+        }
+      }
+    }
+  }
+
+  .modal-footer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid #dfe1e6;
+
+    .spacer {
+      flex: 1;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 3px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &.btn-secondary {
+        background-color: #f4f5f7;
+        color: #172b4d;
+
+        &:hover {
+          background-color: #ebecf0;
+        }
+      }
+
+      &.btn-primary {
+        background-color: #0079BF;
+        color: #fff;
+
+        &:hover {
+          background-color: #026AA7;
+        }
+      }
+
+      &.btn-danger {
+        background-color: #EB5A46;
+        color: #fff;
+
+        &:hover {
+          background-color: #CF513D;
+        }
+      }
+    }
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

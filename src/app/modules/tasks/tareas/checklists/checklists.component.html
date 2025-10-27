@@ -1,0 +1,156 @@
+<div class="checklists-container">
+  <!-- Botón para añadir checklist (no desaparece) -->
+  <button 
+    class="btn-add-checklist"
+    (click)="openModal()"
+  >
+    <i class="fas fa-check-square"></i>
+    Añadir checklist
+  </button>
+
+  <!-- Lista de checklists -->
+  <!-- <div class="checklists-list">
+    <div 
+      *ngFor="let checklist of checklists"
+      class="checklist-card"
+    >
+      
+      <div class="checklist-header">
+        <div class="checklist-title">
+          <i class="fas fa-check-square"></i>
+          <h3>{{ checklist.name }}</h3>
+        </div>
+        <div class="checklist-actions">
+          <button 
+            class="btn-icon"
+            (click)="openModal(checklist)"
+            title="Editar"
+          >
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+          <button 
+            class="btn-icon"
+            (click)="deleteChecklist(checklist)"
+            title="Eliminar"
+          >
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+
+      
+      <div class="progress-section">
+        <div class="progress-info">
+          <span class="progress-text">{{ checklist.progress || 0 }}%</span>
+          <span class="progress-count">
+            {{ getCompletedCount(checklist) }} de {{ checklist.items?.length || 0 }}
+          </span>
+        </div>
+        <div class="progress-bar-container">
+          <div 
+            class="progress-bar"
+            [style.width.%]="checklist.progress || 0"
+            [class]="getProgressClass(checklist.progress || 0)"
+          ></div>
+        </div>
+      </div>
+
+      
+      <div class="items-list">
+        <div 
+          *ngFor="let item of checklist.items"
+          class="item-row"
+          [class.completed]="item.completed"
+        >
+          <label class="checkbox-label">
+            <input 
+              type="checkbox"
+              [checked]="item.completed"
+              (change)="toggleItem(checklist, item)"
+            >
+            <span class="checkbox-custom"></span>
+            <span class="item-name">{{ item.name }}</span>
+          </label>
+          <button 
+            class="btn-delete-item"
+            (click)="deleteItem(checklist, item)"
+            title="Eliminar"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      
+      <div class="add-item-section">
+        <input 
+          type="text"
+          class="add-item-input"
+          placeholder="Añadir un paso..."
+          [(ngModel)]="newItemNames[checklist.id!]"
+          (keyup.enter)="addItem(checklist, $event)"
+        >
+        <button 
+          class="btn-add-item"
+          (click)="addItem(checklist, $event)"
+          [disabled]="!newItemNames[checklist.id!] || !newItemNames[checklist.id!].trim()"
+        >
+          <i class="fas fa-plus"></i>
+          Añadir
+        </button>
+      </div>
+    </div>
+  </div> -->
+</div>
+
+<!-- Modal para crear/editar checklist -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <i class="fas fa-check-square"></i>
+        {{ editingChecklist ? 'Editar Checklist' : 'Nuevo Checklist' }}
+      </h3>
+      <button class="btn-close" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nombre del checklist:</label>
+        <input 
+          type="text" 
+          class="form-control"
+          [(ngModel)]="checklistName"
+          placeholder="Ej: Tareas pendientes, Pasos a seguir..."
+          maxlength="100"
+          (keyup.enter)="saveChecklist()"
+          autofocus
+        >
+      </div>
+
+      <div class="info-box">
+        <i class="fas fa-info-circle"></i>
+        <p>Los checklists te ayudan a organizar tareas en pasos más pequeños y medibles.</p>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button 
+        class="btn btn-secondary" 
+        (click)="closeModal()"
+      >
+        Cancelar
+      </button>
+      <button 
+        class="btn btn-primary" 
+        (click)="saveChecklist()"
+        [disabled]="!checklistName.trim()"
+      >
+        <i class="fas fa-save"></i>
+        {{ editingChecklist ? 'Actualizar' : 'Crear' }}
+      </button>
+    </div>
+  </div>
+</div>

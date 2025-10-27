@@ -1,0 +1,154 @@
+<div class="etiquetas-container">
+  <!-- Botón para añadir etiqueta -->
+  <button 
+    *ngIf="!showAddForm" 
+    class="btn-add-etiqueta"
+    (click)="toggleAddForm()"
+  >
+    <i class="fas fa-tag"></i>
+    Añadir etiqueta
+  </button>
+
+  <!-- Formulario para crear etiqueta -->
+  <div class="etiqueta-form" *ngIf="showAddForm">
+    <div class="form-header">
+      <h3>Nueva Etiqueta</h3>
+      <button class="btn-close" (click)="toggleAddForm()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Selector de color -->
+    <div class="color-picker">
+      <label>Color:</label>
+      <div class="color-options">
+        <div 
+          *ngFor="let color of availableColors"
+          class="color-option"
+          [style.background-color]="color.value"
+          [class.selected]="selectedColor === color.value"
+          (click)="selectColor(color.value)"
+          [title]="color.name"
+        >
+          <i class="fas fa-check" *ngIf="selectedColor === color.value"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botón para abrir modal con nombre -->
+    <button 
+      class="btn-edit-name"
+      (click)="openEditModal()"
+    >
+      <i class="fas fa-pencil-alt"></i>
+      Editar nombre
+    </button>
+
+    <!-- Vista previa -->
+    <div class="preview-etiqueta" *ngIf="etiquetaName">
+      <span 
+        class="etiqueta-badge"
+        [style.background-color]="selectedColor"
+      >
+        {{ etiquetaName }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Etiquetas creadas -->
+  <!-- <div class="etiquetas-list" *ngIf="etiquetas.length > 0">
+    <div 
+      *ngFor="let etiqueta of etiquetas"
+      class="etiqueta-item"
+      [style.background-color]="etiqueta.color"
+    >
+      <span class="etiqueta-name">{{ etiqueta.name }}</span>
+      <div class="etiqueta-actions">
+        <button 
+          class="btn-icon"
+          (click)="editEtiqueta(etiqueta)"
+          title="Editar"
+        >
+          <i class="fas fa-pencil-alt"></i>
+        </button>
+        <button 
+          class="btn-icon"
+          (click)="deleteEtiqueta(etiqueta)"
+          title="Eliminar"
+        >
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    </div>
+  </div> -->
+</div>
+
+<!-- Modal para editar nombre -->
+<div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ editingEtiqueta ? 'Editar Etiqueta' : 'Nombre de la Etiqueta' }}</h3>
+      <button class="btn-close" (click)="closeEditModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <!-- Selector de color en el modal -->
+      <div class="color-picker">
+        <label>Color:</label>
+        <div class="color-options">
+          <div 
+            *ngFor="let color of availableColors"
+            class="color-option"
+            [style.background-color]="color.value"
+            [class.selected]="selectedColor === color.value"
+            (click)="selectColor(color.value)"
+            [title]="color.name"
+          >
+            <i class="fas fa-check" *ngIf="selectedColor === color.value"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Nombre:</label>
+        <input 
+          type="text" 
+          class="form-control"
+          [(ngModel)]="etiquetaName"
+          placeholder="Ej: Urgente, Diseño, Frontend..."
+          maxlength="50"
+          (keyup.enter)="editingEtiqueta ? updateEtiqueta() : saveEtiqueta()"
+        >
+      </div>
+
+      <!-- Vista previa en modal -->
+      <div class="preview-section" *ngIf="etiquetaName">
+        <label>Vista previa:</label>
+        <span 
+          class="etiqueta-badge-preview"
+          [style.background-color]="selectedColor"
+        >
+          {{ etiquetaName }}
+        </span>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button 
+        class="btn btn-secondary" 
+        (click)="closeEditModal()"
+      >
+        Cancelar
+      </button>
+      <button 
+        class="btn btn-primary" 
+        (click)="editingEtiqueta ? updateEtiqueta() : saveEtiqueta()"
+        [disabled]="!etiquetaName.trim()"
+      >
+        {{ editingEtiqueta ? 'Actualizar' : 'Guardar' }}
+      </button>
+    </div>
+  </div>
+</div>
