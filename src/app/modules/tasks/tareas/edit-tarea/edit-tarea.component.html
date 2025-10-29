@@ -13,9 +13,16 @@
     </div>
     
     <!-- Botón cerrar -->
-    <button class="btn-close" (click)="closeModal()">
-      <i class="fa-solid fa-xmark"></i>
-    </button>
+    <div class="btn btn-icon btn-sm btn-active-icon-primary" data-kt-users-modal-action="close" (click)="modal.dismiss()">
+      <!--begin::Svg Icon | path: icons/duotune/arrows/arr061.svg-->
+      <span class="svg-icon svg-icon-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <rect opacity="0.5" x="6" y="17.3137" width="16" height="2" rx="1" transform="rotate(-45 6 17.3137)" fill="currentColor" />
+              <rect x="7.41422" y="6" width="16" height="2" rx="1" transform="rotate(45 7.41422 6)" fill="currentColor" />
+          </svg>
+      </span>
+      <!--end::Svg Icon-->
+    </div>
   </div>
 
   <!-- ========================================
@@ -66,44 +73,102 @@
         <!-- ========================================
              VENCIMIENTO (si existe)
              ======================================== -->
-        <div class="section" *ngIf="tarea.due_date">
+        <div class="section" *ngIf="tarea.due_date || tarea.start_date">
           <div class="section-header">
             <i class="fa-regular fa-clock"></i>
             <h3>Vencimiento</h3>
+            <button 
+              class="link-btn" 
+              *ngIf="!editingFechas" 
+              (click)="toggleEditFechas()">
+              <i class="fa-solid fa-pencil"></i> Editar
+            </button>
+            <button 
+              class="link-btn" 
+              (click)="deleteFechas()">
+              <i class="fa-solid fa-trash"></i> Eliminar fechas
+            </button>
           </div>
           <div class="section-body">
-            <div 
-              class="vencimiento-info"
-              [ngClass]="{
-                'overdue': tarea.is_overdue,
-                'due-soon': tarea.is_due_soon && !tarea.is_overdue
-              }">
-              <i class="fa-regular fa-calendar"></i>
-              <span>{{ tarea.due_date | date: 'dd MMM, HH:mm' }}</span>
-              <i 
-                *ngIf="tarea.is_overdue" 
-                class="fa-solid fa-exclamation-triangle">
-              </i>
+            <!-- Vista normal (no editando) -->
+            <div *ngIf="!editingFechas">
+              <div 
+                class="vencimiento-info"
+                [ngClass]="{
+                  'overdue': tarea.is_overdue,
+                  'due-soon': tarea.is_due_soon && !tarea.is_overdue
+                }">
+                <i class="fa-regular fa-calendar"></i>
+                <span>{{ tarea.due_date | date: 'dd MMM, HH:mm' }}</span>
+                <i 
+                  *ngIf="tarea.is_overdue" 
+                  class="fa-solid fa-exclamation-triangle">
+                </i>
+              </div>
+              
+            </div>
+
+            <!-- Modo edición -->
+            <div *ngIf="editingFechas">
+              <div class="date-form">
+                <div class="form-group">
+                  <label>Fecha de inicio</label>
+                  <input 
+                    type="datetime-local" 
+                    [(ngModel)]="startDate"
+                    class="date-input">
+                </div>
+                <div class="form-group">
+                  <label>Fecha de vencimiento</label>
+                  <input 
+                    type="datetime-local" 
+                    [(ngModel)]="dueDate"
+                    class="date-input">
+                </div>
+              </div>
+              <div class="action-row">
+                <button class="btn-blue" (click)="saveFechas()">Guardar</button>
+                <button class="btn-light" (click)="cancelEditFechas()">Cancelar</button>
+              </div>
             </div>
           </div>
         </div>
-  
+        
         <!-- ========================================
              ETIQUETAS (si existen)
              ======================================== -->
         <div class="section" *ngIf="tarea.etiquetas && tarea.etiquetas.length > 0">
+          <!-- vista de etiqueta -->
           <div class="section-header">
             <i class="fa-solid fa-tag"></i>
             <h3>Etiquetas</h3>
           </div>
+          <!-- botones de la etiqueta -->
           <div class="section-body">
             <div class="etiquetas-container">
-              <span 
+              <div 
                 *ngFor="let etiqueta of tarea.etiquetas" 
-                class="etiqueta-tag"
-                [ngClass]="getEtiquetaColorClass(etiqueta.color)">
-                {{ etiqueta.name }}
-              </span>
+                class="etiqueta-wrapper">
+                <span 
+                  class="etiqueta-tag"
+                  [ngClass]="getEtiquetaColorClass(etiqueta.color)">
+                  {{ etiqueta.name }}
+                </span>
+                <div class="etiqueta-actions">
+                  <button 
+                    class="etiqueta-action-btn"
+                    (click)="openEditEtiquetaModal(etiqueta)"
+                    title="Editar">
+                    <i class="fa-solid fa-pen"></i>
+                  </button>
+                  <button 
+                    class="etiqueta-action-btn delete"
+                    (click)="deleteEtiqueta(etiqueta)"
+                    title="Eliminar">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -317,6 +382,47 @@
           <p class="no-activity">No hay comentarios ni actividad aún.</p>
         </ng-template>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================
+     MODAL EDITAR ETIQUETA
+     ======================================== -->
+<div class="modal-overlay" *ngIf="showEtiquetaModal" (click)="closeEtiquetaModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Editar Etiqueta</h3>
+      <button class="btn-close" (click)="closeEtiquetaModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nombre</label>
+        <input 
+          type="text" 
+          [(ngModel)]="etiquetaName"
+          placeholder="Nombre de la etiqueta"
+          class="form-input">
+      </div>
+      <div class="form-group">
+        <label>Color</label>
+        <div class="color-picker">
+          <div 
+            *ngFor="let color of colorOptions"
+            class="color-option"
+            [ngClass]="{'selected': selectedColor === color.value}"
+            [style.background-color]="color.value"
+            (click)="selectColor(color.value)"
+            [title]="color.name">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-blue" (click)="updateEtiqueta()">Guardar</button>
+      <button class="btn-light" (click)="closeEtiquetaModal()">Cancelar</button>
     </div>
   </div>
 </div>

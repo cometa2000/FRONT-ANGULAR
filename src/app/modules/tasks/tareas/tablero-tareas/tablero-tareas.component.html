@@ -1,4 +1,14 @@
-<div class="container-fluid py-4">
+<div class="container-fluid py-4" 
+     [ngStyle]="{
+       'background-image': GRUPO_SELECTED?.image ? 'url(assets/media/fondos/' + GRUPO_SELECTED.image + ')' : 'none',
+       'background-size': 'cover',
+       'background-position': 'center',
+       'background-attachment': 'fixed',
+       'min-height': '100vh'
+     }">
+   <!-- Loading spinner -->
+  <span class="spinner-border spinner-border-sm align-middle ms-2" *ngIf="isLoading$ | async"></span>
+    
   <!-- Header -->
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div class="d-flex align-items-center">

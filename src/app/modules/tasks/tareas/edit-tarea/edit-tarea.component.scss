@@ -319,12 +319,47 @@ $label-black: #344563;
    ETIQUETAS
    ======================================== */
 
+// .etiquetas-container {
+//   display: flex;
+//   flex-wrap: wrap;
+//   gap: 4px;
+//   margin-bottom: 12px;
+// }
 .etiquetas-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 12px;
+
+  .etiqueta-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background: rgba(0,0,0,0.02);
+    border-radius: 6px;
+    padding: 1px 3px;
+    margin-right: 2px;
+    transition: background .2s ease;
+
+    &:hover {
+      background: rgba(0,0,0,0.15);
+    }
+
+    /* ✅ Se reserva el espacio de botones desde siempre */
+    .etiqueta-actions {
+      display: flex;
+      overflow: hidden;           /* oculta cuando está cerrado */
+      width: 0;                   /* no ocupa espacio por defecto */
+      opacity: 0;                 /* invisible */
+      transition: width .25s ease, opacity .25s ease;
+    }
+
+    &:hover .etiqueta-actions {
+      width: 58px;                /* espacio exacto p/ 2 botones */
+      opacity: 1;                 /* visible al hover */
+    }
+  }
 }
+
+
 
 .etiqueta-tag {
   display: inline-flex;
@@ -350,7 +385,7 @@ $label-black: #344563;
   .remove-btn {
     background: transparent;
     border: none;
-    color: inherit;
+    color: inherit; 
     cursor: pointer;
     padding: 0;
     font-size: 14px;
@@ -899,3 +934,214 @@ textarea {
 .p-2 { padding: 8px; }
 .p-3 { padding: 12px; }
 .p-4 { padding: 16px; }
+/* ========================================
+   ESTILOS PARA EDITAR/ELIMINAR ETIQUETAS
+   ======================================== */
+
+.etiqueta-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 8px;
+  
+  .etiqueta-tag {
+    flex: 0 0 auto;
+  }
+  
+  .etiqueta-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  &:hover .etiqueta-actions {
+    opacity: 1;
+  }
+}
+
+.etiqueta-action-btn {
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: $trello-text-secondary;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: $trello-btn-hover;
+    color: $trello-text-primary;
+  }
+  
+  &.delete:hover {
+    background: rgba($label-red, 0.1);
+    color: $label-red;
+  }
+}
+
+/* ========================================
+   MODAL PARA EDITAR ETIQUETAS
+   ======================================== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+  background: $trello-card-bg;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 8px 16px rgba(9, 30, 66, 0.2);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid $trello-border;
+  
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: $trello-text-primary;
+  }
+  
+  .btn-close {
+    padding: 4px;
+    background: transparent;
+    border: none;
+    color: $trello-text-secondary;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 18px;
+    
+    &:hover {
+      background: $trello-btn-hover;
+      color: $trello-text-primary;
+    }
+  }
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px;
+  border-top: 1px solid $trello-border;
+  justify-content: flex-end;
+}
+
+.form-group {
+  margin-bottom: 16px;
+  
+  label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: $trello-text-primary;
+  }
+  
+  .form-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 2px solid $trello-border;
+    border-radius: 3px;
+    font-size: 14px;
+    color: $trello-text-primary;
+    transition: border-color 0.2s ease;
+    
+    &:focus {
+      outline: none;
+      border-color: $trello-blue;
+    }
+  }
+}
+
+.color-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 8px;
+}
+
+.color-option {
+  width: 40px;
+  height: 40px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  border: 2px solid transparent;
+  
+  &:hover {
+    transform: scale(1.1);
+  }
+  
+  &.selected {
+    border-color: $trello-text-primary;
+    transform: scale(1.1);
+  }
+}
+
+/* ========================================
+   ESTILOS PARA EDITAR FECHAS
+   ======================================== */
+
+.date-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.date-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 2px solid $trello-border;
+  border-radius: 3px;
+  font-size: 14px;
+  color: $trello-text-primary;
+  transition: border-color 0.2s ease;
+  
+  &:focus {
+    outline: none;
+    border-color: $trello-blue;
+  }
+}
+
+.delete-btn {
+  margin-top: 10px;
+  
+  i {
+    margin-right: 4px;
+  }
+}
