@@ -63,7 +63,8 @@
     }
   }
 
-  .color-picker {
+  /* ✅ SOLUCIÓN: Agregar ::ng-deep para forzar aplicación de estilos */
+  ::ng-deep .color-picker {
     margin-bottom: 16px;
 
     label {

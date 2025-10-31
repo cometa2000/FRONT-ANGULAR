@@ -1,18 +1,18 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { EtiquetasService, Etiqueta } from '../service/etiquetas.service';
 import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-etiquetas',
   templateUrl: './etiquetas.component.html',
-  styleUrls: ['./etiquetas.component.scss']
+  styleUrls: ['./etiquetas.component.scss'],
 })
 export class EtiquetasComponent implements OnInit {
   @Input() tareaId?: number;
+  @Output() etiquetasChanged = new EventEmitter<void>();
 
   etiquetas: Etiqueta[] = [];
-  showAddForm: boolean = false;
-  showEditModal: boolean = false;
+  showModal: boolean = false;
 
   selectedColor: string = '#61BD4F';
   etiquetaName: string = '';
@@ -57,17 +57,35 @@ export class EtiquetasComponent implements OnInit {
     this.selectedColor = color;
   }
 
-  toggleAddForm(): void {
-    this.showAddForm = !this.showAddForm;
-    if (this.showAddForm) {
+  // Método para abrir la modal (crear o editar)
+  openModal(etiqueta?: Etiqueta): void {
+    if (etiqueta) {
+      // Modo edición
+      this.editingEtiqueta = { ...etiqueta };
+      this.selectedColor = etiqueta.color;
+      this.etiquetaName = etiqueta.name;
+    } else {
+      // Modo creación
+      this.editingEtiqueta = null;
       this.selectedColor = '#61BD4F';
       this.etiquetaName = '';
     }
+    this.showModal = true;
   }
 
-  // HTML invoca saveEtiqueta() → alias a createEtiqueta()
+  closeModal(): void {
+    this.showModal = false;
+    this.editingEtiqueta = null;
+    this.etiquetaName = '';
+  }
+
+  // HTML invoca saveEtiqueta() → crea o actualiza según el contexto
   saveEtiqueta(): void {
-    this.createEtiqueta();
+    if (this.editingEtiqueta) {
+      this.updateEtiqueta();
+    } else {
+      this.createEtiqueta();
+    }
   }
 
   // Crear
@@ -86,9 +104,9 @@ export class EtiquetasComponent implements OnInit {
 
     this.etiquetasService.createEtiqueta(this.tareaId!, etiquetaData).subscribe({
       next: () => {
-        this.showAddForm = false;
-        this.etiquetaName = '';
+        this.closeModal();
         this.loadEtiquetas();
+        this.etiquetasChanged.emit();
         Swal.fire({
           icon: 'success',
           title: '¡Etiqueta creada!',
@@ -108,30 +126,9 @@ export class EtiquetasComponent implements OnInit {
     });
   }
 
-  // HTML usa openEditModal() **sin** argumentos en algún botón → aceptamos param opcional
-  openEditModal(etiqueta?: Etiqueta): void {
-    if (etiqueta) {
-      this.editingEtiqueta = { ...etiqueta };
-      this.selectedColor = etiqueta.color;
-      this.etiquetaName = etiqueta.name;
-      this.showEditModal = true;
-    } else {
-      // Si no viene etiqueta, tratamos como "crear" dentro de modal (por si tu HTML lo usa así)
-      this.editingEtiqueta = null;
-      this.selectedColor = '#61BD4F';
-      this.etiquetaName = '';
-      this.showEditModal = true;
-    }
-  }
-
-  // HTML usa editEtiqueta(etiqueta) → alias a openEditModal(etiqueta)
+  // HTML usa editEtiqueta(etiqueta) → alias a openModal(etiqueta)
   editEtiqueta(etiqueta: Etiqueta): void {
-    this.openEditModal(etiqueta);
-  }
-
-  closeEditModal(): void {
-    this.showEditModal = false;
-    this.editingEtiqueta = null;
+    this.openModal(etiqueta);
   }
 
   // Actualizar
@@ -154,8 +151,9 @@ export class EtiquetasComponent implements OnInit {
       etiquetaData
     ).subscribe({
       next: () => {
-        this.closeEditModal();
+        this.closeModal();
         this.loadEtiquetas();
+        this.etiquetasChanged.emit();
         Swal.fire({
           icon: 'success',
           title: '¡Etiqueta actualizada!',
@@ -193,6 +191,7 @@ export class EtiquetasComponent implements OnInit {
         this.etiquetasService.deleteEtiqueta(this.tareaId!, etiqueta.id!).subscribe({
           next: () => {
             this.loadEtiquetas();
+            this.etiquetasChanged.emit();
             Swal.fire({
               icon: 'success',
               title: 'Etiqueta eliminada',
