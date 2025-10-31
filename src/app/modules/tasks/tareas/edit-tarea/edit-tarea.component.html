@@ -43,10 +43,6 @@
         
         <!-- Botones de acción -->
         <div class="tarea-actions">
-          <button class="btn-light" (click)="openAdd()">
-            <i class="fa-solid fa-plus"></i> Añadir
-          </button>
-          
           <app-etiquetas 
             [tareaId]="tarea.id" 
             (etiquetasChanged)="loadTarea()">
@@ -63,7 +59,7 @@
           </app-checklists>
           
           <button class="btn-light">
-            <i class="fa-solid fa-user-plus"></i> Miembros
+            <i class="fa-solid fa-paperclip"></i> Adjuntar
           </button>
         </div>
       </div>
