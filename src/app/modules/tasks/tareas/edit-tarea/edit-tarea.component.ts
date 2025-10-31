@@ -510,7 +510,20 @@ export class EditTareaComponent implements OnInit {
   toggleChecklistItem(checklistId: number, itemId: number): void {
     console.log('🔄 Toggle item:', checklistId, itemId);
     
-    this.checklistsService.updateItem(this.tareaId, checklistId, itemId, { completed: true }).subscribe({
+    // Encontrar el checklist y el item actual para obtener su estado
+    const checklist = this.tarea?.checklists?.find(c => c.id === checklistId);
+    const item = checklist?.items?.find((i: any) => i.id === itemId);
+    
+    if (!item) {
+      console.error('❌ Item no encontrado');
+      return;
+    }
+    
+    // Invertir el estado actual
+    const newCompletedState = !item.completed;
+    console.log('📝 Cambiando estado de', item.completed, 'a', newCompletedState);
+    
+    this.checklistsService.updateItem(this.tareaId, checklistId, itemId, { completed: newCompletedState }).subscribe({
       next: () => {
         console.log('✅ Item actualizado');
         this.loadTarea();
@@ -525,6 +538,7 @@ export class EditTareaComponent implements OnInit {
       }
     });
   }
+  
 
   deleteChecklist(checklistId: number): void {
     Swal.fire({
