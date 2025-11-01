@@ -4,7 +4,8 @@ import Swal from 'sweetalert2';
 import { TareaService } from '../service/tarea.service';
 import { ChecklistsService } from '../service/checklists.service';
 import { EtiquetasService, Etiqueta } from '../service/etiquetas.service';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbModal, NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { AdjuntarModalComponent, Enlace, Archivo } from '../adjuntar-modal/adjuntar-modal.component';
 
 export interface Tarea {
   id: number;
@@ -30,7 +31,11 @@ export interface Tarea {
   total_checklist_items?: number;
   completed_checklist_items?: number;
   
-  
+  // 👇 PROPIEDAD PARA ADJUNTOS
+  adjuntos?: {
+    enlaces: Enlace[];
+    archivos: Archivo[];
+  };
 }
 
 @Component({
@@ -56,6 +61,15 @@ export class EditTareaComponent implements OnInit {
     checklists: true,
     comentarios: true,
     actividad: true
+  };
+
+  // 👇 PROPIEDADES PARA ADJUNTOS
+  adjuntos: {
+    enlaces: Enlace[];
+    archivos: Archivo[];
+  } = {
+    enlaces: [],
+    archivos: []
   };
 
   // Propiedades para edición
@@ -93,7 +107,8 @@ export class EditTareaComponent implements OnInit {
     private router: Router,
     private tareaService: TareaService,
     private checklistsService: ChecklistsService,
-    private etiquetasService: EtiquetasService
+    private etiquetasService: EtiquetasService,
+    private modalService: NgbModal  // 👈 NgbModal para el modal de adjuntos
   ) {}
 
   ngOnInit(): void {
@@ -146,8 +161,17 @@ export class EditTareaComponent implements OnInit {
               checklist.newItemName = '';
             });
           }
+
+          // 👇 CARGAR ADJUNTOS SI EXISTEN (con validación de null)
+          if (this.tarea && this.tarea.adjuntos) {
+            this.adjuntos = {
+              enlaces: this.tarea.adjuntos.enlaces || [],
+              archivos: this.tarea.adjuntos.archivos || []
+            };
+          }
           
           console.log('✅ Tarea cargada correctamente:', this.tarea);
+          console.log('📎 Adjuntos cargados:', this.adjuntos);
         } else {
           console.error('❌ Estructura de respuesta inesperada:', resp);
           this.tarea = null;
@@ -169,6 +193,152 @@ export class EditTareaComponent implements OnInit {
         });
       }
     });
+  }
+
+  // =============================
+  // 📎 MÉTODOS DE ADJUNTOS
+  // =============================
+  
+  /**
+   * Abrir modal para adjuntar archivos o enlaces
+   */
+  abrirModalAdjuntar(): void {
+    const modalRef = this.modalService.open(AdjuntarModalComponent, {
+      size: 'lg',
+      centered: true
+    });
+
+    modalRef.componentInstance.adjuntosExistentes = this.adjuntos;
+
+    modalRef.result.then(
+      (result) => {
+        if (result) {
+          console.log('✅ Adjunto agregado:', result);
+          
+          if (result.type === 'archivo') {
+            this.adjuntos.archivos.push(result.data);
+          } else if (result.type === 'enlace') {
+            this.adjuntos.enlaces.push(result.data);
+          }
+
+          // Guardar adjuntos en el servidor
+          this.guardarAdjuntos();
+        }
+      },
+      (reason) => {
+        console.log('Modal cerrado sin guardar:', reason);
+      }
+    );
+  }
+
+  /**
+   * Guardar adjuntos en el servidor
+   */
+  guardarAdjuntos(): void {
+    if (!this.tarea) return;
+
+    const data = {
+      adjuntos: this.adjuntos
+    };
+
+    this.tareaService.updateTarea(this.tareaId, data).subscribe({
+      next: (resp) => {
+        console.log('✅ Adjuntos guardados correctamente:', resp);
+        Swal.fire({
+          icon: 'success',
+          title: 'Adjuntos guardados',
+          timer: 1200,
+          showConfirmButton: false
+        });
+        this.loadTimeline();
+      },
+      error: (error) => {
+        console.error('❌ Error al guardar adjuntos:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error al guardar adjuntos'
+        });
+      }
+    });
+  }
+
+  /**
+   * Eliminar un enlace
+   */
+  eliminarEnlace(index: number): void {
+    Swal.fire({
+      title: '¿Eliminar enlace?',
+      text: 'Esta acción no se puede deshacer',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#F1416C',
+      cancelButtonColor: '#7E8299',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.adjuntos.enlaces.splice(index, 1);
+        this.guardarAdjuntos();
+      }
+    });
+  }
+
+  /**
+   * Eliminar un archivo
+   */
+  eliminarArchivo(index: number): void {
+    Swal.fire({
+      title: '¿Eliminar archivo?',
+      text: 'Esta acción no se puede deshacer',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#F1416C',
+      cancelButtonColor: '#7E8299',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.adjuntos.archivos.splice(index, 1);
+        this.guardarAdjuntos();
+      }
+    });
+  }
+
+  /**
+   * Obtener icono según el tipo de archivo
+   */
+  obtenerIconoArchivo(tipo: string): string {
+    if (tipo.startsWith('image/')) return 'fa-file-image';
+    if (tipo === 'application/pdf') return 'fa-file-pdf';
+    if (tipo.includes('word') || tipo.includes('document')) return 'fa-file-word';
+    if (tipo.includes('excel') || tipo.includes('spreadsheet')) return 'fa-file-excel';
+    if (tipo.includes('powerpoint') || tipo.includes('presentation')) return 'fa-file-powerpoint';
+    return 'fa-file';
+  }
+
+  /**
+   * Abrir enlace en nueva pestaña
+   */
+  abrirEnlace(url: string): void {
+    window.open(url, '_blank');
+  }
+
+  /**
+   * Formatear tiempo relativo (hace X minutos/horas/días)
+   */
+  tiempoRelativo(fecha: string): string {
+    const ahora = new Date();
+    const fechaAdjunto = new Date(fecha);
+    const diferencia = ahora.getTime() - fechaAdjunto.getTime();
+    
+    const minutos = Math.floor(diferencia / 60000);
+    const horas = Math.floor(diferencia / 3600000);
+    const dias = Math.floor(diferencia / 86400000);
+    
+    if (minutos < 1) return 'Hace un momento';
+    if (minutos < 60) return `Hace ${minutos} minuto${minutos > 1 ? 's' : ''}`;
+    if (horas < 24) return `Hace ${horas} hora${horas > 1 ? 's' : ''}`;
+    return `Hace ${dias} día${dias > 1 ? 's' : ''}`;
   }
 
   // =============================
@@ -242,40 +412,110 @@ export class EditTareaComponent implements OnInit {
   }
 
   // =============================
-  // 🏷️ ETIQUETAS
+  // 📅 FECHAS
   // =============================
-  getEtiquetaColorClass(color: string): string {
-    const colorMap: { [key: string]: string } = {
-      '#61bd4f': 'green',
-      '#f2d600': 'yellow',
-      '#ff9f1a': 'orange',
-      '#eb5a46': 'red',
-      '#c377e0': 'purple',
-      '#0079bf': 'blue',
-      '#00c2e0': 'sky',
-      '#51e898': 'lime',
-      '#ff78cb': 'pink',
-      '#344563': 'black',
-      'green': 'green',
-      'yellow': 'yellow',
-      'orange': 'orange',
-      'red': 'red',
-      'purple': 'purple',
-      'blue': 'blue',
-      'sky': 'sky',
-      'lime': 'lime',
-      'pink': 'pink',
-      'black': 'black'
-    };
+  toggleEditFechas(): void {
+    this.editingFechas = true;
     
-    return colorMap[color.toLowerCase()] || 'blue';
+    // Cargar fechas actuales si existen
+    if (this.tarea?.start_date) {
+      this.startDate = this.tarea.start_date;
+    }
+    if (this.tarea?.due_date) {
+      this.dueDate = this.tarea.due_date;
+    }
+  }
+
+  cancelEditFechas(): void {
+    this.editingFechas = false;
+    this.startDate = '';
+    this.dueDate = '';
+  }
+
+  saveFechas(): void {
+    if (!this.startDate || !this.dueDate) {
+      Swal.fire({ 
+        icon: 'warning', 
+        title: 'Completa ambas fechas',
+        text: 'Debes ingresar fecha de inicio y vencimiento'
+      });
+      return;
+    }
+
+    const data = {
+      start_date: this.startDate,
+      due_date: this.dueDate
+    };
+
+    this.tareaService.updateTarea(this.tareaId, data).subscribe({
+      next: () => {
+        console.log('✅ Fechas guardadas');
+        this.editingFechas = false;
+        this.loadTarea();
+        Swal.fire({ 
+          icon: 'success', 
+          title: 'Fechas guardadas', 
+          timer: 1200, 
+          showConfirmButton: false 
+        });
+        this.loadTimeline();
+      },
+      error: (error: any) => {
+        console.error('❌ Error al guardar fechas:', error);
+        Swal.fire({ 
+          icon: 'error', 
+          title: 'No se pudieron guardar las fechas' 
+        });
+      }
+    });
+  }
+
+  deleteFechas(): void {
+    Swal.fire({
+      title: '¿Eliminar fechas?',
+      text: 'Se eliminarán las fechas de inicio y vencimiento',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#EB5A46',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const data = {
+          start_date: null,
+          due_date: null
+        };
+
+        this.tareaService.updateTarea(this.tareaId, data).subscribe({
+          next: () => {
+            console.log('✅ Fechas eliminadas');
+            this.loadTarea();
+            Swal.fire({ 
+              icon: 'success', 
+              title: 'Fechas eliminadas', 
+              timer: 1200, 
+              showConfirmButton: false 
+            });
+            this.loadTimeline();
+          },
+          error: (error: any) => {
+            console.error('❌ Error al eliminar fechas:', error);
+            Swal.fire({ 
+              icon: 'error', 
+              title: 'No se pudieron eliminar las fechas' 
+            });
+          }
+        });
+      }
+    });
   }
 
   // =============================
-  // 🏷️ EDITAR/ELIMINAR ETIQUETAS
+  // 🏷️ ETIQUETAS
   // =============================
   openEditEtiquetaModal(etiqueta: Etiqueta): void {
-    this.editingEtiqueta = { ...etiqueta };
+    this.editingEtiqueta = etiqueta;
     this.etiquetaName = etiqueta.name;
     this.selectedColor = etiqueta.color;
     this.showEtiquetaModal = true;
@@ -293,57 +533,66 @@ export class EditTareaComponent implements OnInit {
   }
 
   updateEtiqueta(): void {
-    if (!this.tarea || !this.editingEtiqueta) return;
-
-    const name = (this.etiquetaName || '').trim();
-    if (!name) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Nombre requerido',
-        text: 'Por favor ingresa un nombre para la etiqueta'
+    if (!this.editingEtiqueta || !this.etiquetaName.trim()) {
+      Swal.fire({ 
+        icon: 'warning', 
+        title: 'El nombre es requerido' 
       });
       return;
     }
 
-    const etiquetaData: Etiqueta = {
-      ...this.editingEtiqueta,
-      name,
+    // 👇 Validación de ID (fix para error de undefined)
+    if (!this.editingEtiqueta.id) {
+      Swal.fire({ 
+        icon: 'error', 
+        title: 'Error',
+        text: 'ID de etiqueta inválido'
+      });
+      return;
+    }
+
+    const data = {
+      name: this.etiquetaName.trim(),
       color: this.selectedColor
     };
 
-    this.etiquetasService.updateEtiqueta(
-      this.tareaId,
-      this.editingEtiqueta.id!,
-      etiquetaData
-    ).subscribe({
+    this.etiquetasService.updateEtiqueta(this.tareaId, this.editingEtiqueta.id, data).subscribe({
       next: () => {
+        console.log('✅ Etiqueta actualizada');
         this.closeEtiquetaModal();
         this.loadTarea();
-        Swal.fire({
-          icon: 'success',
-          title: 'Etiqueta actualizada',
-          timer: 1200,
-          showConfirmButton: false
+        Swal.fire({ 
+          icon: 'success', 
+          title: 'Etiqueta actualizada', 
+          timer: 1200, 
+          showConfirmButton: false 
         });
         this.loadTimeline();
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('❌ Error al actualizar etiqueta:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudo actualizar la etiqueta'
+        Swal.fire({ 
+          icon: 'error', 
+          title: 'No se pudo actualizar la etiqueta' 
         });
       }
     });
   }
 
   deleteEtiqueta(etiqueta: Etiqueta): void {
-    if (!this.tarea) return;
+    // 👇 Validación de ID (fix para error de undefined)
+    if (!etiqueta.id) {
+      Swal.fire({ 
+        icon: 'error', 
+        title: 'Error',
+        text: 'ID de etiqueta inválido'
+      });
+      return;
+    }
 
     Swal.fire({
       title: '¿Eliminar etiqueta?',
-      text: `¿Seguro que deseas eliminar "${etiqueta.name}"?`,
+      text: `Se eliminará la etiqueta "${etiqueta.name}"`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#EB5A46',
@@ -351,24 +600,24 @@ export class EditTareaComponent implements OnInit {
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar'
     }).then((result) => {
-      if (result.isConfirmed) {
-        this.etiquetasService.deleteEtiqueta(this.tareaId, etiqueta.id!).subscribe({
+      if (result.isConfirmed && etiqueta.id) {
+        this.etiquetasService.deleteEtiqueta(this.tareaId, etiqueta.id).subscribe({
           next: () => {
+            console.log('✅ Etiqueta eliminada');
             this.loadTarea();
-            Swal.fire({
-              icon: 'success',
-              title: 'Etiqueta eliminada',
-              timer: 1200,
-              showConfirmButton: false
+            Swal.fire({ 
+              icon: 'success', 
+              title: 'Etiqueta eliminada', 
+              timer: 1200, 
+              showConfirmButton: false 
             });
             this.loadTimeline();
           },
-          error: (error) => {
+          error: (error: any) => {
             console.error('❌ Error al eliminar etiqueta:', error);
-            Swal.fire({
-              icon: 'error',
-              title: 'Error',
-              text: 'No se pudo eliminar la etiqueta'
+            Swal.fire({ 
+              icon: 'error', 
+              title: 'No se pudo eliminar la etiqueta' 
             });
           }
         });
@@ -376,174 +625,68 @@ export class EditTareaComponent implements OnInit {
     });
   }
 
-  // =============================
-  // 📅 EDITAR/ELIMINAR FECHAS
-  // =============================
-  toggleEditFechas(): void {
-    this.editingFechas = true;
-    // Inicializar con las fechas actuales
-    if (this.tarea) {
-      this.startDate = this.formatDateForInput(this.tarea.start_date);
-      this.dueDate = this.formatDateForInput(this.tarea.due_date);
-    }
-  }
-
-  private formatDateForInput(isoDate: string | null | undefined): string {
-    if (!isoDate) return '';
-    
-    try {
-      // Crear objeto Date desde la fecha ISO
-      const date = new Date(isoDate);
-      
-      // Verificar que la fecha sea válida
-      if (isNaN(date.getTime())) return '';
-      
-      // Obtener componentes de la fecha en hora local
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      
-      // Retornar en formato YYYY-MM-DDTHH:mm
-      return `${year}-${month}-${day}T${hours}:${minutes}`;
-    } catch (error) {
-      console.error('Error al formatear fecha:', error);
-      return '';
-    }
-  }
-
-  cancelEditFechas(): void {
-    this.editingFechas = false;
-    this.startDate = '';
-    this.dueDate = '';
-  }
-
-  saveFechas(): void {
-    if (!this.tarea) return;
-
-    console.log('💾 Guardando fechas:', { startDate: this.startDate, dueDate: this.dueDate });
-
-    const updateData = {
-      start_date: this.startDate || null,
-      due_date: this.dueDate || null
+  getEtiquetaColorClass(color: string): string {
+    const colorMap: { [key: string]: string } = {
+      '#61BD4F': 'etiqueta-verde',
+      '#F2D600': 'etiqueta-amarillo',
+      '#FF9F1A': 'etiqueta-naranja',
+      '#EB5A46': 'etiqueta-rojo',
+      '#C377E0': 'etiqueta-morado',
+      '#0079BF': 'etiqueta-azul',
+      '#00C2E0': 'etiqueta-celeste',
+      '#51E898': 'etiqueta-lima',
+      '#FF78CB': 'etiqueta-rosa',
+      '#B3BAC5': 'etiqueta-gris',
+      '#344563': 'etiqueta-negro'
     };
-
-    this.tareaService.updateTarea(this.tareaId, updateData).subscribe({
-      next: () => {
-        console.log('✅ Fechas guardadas correctamente');
-        this.editingFechas = false;
-        this.loadTarea();
-        Swal.fire({
-          icon: 'success',
-          title: 'Fechas actualizadas',
-          timer: 1200,
-          showConfirmButton: false
-        });
-        this.loadTimeline();
-      },
-      error: (error) => {
-        console.error('❌ Error al guardar fechas:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'No se pudieron guardar las fechas'
-        });
-      }
-    });
-  }
-
-  deleteFechas(): void {
-    if (!this.tarea) return;
-
-    Swal.fire({
-      title: '¿Eliminar fechas?',
-      text: '¿Estás seguro de eliminar las fechas de esta tarea?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#EB5A46',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        const updateData = {
-          start_date: null,
-          due_date: null
-        };
-
-        this.tareaService.updateTarea(this.tareaId, updateData).subscribe({
-          next: () => {
-            this.loadTarea();
-            Swal.fire({
-              icon: 'success',
-              title: 'Fechas eliminadas',
-              timer: 1200,
-              showConfirmButton: false
-            });
-            this.loadTimeline();
-          },
-          error: (error) => {
-            console.error('❌ Error al eliminar fechas:', error);
-            Swal.fire({
-              icon: 'error',
-              title: 'Error',
-              text: 'No se pudieron eliminar las fechas'
-            });
-          }
-        });
-      }
-    });
+    return colorMap[color] || 'etiqueta-default';
   }
 
   // =============================
   // ✅ CHECKLISTS
   // =============================
+  
+  /**
+   * 👇 MÉTODO FALTANTE: Calcular progreso del checklist
+   */
   getChecklistProgress(checklist: any): number {
-    if (!checklist.items || checklist.items.length === 0) {
+    if (!checklist || !checklist.items || checklist.items.length === 0) {
       return 0;
     }
     
     const completedItems = checklist.items.filter((item: any) => item.completed).length;
-    return Math.round((completedItems / checklist.items.length) * 100);
+    const totalItems = checklist.items.length;
+    
+    return Math.round((completedItems / totalItems) * 100);
   }
 
-  toggleChecklistItem(checklistId: number, itemId: number): void {
-    console.log('🔄 Toggle item:', checklistId, itemId);
+  toggleChecklistItem(checklistId: number, item: any): void {
+    console.log('🔄 Cambiando estado de item:', item);
     
-    // Encontrar el checklist y el item actual para obtener su estado
-    const checklist = this.tarea?.checklists?.find(c => c.id === checklistId);
-    const item = checklist?.items?.find((i: any) => i.id === itemId);
-    
-    if (!item) {
-      console.error('❌ Item no encontrado');
-      return;
-    }
-    
-    // Invertir el estado actual
     const newCompletedState = !item.completed;
-    console.log('📝 Cambiando estado de', item.completed, 'a', newCompletedState);
     
-    this.checklistsService.updateItem(this.tareaId, checklistId, itemId, { completed: newCompletedState }).subscribe({
+    this.checklistsService.updateItem(this.tareaId, checklistId, item.id, {
+      completed: newCompletedState
+    }).subscribe({
       next: () => {
         console.log('✅ Item actualizado');
+        item.completed = newCompletedState;
         this.loadTarea();
       },
       error: (error: any) => {
         console.error('❌ Error al actualizar item:', error);
         Swal.fire({
           icon: 'error',
-          title: 'Error',
-          text: 'No se pudo actualizar el elemento'
+          title: 'No se pudo actualizar el elemento'
         });
       }
     });
   }
-  
 
   deleteChecklist(checklistId: number): void {
     Swal.fire({
       title: '¿Eliminar checklist?',
-      text: 'Esta acción no se puede deshacer',
+      text: 'Se eliminarán todos los elementos del checklist',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#EB5A46',

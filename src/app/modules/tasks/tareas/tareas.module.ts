@@ -22,6 +22,7 @@ import { TableroTareasComponent } from './tablero-tareas/tablero-tareas.componen
 import { EtiquetasComponent } from './etiquetas/etiquetas.component';
 import { FechasComponent } from './fechas/fechas.component';
 import { ChecklistsComponent } from './checklists/checklists.component';
+import { AdjuntarModalComponent } from './adjuntar-modal/adjuntar-modal.component';
 
 
 @NgModule({
@@ -38,6 +39,7 @@ import { ChecklistsComponent } from './checklists/checklists.component';
     EtiquetasComponent,
     FechasComponent,
     ChecklistsComponent,
+    AdjuntarModalComponent,
   ],
   imports: [
     CommonModule,

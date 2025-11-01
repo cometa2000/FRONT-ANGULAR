@@ -1,0 +1,146 @@
+<!--begin::Modal content-->
+<div class="modal-content adjuntar-modal">
+  <!--begin::Modal header-->
+  <div class="modal-header">
+    <h2 class="fw-bolder">
+      <i class="fa-solid fa-paperclip me-2"></i>
+      Adjuntar
+    </h2>
+    <button class="btn btn-icon btn-sm btn-active-icon-primary" (click)="modal.dismiss()">
+      <span class="svg-icon svg-icon-1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <rect opacity="0.5" x="6" y="17.3137" width="16" height="2" rx="1" transform="rotate(-45 6 17.3137)" fill="currentColor" />
+          <rect x="7.41422" y="6" width="16" height="2" rx="1" transform="rotate(45 7.41422 6)" fill="currentColor" />
+        </svg>
+      </span>
+    </button>
+  </div>
+  <!--end::Modal header-->
+
+  <!--begin::Modal body-->
+  <div class="modal-body scroll-y mx-5 my-7">
+    <!-- Tabs -->
+    <div class="adjuntar-tabs mb-4">
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab === 'archivo'"
+        (click)="cambiarTab('archivo')">
+        <i class="fa-solid fa-file me-2"></i>
+        Subir Archivo
+      </button>
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab === 'enlace'"
+        (click)="cambiarTab('enlace')">
+        <i class="fa-solid fa-link me-2"></i>
+        Pegar Enlace
+      </button>
+    </div>
+
+    <!-- Contenido Tab Archivo -->
+    <div *ngIf="activeTab === 'archivo'" class="tab-content">
+      <div 
+        class="file-dropzone" 
+        [class.file-over]="isDragOver"
+        (drop)="onFileDrop($event)"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)">
+        
+        <div *ngIf="!archivoSeleccionado" class="dropzone-placeholder">
+          <i class="fa-solid fa-cloud-arrow-up fa-3x mb-3 text-muted"></i>
+          <p class="mb-2">Arrastra y suelta tu archivo aquí</p>
+          <p class="text-muted small">o haz clic para seleccionar</p>
+          <input 
+            type="file" 
+            (change)="onFileSelected($event)" 
+            accept=".jpeg,.bmp,.jpg,.png,.gif,.webp,.docx,.doc,.txt,.xlsx,.xls,.csv,.pdf,.pptx,.ppt" 
+            style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer;" />
+        </div>
+
+        <div *ngIf="archivoSeleccionado" class="archivo-preview">
+          <!-- Preview para imágenes -->
+          <div *ngIf="archivoPreview" class="preview-imagen">
+            <img [src]="archivoPreview" alt="Preview" />
+          </div>
+
+          <!-- Icono para otros archivos -->
+          <div *ngIf="!archivoPreview" class="preview-icono">
+            <i class="fa-solid fa-4x" [ngClass]="obtenerIcono(archivoSeleccionado.type)"></i>
+          </div>
+
+          <!-- Info del archivo -->
+          <div class="archivo-info">
+            <div class="archivo-nombre">
+              <i class="fa-solid fa-file me-2"></i>
+              {{ archivoSeleccionado.name }}
+            </div>
+            <div class="archivo-tamano text-muted">
+              {{ formatearTamano(archivoSeleccionado.size) }}
+            </div>
+          </div>
+
+          <!-- Botón eliminar -->
+          <button class="btn-eliminar-archivo" (click)="eliminarArchivo()">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="info-box mt-3">
+        <i class="fa-solid fa-circle-info me-2"></i>
+        <small>Archivos permitidos: Imágenes, PDF, Word, Excel, PowerPoint, TXT, CSV (Máx. 10MB)</small>
+      </div>
+    </div>
+
+    <!-- Contenido Tab Enlace -->
+    <div *ngIf="activeTab === 'enlace'" class="tab-content">
+      <div class="enlace-form">
+        <div class="form-group mb-3">
+          <label class="form-label required">URL del enlace</label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-link input-icon"></i>
+            <input 
+              type="url" 
+              class="form-control" 
+              [(ngModel)]="enlaceUrl"
+              placeholder="https://ejemplo.com/documento.pdf">
+          </div>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label required">Nombre del enlace</label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-tag input-icon"></i>
+            <input 
+              type="text" 
+              class="form-control" 
+              [(ngModel)]="enlaceNombre"
+              placeholder="Documento importante">
+          </div>
+        </div>
+
+        <div class="info-box">
+          <i class="fa-solid fa-circle-info me-2"></i>
+          <small>Asegúrate de que el enlace sea accesible para todos</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--end::Modal body-->
+
+  <!--begin::Modal footer-->
+  <div class="modal-footer">
+    <button type="button" class="btn btn-light me-3" (click)="modal.dismiss()">
+      Cancelar
+    </button>
+    <button 
+      type="button" 
+      class="btn btn-primary" 
+      (click)="guardarAdjunto()">
+      <i class="fa-solid fa-check me-2"></i>
+      Adjuntar
+    </button>
+  </div>
+  <!--end::Modal footer-->
+</div>
+<!--end::Modal content-->

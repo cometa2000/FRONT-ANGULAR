@@ -1,0 +1,307 @@
+.adjuntar-modal {
+  .modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e4e6ef;
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #181c32;
+      margin: 0;
+    }
+  }
+
+  .modal-body {
+    padding: 2rem;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid #e4e6ef;
+  }
+}
+
+// =============================
+// 📑 TABS
+// =============================
+.adjuntar-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid #e4e6ef;
+  padding-bottom: 0;
+
+  .tab-btn {
+    padding: 0.75rem 1.5rem;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #7e8299;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: -2px;
+
+    i {
+      color: #7e8299;
+      transition: color 0.3s ease;
+    }
+
+    &:hover {
+      color: #009ef7;
+      background: #f9f9f9;
+
+      i {
+        color: #009ef7;
+      }
+    }
+
+    &.active {
+      color: #009ef7;
+      border-bottom-color: #009ef7;
+      background: #f1faff;
+
+      i {
+        color: #009ef7;
+      }
+    }
+  }
+}
+
+// =============================
+// 📄 DROPZONE
+// =============================
+.file-dropzone {
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 3rem 2rem;
+  text-align: center;
+  background: #f9fafb;
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.file-over {
+    border-color: #009ef7;
+    background: #e8f4ff;
+  }
+
+  .dropzone-placeholder {
+    width: 100%;
+
+    p {
+      margin: 0;
+      font-size: 1rem;
+      color: #5e6278;
+    }
+
+    .text-muted {
+      font-size: 0.875rem;
+    }
+  }
+}
+
+// =============================
+// 🖼️ PREVIEW ARCHIVO
+// =============================
+.archivo-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  position: relative;
+
+  .preview-imagen {
+    img {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  .preview-icono {
+    color: #7e8299;
+    padding: 2rem;
+  }
+
+  .archivo-info {
+    text-align: center;
+    width: 100%;
+
+    .archivo-nombre {
+      font-weight: 600;
+      color: #181c32;
+      word-break: break-word;
+      padding: 0 1rem;
+    }
+
+    .archivo-tamano {
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+  }
+
+  .btn-eliminar-archivo {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #f1416c;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+    &:hover {
+      background: #d63656;
+      transform: scale(1.1);
+    }
+
+    i {
+      font-size: 0.875rem;
+    }
+  }
+}
+
+// =============================
+// 🔗 FORMULARIO ENLACE
+// =============================
+.enlace-form {
+  .form-group {
+    margin-bottom: 1.5rem;
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: #181c32;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+
+      &.required::after {
+        content: '*';
+        color: #f1416c;
+        margin-left: 0.25rem;
+      }
+    }
+
+    .input-with-icon {
+      position: relative;
+
+      .input-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #a1a5b7;
+        pointer-events: none;
+      }
+
+      .form-control {
+        padding-left: 2.75rem;
+        border: 1px solid #e4e6ef;
+        border-radius: 6px;
+        height: 45px;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+
+        &:focus {
+          border-color: #009ef7;
+          box-shadow: 0 0 0 0.2rem rgba(0, 158, 247, 0.1);
+        }
+
+        &::placeholder {
+          color: #a1a5b7;
+        }
+      }
+    }
+  }
+}
+
+// =============================
+// ℹ️ INFO BOX
+// =============================
+.info-box {
+  background: #fff4de;
+  border: 1px solid #ffc700;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  color: #7c6d00;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+
+  i {
+    flex-shrink: 0;
+  }
+}
+
+// =============================
+// 🎨 BOTONES
+// =============================
+.btn {
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+
+  &.btn-light {
+    background: #f5f8fa;
+    border: 1px solid #e4e6ef;
+    color: #7e8299;
+
+    &:hover {
+      background: #e4e6ef;
+      color: #5e6278;
+    }
+  }
+
+  &.btn-primary {
+    background: #009ef7;
+    border: none;
+    color: white;
+
+    &:hover {
+      background: #0095e8;
+      box-shadow: 0 4px 12px rgba(0, 158, 247, 0.3);
+    }
+
+    i {
+      margin-right: 0.5rem;
+    }
+  }
+}
+
+// =============================
+// 📱 RESPONSIVE
+// =============================
+@media (max-width: 768px) {
+  .adjuntar-modal {
+    .modal-body {
+      padding: 1rem;
+    }
+
+    .file-dropzone {
+      padding: 2rem 1rem;
+      min-height: 200px;
+    }
+
+    .adjuntar-tabs {
+      .tab-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+      }
+    }
+  }
+}

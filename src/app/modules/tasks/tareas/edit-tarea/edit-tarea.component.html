@@ -58,14 +58,129 @@
             (checklistsChanged)="loadTarea()">
           </app-checklists>
           
-          <button class="btn-light">
+          <button class="btn-light" (click)="abrirModalAdjuntar()">
             <i class="fa-solid fa-paperclip"></i> Adjuntar
+            <span *ngIf="adjuntos.archivos.length > 0 || adjuntos.enlaces.length > 0" 
+                  class="badge badge-primary ms-2">
+              {{ adjuntos.archivos.length + adjuntos.enlaces.length }}
+            </span>
           </button>
         </div>
       </div>
       
       <div class="scroll-sections">
 
+        <!-- ========================================
+            ADJUNTOS (si existen)
+            ======================================== -->
+        <div class="section" *ngIf="adjuntos.archivos.length > 0 || adjuntos.enlaces.length > 0">
+          <div class="section-header">
+            <i class="fa-solid fa-paperclip"></i>
+            <h3>Adjuntos</h3>
+            <button 
+              class="link-btn" 
+              (click)="abrirModalAdjuntar()">
+              <i class="fa-solid fa-plus"></i> Agregar
+            </button>
+          </div>
+
+          <div class="section-body">
+            <!-- Enlaces -->
+            <div *ngIf="adjuntos.enlaces.length > 0" class="adjuntos-group">
+              <div class="adjuntos-group-title">
+                <i class="fa-solid fa-link"></i>
+                <span>Enlaces</span>
+              </div>
+              
+              <div class="adjuntos-list">
+                <div 
+                  *ngFor="let enlace of adjuntos.enlaces; let i = index" 
+                  class="adjunto-item enlace-item">
+                  
+                  <div class="adjunto-icon">
+                    <i class="fa-solid fa-link"></i>
+                  </div>
+                  
+                  <div class="adjunto-info">
+                    <div class="adjunto-nombre" (click)="abrirEnlace(enlace.url)" style="cursor: pointer;">
+                      {{ enlace.nombre }}
+                    </div>
+                    <div class="adjunto-meta">
+                      <a [href]="enlace.url" target="_blank" class="adjunto-url">
+                        {{ enlace.url }}
+                      </a>
+                    </div>
+                  </div>
+                  
+                  <div class="adjunto-acciones">
+                    <button 
+                      class="btn-icon" 
+                      (click)="abrirEnlace(enlace.url)"
+                      title="Abrir enlace">
+                      <i class="fa-solid fa-external-link-alt"></i>
+                    </button>
+                    <button 
+                      class="btn-icon delete" 
+                      (click)="eliminarEnlace(i)"
+                      title="Eliminar">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Archivos -->
+            <div *ngIf="adjuntos.archivos.length > 0" class="adjuntos-group">
+              <div class="adjuntos-group-title">
+                <i class="fa-solid fa-file"></i>
+                <span>Archivos</span>
+              </div>
+              
+              <div class="adjuntos-list">
+                <div 
+                  *ngFor="let archivo of adjuntos.archivos; let i = index" 
+                  class="adjunto-item archivo-item">
+                  
+                  <div class="adjunto-icon">
+                    <i class="fa-solid" [ngClass]="obtenerIconoArchivo(archivo.tipo)"></i>
+                  </div>
+                  
+                  <div class="adjunto-info">
+                    <div class="adjunto-nombre">
+                      {{ archivo.nombre }}
+                    </div>
+                    <div class="adjunto-meta">
+                      <span class="adjunto-tiempo">
+                        {{ tiempoRelativo(archivo.tiempo_subida) }}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div class="adjunto-acciones">
+                    <button 
+                      class="btn-icon" 
+                      *ngIf="archivo.preview"
+                      title="Ver preview">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                    <button 
+                      class="btn-icon" 
+                      title="Descargar">
+                      <i class="fa-solid fa-download"></i>
+                    </button>
+                    <button 
+                      class="btn-icon delete" 
+                      (click)="eliminarArchivo(i)"
+                      title="Eliminar">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         <!-- ========================================
              VENCIMIENTO (si existe)
              ======================================== -->
