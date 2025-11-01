@@ -30,8 +30,6 @@ export interface Tarea {
   total_checklist_progress?: number;
   total_checklist_items?: number;
   completed_checklist_items?: number;
-  
-  // 👇 PROPIEDAD PARA ADJUNTOS
   adjuntos?: {
     enlaces: Enlace[];
     archivos: Archivo[];
@@ -45,9 +43,7 @@ export interface Tarea {
 })
 export class EditTareaComponent implements OnInit {
 
-  // ←—— cuando se abre como modal desde ListTarea
   @Input() TAREA_SELECTED?: { id: number };
-  // ←—— opcional: si el padre inyecta usuarios para los avatares
   @Input() users: any[] = [];
 
   tareaId!: number;
@@ -63,7 +59,7 @@ export class EditTareaComponent implements OnInit {
     actividad: true
   };
 
-  // 👇 PROPIEDADES PARA ADJUNTOS
+  // ADJUNTOS
   adjuntos: {
     enlaces: Enlace[];
     archivos: Archivo[];
@@ -108,18 +104,16 @@ export class EditTareaComponent implements OnInit {
     private tareaService: TareaService,
     private checklistsService: ChecklistsService,
     private etiquetasService: EtiquetasService,
-    private modalService: NgbModal  // 👈 NgbModal para el modal de adjuntos
+    private modalService: NgbModal
   ) {}
 
   ngOnInit(): void {
     console.log('🎯 Iniciando EditTareaComponent');
     
-    // 1) Prioriza el ID que llega por @Input() (modal)
     if (this.TAREA_SELECTED?.id) {
       this.tareaId = Number(this.TAREA_SELECTED.id);
       console.log('📌 ID desde @Input:', this.tareaId);
     } else {
-      // 2) fallback: ID por ruta (si alguna vez entras navegando)
       const idFromRoute = this.route.snapshot.paramMap.get('id');
       this.tareaId = idFromRoute ? Number(idFromRoute) : NaN;
       console.log('📌 ID desde ruta:', this.tareaId);
@@ -154,7 +148,6 @@ export class EditTareaComponent implements OnInit {
         if (resp && resp.tarea) {
           this.tarea = resp.tarea;
           
-          // Inicializar propiedades de checklists para el UI
           if (this.tarea && this.tarea.checklists) {
             this.tarea.checklists.forEach(checklist => {
               checklist.addingItem = false;
@@ -162,7 +155,6 @@ export class EditTareaComponent implements OnInit {
             });
           }
 
-          // 👇 CARGAR ADJUNTOS SI EXISTEN (con validación de null)
           if (this.tarea && this.tarea.adjuntos) {
             this.adjuntos = {
               enlaces: this.tarea.adjuntos.enlaces || [],
@@ -199,9 +191,6 @@ export class EditTareaComponent implements OnInit {
   // 📎 MÉTODOS DE ADJUNTOS
   // =============================
   
-  /**
-   * Abrir modal para adjuntar archivos o enlaces
-   */
   abrirModalAdjuntar(): void {
     const modalRef = this.modalService.open(AdjuntarModalComponent, {
       size: 'lg',
@@ -216,13 +205,10 @@ export class EditTareaComponent implements OnInit {
           console.log('✅ Adjunto agregado:', result);
           
           if (result.type === 'archivo') {
-            this.adjuntos.archivos.push(result.data);
+            this.guardarArchivo(result.data);
           } else if (result.type === 'enlace') {
-            this.adjuntos.enlaces.push(result.data);
+            this.guardarEnlace(result.data);
           }
-
-          // Guardar adjuntos en el servidor
-          this.guardarAdjuntos();
         }
       },
       (reason) => {
@@ -231,41 +217,69 @@ export class EditTareaComponent implements OnInit {
     );
   }
 
-  /**
-   * Guardar adjuntos en el servidor
-   */
-  guardarAdjuntos(): void {
+  guardarArchivo(archivo: Archivo): void {
     if (!this.tarea) return;
 
-    const data = {
-      adjuntos: this.adjuntos
-    };
+    const formData = new FormData();
+    formData.append('tipo', 'archivo');
+    if (archivo.file) {
+      formData.append('file', archivo.file);
+    }
 
-    this.tareaService.updateTarea(this.tareaId, data).subscribe({
+    this.tareaService.addAdjunto(this.tareaId, formData).subscribe({
       next: (resp) => {
-        console.log('✅ Adjuntos guardados correctamente:', resp);
+        console.log('✅ Archivo guardado:', resp);
+        this.loadTarea();
         Swal.fire({
           icon: 'success',
-          title: 'Adjuntos guardados',
+          title: 'Archivo adjuntado',
           timer: 1200,
           showConfirmButton: false
         });
-        this.loadTimeline();
       },
       error: (error) => {
-        console.error('❌ Error al guardar adjuntos:', error);
+        console.error('❌ Error al guardar archivo:', error);
         Swal.fire({
           icon: 'error',
-          title: 'Error al guardar adjuntos'
+          title: 'Error al adjuntar archivo'
         });
       }
     });
   }
 
-  /**
-   * Eliminar un enlace
-   */
+  guardarEnlace(enlace: Enlace): void {
+    if (!this.tarea) return;
+
+    const data = {
+      tipo: 'enlace',
+      nombre: enlace.nombre,
+      url: enlace.url
+    };
+
+    this.tareaService.addAdjunto(this.tareaId, data).subscribe({
+      next: (resp) => {
+        console.log('✅ Enlace guardado:', resp);
+        this.loadTarea();
+        Swal.fire({
+          icon: 'success',
+          title: 'Enlace agregado',
+          timer: 1200,
+          showConfirmButton: false
+        });
+      },
+      error: (error) => {
+        console.error('❌ Error al guardar enlace:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error al agregar enlace'
+        });
+      }
+    });
+  }
+
   eliminarEnlace(index: number): void {
+    const enlace = this.adjuntos.enlaces[index];
+    
     Swal.fire({
       title: '¿Eliminar enlace?',
       text: 'Esta acción no se puede deshacer',
@@ -277,16 +291,35 @@ export class EditTareaComponent implements OnInit {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.adjuntos.enlaces.splice(index, 1);
-        this.guardarAdjuntos();
+        if (enlace.id) {
+          this.tareaService.deleteAdjunto(this.tareaId, enlace.id).subscribe({
+            next: () => {
+              this.loadTarea();
+              Swal.fire({
+                icon: 'success',
+                title: 'Enlace eliminado',
+                timer: 1200,
+                showConfirmButton: false
+              });
+            },
+            error: (error) => {
+              console.error('❌ Error al eliminar:', error);
+              Swal.fire({
+                icon: 'error',
+                title: 'Error al eliminar'
+              });
+            }
+          });
+        } else {
+          this.adjuntos.enlaces.splice(index, 1);
+        }
       }
     });
   }
 
-  /**
-   * Eliminar un archivo
-   */
   eliminarArchivo(index: number): void {
+    const archivo = this.adjuntos.archivos[index];
+    
     Swal.fire({
       title: '¿Eliminar archivo?',
       text: 'Esta acción no se puede deshacer',
@@ -298,15 +331,32 @@ export class EditTareaComponent implements OnInit {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.adjuntos.archivos.splice(index, 1);
-        this.guardarAdjuntos();
+        if (archivo.id) {
+          this.tareaService.deleteAdjunto(this.tareaId, archivo.id).subscribe({
+            next: () => {
+              this.loadTarea();
+              Swal.fire({
+                icon: 'success',
+                title: 'Archivo eliminado',
+                timer: 1200,
+                showConfirmButton: false
+              });
+            },
+            error: (error) => {
+              console.error('❌ Error al eliminar:', error);
+              Swal.fire({
+                icon: 'error',
+                title: 'Error al eliminar'
+              });
+            }
+          });
+        } else {
+          this.adjuntos.archivos.splice(index, 1);
+        }
       }
     });
   }
 
-  /**
-   * Obtener icono según el tipo de archivo
-   */
   obtenerIconoArchivo(tipo: string): string {
     if (tipo.startsWith('image/')) return 'fa-file-image';
     if (tipo === 'application/pdf') return 'fa-file-pdf';
@@ -316,16 +366,10 @@ export class EditTareaComponent implements OnInit {
     return 'fa-file';
   }
 
-  /**
-   * Abrir enlace en nueva pestaña
-   */
   abrirEnlace(url: string): void {
     window.open(url, '_blank');
   }
 
-  /**
-   * Formatear tiempo relativo (hace X minutos/horas/días)
-   */
   tiempoRelativo(fecha: string): string {
     const ahora = new Date();
     const fechaAdjunto = new Date(fecha);
@@ -417,7 +461,6 @@ export class EditTareaComponent implements OnInit {
   toggleEditFechas(): void {
     this.editingFechas = true;
     
-    // Cargar fechas actuales si existen
     if (this.tarea?.start_date) {
       this.startDate = this.tarea.start_date;
     }
@@ -541,7 +584,6 @@ export class EditTareaComponent implements OnInit {
       return;
     }
 
-    // 👇 Validación de ID (fix para error de undefined)
     if (!this.editingEtiqueta.id) {
       Swal.fire({ 
         icon: 'error', 
@@ -580,7 +622,6 @@ export class EditTareaComponent implements OnInit {
   }
 
   deleteEtiqueta(etiqueta: Etiqueta): void {
-    // 👇 Validación de ID (fix para error de undefined)
     if (!etiqueta.id) {
       Swal.fire({ 
         icon: 'error', 
@@ -625,30 +666,27 @@ export class EditTareaComponent implements OnInit {
     });
   }
 
- getEtiquetaColorClass(color: string): string {
-  const colorMap: { [key: string]: string } = {
-    '#61BD4F': 'green',      // ✅ cambiar de 'etiqueta-verde' a 'green'
-    '#F2D600': 'yellow',     // ✅ cambiar
-    '#FF9F1A': 'orange',     // ✅ cambiar
-    '#EB5A46': 'red',        // ✅ cambiar
-    '#C377E0': 'purple',     // ✅ cambiar
-    '#0079BF': 'blue',       // ✅ cambiar
-    '#00C2E0': 'sky',        // ✅ cambiar
-    '#51E898': 'lime',       // ✅ cambiar
-    '#FF78CB': 'pink',       // ✅ cambiar
-    '#B3BAC5': 'gray',       // ✅ nuevo (faltaba)
-    '#344563': 'black'       // ✅ cambiar
-  };
-  return colorMap[color] || 'green'; // default a green en vez de 'etiqueta-default'
-}
+  getEtiquetaColorClass(color: string): string {
+    const colorMap: { [key: string]: string } = {
+      '#61BD4F': 'green',
+      '#F2D600': 'yellow',
+      '#FF9F1A': 'orange',
+      '#EB5A46': 'red',
+      '#C377E0': 'purple',
+      '#0079BF': 'blue',
+      '#00C2E0': 'sky',
+      '#51E898': 'lime',
+      '#FF78CB': 'pink',
+      '#B3BAC5': 'gray',
+      '#344563': 'black'
+    };
+    return colorMap[color] || 'green';
+  }
 
   // =============================
   // ✅ CHECKLISTS
   // =============================
   
-  /**
-   * 👇 MÉTODO FALTANTE: Calcular progreso del checklist
-   */
   getChecklistProgress(checklist: any): number {
     if (!checklist || !checklist.items || checklist.items.length === 0) {
       return 0;
@@ -842,7 +880,6 @@ export class EditTareaComponent implements OnInit {
   }
 
   editComment(comentarioId: number): void {
-    // Encontrar el comentario
     const comment = this.timeline.find(item => 
       item.type === 'comentario' && item.id === comentarioId
     );
@@ -926,7 +963,6 @@ export class EditTareaComponent implements OnInit {
   // =============================
   openAdd(): void {
     console.log('🔧 Abrir menú de añadir');
-    // Aquí puedes implementar un menú desplegable con opciones
   }
 
   toggleSection(key: keyof typeof this.sectionsOpen): void {
@@ -977,9 +1013,6 @@ export class EditTareaComponent implements OnInit {
     });
   }
 
-  /**
-   * Cerrar la modal (si aplica)
-   */
   closeModal(): void {
     this.modal.close();
   }

@@ -3,16 +3,19 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 
 export interface Enlace {
+  id?: number;
   url: string;
   nombre: string;
 }
 
 export interface Archivo {
+  id?: number;
   nombre: string;
   tipo: string;
   tiempo_subida: string;
   file?: File;
   preview?: string;
+  file_url?: string;
 }
 
 @Component({

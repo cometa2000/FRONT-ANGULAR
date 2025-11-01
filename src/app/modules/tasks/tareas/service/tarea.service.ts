@@ -40,10 +40,8 @@ export class TareaService {
     let errorMessage = 'Ocurrió un error desconocido';
     
     if (error.error instanceof ErrorEvent) {
-      // Error del lado del cliente
       errorMessage = `Error: ${error.error.message}`;
     } else {
-      // Error del lado del servidor
       errorMessage = `Código de error: ${error.status}\nMensaje: ${error.message}`;
       
       if (error.status === 0) {
@@ -392,5 +390,51 @@ export class TareaService {
     );
   }
 
-  
+  // =============================
+  // 📎 AGREGAR ADJUNTO
+  // =============================
+  addAdjunto(tareaId: number, data: any): Observable<any> {
+    console.log('📎 Agregando adjunto a tarea:', tareaId, data);
+    
+    this.isLoadingSubject.next(true);
+    
+    // Si es FormData (archivo), no usar JSON headers
+    let headers;
+    if (data instanceof FormData) {
+      headers = new HttpHeaders({
+        'Authorization': 'Bearer ' + this.authservice.token
+      });
+    } else {
+      headers = this.getHeaders();
+    }
+    
+    const URL = `${URL_SERVICIOS}/tareas/${tareaId}/adjuntos`;
+    
+    return this.http.post(URL, data, { headers }).pipe(
+      tap((response: any) => {
+        console.log('✅ Adjunto agregado:', response);
+      }),
+      catchError(this.handleError),
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
+  // =============================
+  // 🗑️ ELIMINAR ADJUNTO
+  // =============================
+  deleteAdjunto(tareaId: number, adjuntoId: number): Observable<any> {
+    console.log('🗑️ Eliminando adjunto:', { tareaId, adjuntoId });
+    
+    this.isLoadingSubject.next(true);
+    const headers = this.getHeaders();
+    const URL = `${URL_SERVICIOS}/tareas/${tareaId}/adjuntos/${adjuntoId}`;
+    
+    return this.http.delete(URL, { headers }).pipe(
+      tap((response: any) => {
+        console.log('✅ Adjunto eliminado:', response);
+      }),
+      catchError(this.handleError),
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
 }
