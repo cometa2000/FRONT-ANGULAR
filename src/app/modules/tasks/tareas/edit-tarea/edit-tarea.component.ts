@@ -625,22 +625,22 @@ export class EditTareaComponent implements OnInit {
     });
   }
 
-  getEtiquetaColorClass(color: string): string {
-    const colorMap: { [key: string]: string } = {
-      '#61BD4F': 'etiqueta-verde',
-      '#F2D600': 'etiqueta-amarillo',
-      '#FF9F1A': 'etiqueta-naranja',
-      '#EB5A46': 'etiqueta-rojo',
-      '#C377E0': 'etiqueta-morado',
-      '#0079BF': 'etiqueta-azul',
-      '#00C2E0': 'etiqueta-celeste',
-      '#51E898': 'etiqueta-lima',
-      '#FF78CB': 'etiqueta-rosa',
-      '#B3BAC5': 'etiqueta-gris',
-      '#344563': 'etiqueta-negro'
-    };
-    return colorMap[color] || 'etiqueta-default';
-  }
+ getEtiquetaColorClass(color: string): string {
+  const colorMap: { [key: string]: string } = {
+    '#61BD4F': 'green',      // ✅ cambiar de 'etiqueta-verde' a 'green'
+    '#F2D600': 'yellow',     // ✅ cambiar
+    '#FF9F1A': 'orange',     // ✅ cambiar
+    '#EB5A46': 'red',        // ✅ cambiar
+    '#C377E0': 'purple',     // ✅ cambiar
+    '#0079BF': 'blue',       // ✅ cambiar
+    '#00C2E0': 'sky',        // ✅ cambiar
+    '#51E898': 'lime',       // ✅ cambiar
+    '#FF78CB': 'pink',       // ✅ cambiar
+    '#B3BAC5': 'gray',       // ✅ nuevo (faltaba)
+    '#344563': 'black'       // ✅ cambiar
+  };
+  return colorMap[color] || 'green'; // default a green en vez de 'etiqueta-default'
+}
 
   // =============================
   // ✅ CHECKLISTS

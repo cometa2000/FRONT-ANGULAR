@@ -1389,41 +1389,6 @@ textarea {
   animation: fadeIn 0.3s ease;
 }
 
-// =============================
-// 🌓 MODO OSCURO (OPCIONAL)
-// =============================
-@media (prefers-color-scheme: dark) {
-  .adjunto-item {
-    background: #1e1e2d;
-    border-color: #2b2b40;
-
-    &:hover {
-      background: #27273a;
-    }
-
-    .adjunto-nombre {
-      color: #e4e6ef;
-    }
-
-    .adjunto-meta {
-      color: #a1a5b7;
-    }
-
-    .btn-icon {
-      color: #a1a5b7;
-
-      &:hover {
-        background: #2b2b40;
-        color: #e4e6ef;
-      }
-    }
-  }
-
-  .adjuntos-group-title {
-    color: #e4e6ef;
-    border-color: #2b2b40;
-  }
-}
 
 
 
