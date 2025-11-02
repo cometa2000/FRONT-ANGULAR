@@ -108,9 +108,25 @@
                   </div>
 
                   <div class="adjunto-acciones">
-                    <button class="btn-icon" *ngIf="archivo.preview"><i class="fa-solid fa-eye"></i></button>
-                    <button class="btn-icon" (click)="descargarArchivo(archivo)"><i class="fa-solid fa-download"></i></button>
-                    <button class="btn-icon delete" (click)="eliminarArchivo(i)"><i class="fa-solid fa-trash"></i></button>
+                    <button 
+                      class="btn-icon" 
+                      *ngIf="esArchivoVisualizable(archivo)"
+                      (click)="visualizarArchivo(archivo)"
+                      title="Visualizar archivo">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                    <button 
+                      class="btn-icon" 
+                      (click)="descargarArchivo(archivo)"
+                      title="Descargar archivo">
+                      <i class="fa-solid fa-download"></i>
+                    </button>
+                    <button 
+                      class="btn-icon delete" 
+                      (click)="eliminarArchivo(i)"
+                      title="Eliminar archivo">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
                   </div>
 
                 </div>
@@ -167,14 +183,25 @@
 
           <div class="section-body">
             <div class="etiquetas-container">
+
               <div *ngFor="let etiqueta of tarea.etiquetas" class="etiqueta-wrapper">
                 <span class="etiqueta-tag" [ngClass]="getEtiquetaColorClass(etiqueta.color)">
                   {{ etiqueta.name }}
                 </span>
-
+  
                 <div class="etiqueta-actions">
-                  <button class="etiqueta-action-btn" (click)="openEditEtiquetaModal(etiqueta)"><i class="fa-solid fa-pen"></i></button>
-                  <button class="etiqueta-action-btn delete" (click)="deleteEtiqueta(etiqueta)"><i class="fa-solid fa-trash"></i></button>
+                  <button 
+                    class="etiqueta-action-btn" 
+                    (click)="openEditEtiquetaModal(etiqueta)"
+                    title="Editar etiqueta">
+                    <i class="fa-solid fa-pen"></i>
+                  </button>
+                  <button 
+                    class="etiqueta-action-btn delete" 
+                    (click)="deleteEtiqueta(etiqueta)"
+                    title="Eliminar etiqueta">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
                 </div>
               </div>
             </div>

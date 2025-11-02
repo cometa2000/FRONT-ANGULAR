@@ -959,6 +959,73 @@ export class EditTareaComponent implements OnInit {
     return 'fa-file';
   }
 
+  /**
+   * 🔧 CORRECCIÓN: Verificar si un archivo puede ser visualizado
+   */
+  esArchivoVisualizable(archivo: any): boolean {
+    if (!archivo || !archivo.tipo) return false;
+    
+    const tipo = archivo.tipo.toLowerCase();
+    
+    // Imágenes
+    if (tipo.includes('image/') || 
+        tipo.includes('jpeg') || 
+        tipo.includes('jpg') || 
+        tipo.includes('png') || 
+        tipo.includes('gif') || 
+        tipo.includes('webp') || 
+        tipo.includes('svg')) {
+      return true;
+    }
+    
+    // PDFs
+    if (tipo.includes('pdf')) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * 🔧 CORRECCIÓN: Visualizar archivo en modal o nueva ventana
+   */
+  visualizarArchivo(archivo: any): void {
+    console.log('👁️ Visualizando archivo:', archivo);
+    
+    if (!archivo.file_url && !archivo.url) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se puede visualizar el archivo: URL no disponible'
+      });
+      return;
+    }
+
+    const url = archivo.file_url || archivo.url;
+    const tipo = archivo.tipo ? archivo.tipo.toLowerCase() : '';
+
+    // Para imágenes, mostrar en modal con Swal
+    if (tipo.includes('image')) {
+      Swal.fire({
+        title: archivo.nombre || 'Imagen',
+        imageUrl: url,
+        imageAlt: archivo.nombre,
+        width: 800,
+        showCloseButton: true,
+        showConfirmButton: false,
+        customClass: {
+          image: 'img-fluid'
+        }
+      });
+    } 
+    // Para PDFs y otros documentos, abrir en nueva pestaña
+    else {
+      window.open(url, '_blank');
+    }
+
+    console.log('✅ Archivo visualizado correctamente');
+  }
+
   // =============================
   // 💬 COMENTARIOS Y TIMELINE
   // =============================
