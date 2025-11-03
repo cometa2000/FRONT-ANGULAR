@@ -234,20 +234,15 @@
                       </div>
 
                       <!-- Avatar del usuario asignado -->
-                      <div class="user-avatar" *ngIf="TAREA.user" [title]="TAREA.user.name">
+                      <!-- <div class="user-avatar" *ngIf="TAREA.user" [title]="TAREA.user.name">
                         <img 
                           [src]="TAREA.user.avatar || 'assets/media/avatars/blank.png'" 
                           [alt]="TAREA.user.name"
                           (error)="onAvatarError($event)">
-                      </div>
+                      </div> -->
                     </div>
                   </div>
 
-                  <!-- Usuario asignado -->
-                  <div class="d-flex align-items-center" *ngIf="TAREA.user">
-                    <i class="fa-solid fa-user-circle me-2 text-muted"></i>
-                    <span class="small text-muted">{{ TAREA.user.name }}</span>
-                  </div>
                 </div>
 
                 <!-- Botones de acción -->

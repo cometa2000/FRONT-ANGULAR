@@ -52,6 +52,28 @@
       <!-- SCROLL DE SECCIONES -->
       <div class="scroll-sections">
 
+        <!-- DESCRIPCIÓN -->
+        <div class="section">
+          <div class="section-header">
+            <i class="fa-solid fa-bars"></i>
+            <h3>Descripción</h3>
+            <button class="link-btn" *ngIf="!editingDescription && tarea.description" (click)="toggleEditDescription()">Editar</button>
+          </div>
+
+          <div class="section-body">
+            <p *ngIf="tarea.description && !editingDescription" class="desc-text" (click)="toggleEditDescription()">{{ tarea.description }}</p>
+            <p *ngIf="!tarea.description && !editingDescription" class="desc-placeholder" (click)="toggleEditDescription()">Añadir descripción…</p>
+
+            <div *ngIf="editingDescription">
+              <textarea [(ngModel)]="tarea.description" rows="4"></textarea>
+              <div class="action-row">
+                <button class="btn-blue" (click)="saveDescription()">Guardar</button>
+                <button class="btn-light" (click)="cancelEditDescription()">Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- ADJUNTOS -->
         <div class="section" *ngIf="adjuntos.enlaces.length > 0 || adjuntos.archivos.length > 0">
           <div class="section-header">
@@ -203,28 +225,6 @@
                     <i class="fa-solid fa-trash"></i>
                   </button>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- DESCRIPCIÓN -->
-        <div class="section">
-          <div class="section-header">
-            <i class="fa-solid fa-bars"></i>
-            <h3>Descripción</h3>
-            <button class="link-btn" *ngIf="!editingDescription && tarea.description" (click)="toggleEditDescription()">Editar</button>
-          </div>
-
-          <div class="section-body">
-            <p *ngIf="tarea.description && !editingDescription" class="desc-text" (click)="toggleEditDescription()">{{ tarea.description }}</p>
-            <p *ngIf="!tarea.description && !editingDescription" class="desc-placeholder" (click)="toggleEditDescription()">Añadir descripción…</p>
-
-            <div *ngIf="editingDescription">
-              <textarea [(ngModel)]="tarea.description" rows="4"></textarea>
-              <div class="action-row">
-                <button class="btn-blue" (click)="saveDescription()">Guardar</button>
-                <button class="btn-light" (click)="cancelEditDescription()">Cancelar</button>
               </div>
             </div>
           </div>
