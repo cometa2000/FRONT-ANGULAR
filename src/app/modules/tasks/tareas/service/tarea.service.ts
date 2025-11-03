@@ -437,4 +437,100 @@ export class TareaService {
       finalize(() => this.isLoadingSubject.next(false))
     );
   }
+
+
+  // =============================
+  // 👥 MÉTODOS PARA MIEMBROS DE TAREAS
+  // =============================
+
+  /**
+   * Asignar miembros a una tarea
+   * @param tareaId ID de la tarea
+   * @param userIds Array de IDs de usuarios a asignar
+   */
+  assignMembersToTarea(tareaId: number, userIds: number[]): Observable<any> {
+    console.log('🌐 TareaService.assignMembersToTarea - Asignando miembros:', tareaId, userIds);
+    
+    this.isLoadingSubject.next(true);
+    const headers = this.getHeaders();
+    const URL = `${URL_SERVICIOS}/tareas/${tareaId}/assign-members`;
+    
+    return this.http.post(URL, { user_ids: userIds }, { headers }).pipe(
+      tap((response: any) => {
+        console.log('✅ TareaService.assignMembersToTarea - Miembros asignados:', response);
+      }),
+      catchError((error) => {
+        console.error('❌ TareaService.assignMembersToTarea - Error:', error);
+        return this.handleError(error);
+      }),
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
+  /**
+   * Obtener miembros asignados a una tarea
+   * @param tareaId ID de la tarea
+   */
+  getAssignedMembers(tareaId: number): Observable<any> {
+    console.log('🌐 TareaService.getAssignedMembers - Obteniendo miembros:', tareaId);
+    
+    const headers = this.getHeaders();
+    const URL = `${URL_SERVICIOS}/tareas/${tareaId}/members`;
+    
+    return this.http.get(URL, { headers }).pipe(
+      tap((response: any) => {
+        console.log('✅ TareaService.getAssignedMembers - Miembros obtenidos:', response);
+      }),
+      catchError((error) => {
+        console.error('❌ TareaService.getAssignedMembers - Error:', error);
+        return this.handleError(error);
+      })
+    );
+  }
+
+  /**
+   * Desasignar un miembro de una tarea
+   * @param tareaId ID de la tarea
+   * @param userId ID del usuario a desasignar
+   */
+  unassignMemberFromTarea(tareaId: number, userId: number): Observable<any> {
+    console.log('🌐 TareaService.unassignMemberFromTarea - Desasignando:', tareaId, userId);
+    
+    this.isLoadingSubject.next(true);
+    const headers = this.getHeaders();
+    const URL = `${URL_SERVICIOS}/tareas/${tareaId}/unassign-member/${userId}`;
+    
+    return this.http.delete(URL, { headers }).pipe(
+      tap((response: any) => {
+        console.log('✅ TareaService.unassignMemberFromTarea - Miembro desasignado:', response);
+      }),
+      catchError((error) => {
+        console.error('❌ TareaService.unassignMemberFromTarea - Error:', error);
+        return this.handleError(error);
+      }),
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
+  /**
+   * Buscar usuarios disponibles en el grupo
+   * @param grupoId ID del grupo
+   * @param search Término de búsqueda
+   */
+  searchUsersInGrupo(grupoId: number, search: string = ''): Observable<any> {
+    console.log('🌐 TareaService.searchUsersInGrupo - Buscando:', grupoId, search);
+    
+    const headers = this.getHeaders();
+    const URL = `${URL_SERVICIOS}/grupos/${grupoId}/members/search?search=${search}`;
+    
+    return this.http.get(URL, { headers }).pipe(
+      tap((response: any) => {
+        console.log('✅ TareaService.searchUsersInGrupo - Usuarios encontrados:', response);
+      }),
+      catchError((error) => {
+        console.error('❌ TareaService.searchUsersInGrupo - Error:', error);
+        return this.handleError(error);
+      })
+    );
+  }
 }

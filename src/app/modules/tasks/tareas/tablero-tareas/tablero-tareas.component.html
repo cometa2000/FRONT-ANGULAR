@@ -234,12 +234,25 @@
                       </div>
 
                       <!-- Avatar del usuario asignado -->
-                      <!-- <div class="user-avatar" *ngIf="TAREA.user" [title]="TAREA.user.name">
-                        <img 
-                          [src]="TAREA.user.avatar || 'assets/media/avatars/blank.png'" 
-                          [alt]="TAREA.user.name"
-                          (error)="onAvatarError($event)">
-                      </div> -->
+                      <div class="d-flex align-items-center gap-2 mt-2" *ngIf="TAREA.assigned_members && TAREA.assigned_members.length > 0">
+                        <div class="members-avatars">
+                          <div 
+                            *ngFor="let member of TAREA.assigned_members.slice(0, 3)" 
+                            class="member-avatar-wrapper"
+                            [title]="member.name + ' ' + (member.surname || '')">
+                            <img 
+                              [src]="member.avatar || 'assets/media/avatars/blank.png'" 
+                              [alt]="member.name"
+                              class="member-avatar">
+                          </div>
+                          <div 
+                            *ngIf="TAREA.assigned_members.length > 3" 
+                            class="member-avatar-more"
+                            [title]="'+ ' + (TAREA.assigned_members.length - 3) + ' miembro(s) más'">
+                            <span>+{{ TAREA.assigned_members.length - 3 }}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 

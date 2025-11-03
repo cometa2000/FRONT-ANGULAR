@@ -844,3 +844,67 @@
     height: 6px;
   }
 }
+
+
+
+
+// Contenedor de avatares de miembros
+.members-avatars {
+  display: flex;
+  align-items: center;
+  gap: -8px; // Avatares superpuestos
+  padding-left: 4px;
+}
+
+.member-avatar-wrapper {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  margin-left: -8px; // Superposición
+  
+  &:first-child {
+    margin-left: 0;
+  }
+  
+  &:hover {
+    transform: scale(1.15) translateY(-2px);
+    z-index: 10;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.member-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.member-avatar-more {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: -8px;
+  
+  &:hover {
+    transform: scale(1.15) translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+}

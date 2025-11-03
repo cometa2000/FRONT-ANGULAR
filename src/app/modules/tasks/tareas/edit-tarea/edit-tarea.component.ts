@@ -6,6 +6,7 @@ import { ChecklistsService } from '../service/checklists.service';
 import { EtiquetasService, Etiqueta } from '../service/etiquetas.service';
 import { NgbModal, NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { AdjuntarModalComponent, Enlace, Archivo } from '../adjuntar-modal/adjuntar-modal.component';
+import { AssignMembersTareaComponent } from '../assign-members-tarea/assign-members-tarea.component';
 
 export interface Tarea {
   id: number;
@@ -57,7 +58,8 @@ export class EditTareaComponent implements OnInit {
     etiquetas: true,
     checklists: true,
     comentarios: true,
-    actividad: true
+    actividad: true,
+    miembros: true
   };
 
   // ADJUNTOS
@@ -97,6 +99,9 @@ export class EditTareaComponent implements OnInit {
     { name: 'Gris', value: '#B3BAC5' },
     { name: 'Negro', value: '#344563' }
   ];
+
+
+  miembrosAsignados: any[] = [];
 
   constructor(
     public modal: NgbActiveModal,
@@ -139,50 +144,41 @@ export class EditTareaComponent implements OnInit {
   // =============================
   // 🧱 CARGA DE TAREA
   // =============================
-  loadTarea(): void {
-    console.log('🔄 Llamando a tareaService.show con ID:', this.tareaId);
+  loadTarea() {
+    console.log('🔄 Cargando tarea con ID:', this.tareaId);
     
-    this.tareaService.show(String(this.tareaId)).subscribe({
-      next: (resp) => {
-        console.log('✅ Respuesta recibida del servidor:', resp);
+    this.tareaService.show(this.tareaId.toString()).subscribe({
+      next: (resp: any) => {
+        console.log('✅ Tarea cargada:', resp);
         
-        if (resp && resp.tarea) {
+        if (resp.message === 200 && resp.tarea) {
           this.tarea = resp.tarea;
           
-          if (this.tarea && this.tarea.checklists) {
-            this.tarea.checklists.forEach(checklist => {
-              checklist.addingItem = false;
-              checklist.newItemName = '';
-            });
-          }
-
-          if (this.tarea && this.tarea.adjuntos) {
-            this.adjuntos = {
-              enlaces: this.tarea.adjuntos.enlaces || [],
-              archivos: this.tarea.adjuntos.archivos || []
-            };
-          }
+          // Cargar adjuntos
+          this.adjuntos = this.tarea?.adjuntos || { enlaces: [], archivos: [] };
           
-          console.log('✅ Tarea cargada correctamente:', this.tarea);
-          console.log('📎 Adjuntos cargados:', this.adjuntos);
+          // 🆕 CARGAR MIEMBROS ASIGNADOS
+          this.loadMiembrosAsignados();
+          
+          // Cargar timeline
+          this.loadTimeline();
+          
+          console.log('📋 Tarea completa:', this.tarea);
         } else {
-          console.error('❌ Estructura de respuesta inesperada:', resp);
-          this.tarea = null;
+          console.error('❌ Respuesta inesperada:', resp);
           Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'La respuesta del servidor no tiene el formato esperado',
-            confirmButtonColor: '#EB5A46'
+            text: 'No se pudo cargar la información de la tarea.'
           });
         }
       },
       error: (error: any) => {
-        console.error('❌ Error al cargar la tarea:', error);
+        console.error('❌ Error al cargar tarea:', error);
         Swal.fire({
           icon: 'error',
           title: 'Error',
-          text: 'No se pudo cargar la tarea. ' + (error.error?.message || 'Verifica tu conexión e intenta nuevamente.'),
-          confirmButtonColor: '#EB5A46'
+          text: error?.userMessage || 'No se pudo cargar la tarea. Por favor, intenta de nuevo.'
         });
       }
     });
@@ -1143,5 +1139,126 @@ export class EditTareaComponent implements OnInit {
   // =============================
   onAvatarError(event: any): void {
     event.target.src = this.defaultAvatar;
+  }
+
+
+
+
+  loadMiembrosAsignados() {
+    console.log('🔄 Cargando miembros asignados...');
+    
+    this.tareaService.getAssignedMembers(this.tareaId).subscribe({
+      next: (resp: any) => {
+        console.log('✅ Miembros asignados:', resp);
+        this.miembrosAsignados = resp.members || [];
+      },
+      error: (error: any) => {
+        console.error('❌ Error al cargar miembros:', error);
+        this.miembrosAsignados = [];
+      }
+    });
+  }
+
+  /**
+   * Abrir modal para asignar miembros
+   */
+  abrirModalMiembros() {
+    
+    // Intentar obtener el grupo_id de múltiples formas
+    let grupoId = null;
+    
+    // Opción 1: Desde tarea.grupo.id
+    if (this.tarea?.grupo?.id) {
+      grupoId = this.tarea.grupo.id;
+    }
+    // Opción 2: Desde tarea.grupo_id
+    else if (this.tarea?.grupo_id) {
+      grupoId = this.tarea.grupo_id;
+    }
+    // Opción 3: Desde lista.grupo.id
+    else if (this.tarea?.lista?.grupo?.id) {
+      grupoId = this.tarea.lista.grupo.id;
+    }
+    // Opción 4: Desde lista.grupo_id
+    else if (this.tarea?.lista?.grupo_id) {
+      grupoId = this.tarea.lista.grupo_id;
+    }
+    
+    if (!grupoId) {
+      
+      Swal.fire({
+        icon: 'warning',
+        title: 'Advertencia',
+        text: 'No se puede asignar miembros sin un grupo asociado. Verifica la consola para más detalles.'
+      });
+      return;
+    }
+
+    
+
+    const modalRef = this.modalService.open(AssignMembersTareaComponent, {
+      centered: true,
+      size: 'lg'
+    });
+    
+    modalRef.componentInstance.TAREA_SELECTED = this.tarea;
+    modalRef.componentInstance.GRUPO_ID = grupoId;
+    
+    modalRef.componentInstance.MembersAssigned.subscribe((tareaActualizada: any) => {
+      
+      this.loadMiembrosAsignados();
+      this.loadTimeline();
+      
+      // Emitir cambios al componente padre
+      this.TareaE.emit(tareaActualizada);
+    });
+  }
+
+  /**
+   * Desasignar un miembro de la tarea
+   */
+  desasignarMiembro(userId: number) {
+    const miembro = this.miembrosAsignados.find(m => m.id === userId);
+    const nombreMiembro = miembro ? `${miembro.name} ${miembro.surname || ''}` : 'este miembro';
+
+    Swal.fire({
+      title: '¿Desasignar miembro?',
+      text: `¿Estás seguro de desasignar a ${nombreMiembro} de esta tarea?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, desasignar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.tareaService.unassignMemberFromTarea(this.tareaId, userId).subscribe({
+          next: (resp: any) => {
+            if (resp.message === 200) {
+              this.miembrosAsignados = this.miembrosAsignados.filter(m => m.id !== userId);
+              
+              Swal.fire({
+                icon: 'success',
+                title: 'Miembro desasignado',
+                text: `${nombreMiembro} ha sido desasignado de la tarea.`,
+                timer: 2000,
+                showConfirmButton: false
+              });
+              
+              this.loadTimeline();
+              this.TareaE.emit(resp.tarea || this.tarea);
+            }
+          },
+          error: (error: any) => {
+            console.error('❌ Error al desasignar miembro:', error);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'No se pudo desasignar el miembro. Intenta de nuevo.'
+            });
+          }
+        });
+      }
+    });
   }
 }

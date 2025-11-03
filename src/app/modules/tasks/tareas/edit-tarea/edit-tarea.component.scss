@@ -1392,4 +1392,431 @@ textarea {
 
 
 
+// ========================================
+// Variables de colores elegantes
+// ========================================
+$elegant-primary: #2563eb;
+$elegant-accent: #7c3aed;
+$elegant-danger: #dc2626;
+$elegant-dark: #0f172a;
+$elegant-gray: #64748b;
+$elegant-light: #f8fafc;
+$elegant-border: #e2e8f0;
 
+// ========================================
+// Grid de miembros
+// ========================================
+.miembros-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+// ========================================
+// Tarjeta de miembro elegante
+// ========================================
+.miembro-card {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: white;
+  border: 1px solid $elegant-border;
+  border-radius: 12px;
+  
+  // Sombra sofisticada
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+  
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  // Barra de acento a la izquierda
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 0;
+    background: linear-gradient(180deg, $elegant-primary, $elegant-accent);
+    border-radius: 0 4px 4px 0;
+    transition: height 0.3s ease;
+  }
+  
+  &:hover {
+    transform: translateX(4px);
+    border-color: $elegant-primary;
+    box-shadow: 
+      0 10px 25px rgba(37, 99, 235, 0.1),
+      0 4px 10px rgba(0, 0, 0, 0.05);
+    
+    &::before {
+      height: 70%;
+    }
+  }
+}
+
+// ========================================
+// Información del miembro
+// ========================================
+.miembro-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+// ========================================
+// Avatar elegante
+// ========================================
+.miembro-avatar {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  object-fit: cover;
+  
+  // Borde sutil
+  border: 2px solid $elegant-light;
+  
+  // Sombra suave
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  
+  transition: all 0.3s ease;
+  
+  .miembro-card:hover & {
+    transform: scale(1.05);
+    border-color: $elegant-primary;
+    box-shadow: 
+      0 6px 16px rgba(37, 99, 235, 0.2),
+      inset 0 0 0 2px rgba(37, 99, 235, 0.1);
+  }
+  
+  // Badge de rol (opcional - agregar data-role en el HTML)
+  &::after {
+    content: attr(data-role);
+    position: absolute;
+    bottom: -6px;
+    right: -6px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: white;
+    background: $elegant-primary;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  }
+}
+
+// ========================================
+// Detalles del miembro
+// ========================================
+.miembro-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.miembro-name {
+  font-weight: 600;
+  font-size: 16px;
+  color: $elegant-dark;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  
+  transition: color 0.3s ease;
+  
+  .miembro-card:hover & {
+    color: $elegant-primary;
+  }
+}
+
+.miembro-email {
+  font-size: 13px;
+  color: $elegant-gray;
+  line-height: 1.3;
+  font-weight: 400;
+  
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+  
+  .miembro-card:hover & {
+    opacity: 1;
+  }
+}
+
+// ========================================
+// Acciones del miembro
+// ========================================
+.miembro-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+  
+  .miembro-card:hover & {
+    opacity: 1;
+  }
+}
+
+.btn-icon {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  
+  transition: all 0.2s ease;
+  
+  &.btn-danger-soft {
+    background: $elegant-light;
+    color: $elegant-danger;
+    
+    &:hover {
+      background: $elegant-danger;
+      color: white;
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+    }
+    
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+}
+
+// ========================================
+// Estado vacío elegante
+// ========================================
+.empty-state {
+  text-align: center;
+  padding: 80px 40px;
+  background: 
+    linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 16px;
+  border: 1px solid $elegant-border;
+  
+  i {
+    color: $elegant-primary;
+    opacity: 0.3;
+    margin-bottom: 24px;
+    filter: drop-shadow(0 4px 8px rgba(37, 99, 235, 0.1));
+  }
+  
+  p {
+    margin-bottom: 28px;
+    font-size: 15px;
+    color: $elegant-gray;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  
+  .btn {
+    padding: 12px 32px;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: -0.01em;
+    border-radius: 10px;
+    border: 2px solid $elegant-primary;
+    color: $elegant-primary;
+    background: white;
+    
+    transition: all 0.3s ease;
+    
+    &:hover {
+      background: $elegant-primary;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 
+        0 12px 24px rgba(37, 99, 235, 0.2),
+        0 6px 12px rgba(37, 99, 235, 0.15);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+// ========================================
+// Animación de entrada
+// ========================================
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.miembro-card {
+  animation: slideInRight 0.4s ease-out backwards;
+  
+  @for $i from 1 through 10 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 0.04}s;
+    }
+  }
+}
+
+// ========================================
+// Contador de miembros (para el badge)
+// ========================================
+.badge {
+  &.badge-primary {
+    background: linear-gradient(135deg, $elegant-primary, $elegant-accent);
+    color: white;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  }
+}
+
+// ========================================
+// Mejora del header de la sección
+// ========================================
+.section-toggle {
+  padding: 7px 15px;
+  background: 
+    linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border: 1px solid $elegant-border;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  
+  .section-icon {
+    color: $elegant-primary;
+  }
+  
+  .section-title {
+    font-weight: 600;
+    color: $elegant-dark;
+    letter-spacing: -0.02em;
+  }
+}
+
+// ========================================
+// Responsive
+// ========================================
+@media (max-width: 768px) {
+  .miembros-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .miembro-card {
+    padding: 16px 20px;
+  }
+  
+  .miembro-avatar {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .empty-state {
+    padding: 60px 30px;
+  }
+}
+
+// ========================================
+// Tooltip elegante (opcional)
+// ========================================
+.btn-icon {
+  position: relative;
+  
+  &::after {
+    content: attr(title);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) scale(0.9);
+    padding: 6px 12px;
+    background: $elegant-dark;
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    border-radius: 6px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  &:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+// ========================================
+// Divider entre miembros (opcional)
+// ========================================
+.miembro-card + .miembro-card {
+  margin-top: 0;
+}
+
+// ========================================
+// Estados de carga (skeleton)
+// ========================================
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.miembro-card.loading {
+  background: linear-gradient(
+    to right,
+    #f6f7f8 0%,
+    #edeef1 20%,
+    #f6f7f8 40%,
+    #f6f7f8 100%
+  );
+  background-size: 800px 104px;
+  animation: shimmer 1.5s infinite linear;
+  
+  .miembro-info,
+  .miembro-actions {
+    opacity: 0;
+  }
+}

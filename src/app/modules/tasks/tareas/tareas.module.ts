@@ -23,6 +23,7 @@ import { EtiquetasComponent } from './etiquetas/etiquetas.component';
 import { FechasComponent } from './fechas/fechas.component';
 import { ChecklistsComponent } from './checklists/checklists.component';
 import { AdjuntarModalComponent } from './adjuntar-modal/adjuntar-modal.component';
+import { AssignMembersTareaComponent } from './assign-members-tarea/assign-members-tarea.component';
 
 
 @NgModule({
@@ -40,6 +41,7 @@ import { AdjuntarModalComponent } from './adjuntar-modal/adjuntar-modal.componen
     FechasComponent,
     ChecklistsComponent,
     AdjuntarModalComponent,
+    AssignMembersTareaComponent,
   ],
   imports: [
     CommonModule,

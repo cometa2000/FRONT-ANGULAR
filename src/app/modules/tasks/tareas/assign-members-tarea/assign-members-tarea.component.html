@@ -1,0 +1,148 @@
+<!-- ========================================
+     MODAL PARA ASIGNAR MIEMBROS A TAREA
+     ======================================== -->
+<div class="modal-header">
+  <h5 class="modal-title">
+    <i class="fa-solid fa-user-plus me-2"></i>
+    Asignar Miembros a la Tarea
+  </h5>
+  <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
+</div>
+
+<div class="modal-body">
+  <!-- 🔍 BUSCADOR -->
+  <div class="search-section mb-4">
+    <label class="form-label fw-bold">
+      <i class="fa-solid fa-search me-2"></i>Buscar Miembros del Grupo
+    </label>
+    <input 
+      type="text" 
+      class="form-control" 
+      [(ngModel)]="searchTerm" 
+      (ngModelChange)="onSearchChange()"
+      placeholder="Buscar por nombre o correo (min. 3 caracteres)">
+    <small class="text-muted">Busca miembros del grupo para asignarlos a esta tarea</small>
+  </div>
+
+  <!-- 👥 RESULTADOS DE BÚSQUEDA -->
+  <div *ngIf="searchResults.length > 0" class="search-results mb-4">
+    <h6 class="fw-bold mb-3">
+      <i class="fa-solid fa-users me-2"></i>
+      Resultados de Búsqueda ({{ searchResults.length }})
+    </h6>
+    <div class="list-group">
+      <div 
+        *ngFor="let user of searchResults" 
+        class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+        [class.disabled]="isUserAlreadyAssigned(user.id)"
+        [class.selected]="isUserSelected(user.id)"
+        (click)="!isUserAlreadyAssigned(user.id) && toggleUserSelection(user)">
+        <div class="d-flex align-items-center">
+          <img 
+            [src]="user.avatar || defaultAvatar" 
+            class="rounded-circle me-3" 
+            width="40" 
+            height="40"
+            [alt]="user.name">
+          <div>
+            <div class="fw-bold">{{ user.name }} {{ user.surname }}</div>
+            <small class="text-muted">{{ user.email }}</small>
+          </div>
+        </div>
+        <div>
+          <span *ngIf="isUserAlreadyAssigned(user.id)" class="badge bg-success">
+            <i class="fa-solid fa-check me-1"></i>Ya asignado
+          </span>
+          <span *ngIf="isUserSelected(user.id) && !isUserAlreadyAssigned(user.id)" class="badge bg-primary">
+            <i class="fa-solid fa-check me-1"></i>Seleccionado
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📝 MENSAJE DE BÚSQUEDA -->
+  <div *ngIf="searchPerformed && searchResults.length === 0 && searchTerm.length >= 3" 
+       class="alert alert-info">
+    <i class="fa-solid fa-info-circle me-2"></i>
+    No se encontraron miembros que coincidan con "<strong>{{ searchTerm }}</strong>"
+  </div>
+
+  <!-- 🎯 USUARIOS SELECCIONADOS PARA ASIGNAR -->
+  <div *ngIf="selectedUsers.length > 0" class="selected-users mb-4">
+    <h6 class="fw-bold mb-3">
+      <i class="fa-solid fa-user-check me-2"></i>
+      Miembros Seleccionados ({{ selectedUsers.length }})
+    </h6>
+    <div class="d-flex flex-wrap gap-2">
+      <div *ngFor="let user of selectedUsers" 
+           class="badge bg-primary p-2 d-flex align-items-center gap-2">
+        <img 
+          [src]="user.avatar || defaultAvatar" 
+          class="rounded-circle" 
+          width="24" 
+          height="24"
+          [alt]="user.name">
+        <span>{{ user.name }}</span>
+        <button 
+          type="button" 
+          class="btn-close btn-close-white btn-sm" 
+          (click)="removeUser(user.id)"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ MIEMBROS YA ASIGNADOS -->
+  <div *ngIf="assignedMembers.length > 0" class="assigned-members">
+    <h6 class="fw-bold mb-3">
+      <i class="fa-solid fa-users-check me-2"></i>
+      Miembros Asignados Actualmente ({{ assignedMembers.length }})
+    </h6>
+    <div class="list-group">
+      <div 
+        *ngFor="let member of assignedMembers" 
+        class="list-group-item d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <img 
+            [src]="member.avatar || defaultAvatar" 
+            class="rounded-circle me-3" 
+            width="40" 
+            height="40"
+            [alt]="member.name">
+          <div>
+            <div class="fw-bold">{{ member.name }} {{ member.surname }}</div>
+            <small class="text-muted">{{ member.email }}</small>
+          </div>
+        </div>
+        <button 
+          class="btn btn-sm btn-outline-danger" 
+          (click)="unassignMember(member.id)"
+          title="Desasignar miembro">
+          <i class="fa-solid fa-user-minus"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 💡 MENSAJE SI NO HAY ASIGNADOS -->
+  <div *ngIf="assignedMembers.length === 0 && !searchPerformed" 
+       class="alert alert-warning">
+    <i class="fa-solid fa-exclamation-triangle me-2"></i>
+    Esta tarea aún no tiene miembros asignados. Usa el buscador para agregar miembros.
+  </div>
+</div>
+
+<div class="modal-footer">
+  <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">
+    <i class="fa-solid fa-times me-2"></i>Cancelar
+  </button>
+  <button 
+    type="button" 
+    class="btn btn-primary" 
+    [disabled]="selectedUsers.length === 0 || (isLoading | async)"
+    (click)="assignMembers()">
+    <span *ngIf="isLoading | async" class="spinner-border spinner-border-sm me-2"></span>
+    <i *ngIf="!(isLoading | async)" class="fa-solid fa-check me-2"></i>
+    Asignar Seleccionados ({{ selectedUsers.length }})
+  </button>
+</div>

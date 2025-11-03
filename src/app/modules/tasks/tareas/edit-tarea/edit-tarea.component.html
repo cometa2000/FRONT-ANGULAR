@@ -46,11 +46,66 @@
               {{ adjuntos.archivos.length + adjuntos.enlaces.length }}
             </span>
           </button>
+
+          <button class="btn-light" (click)="abrirModalMiembros()">
+            <i class="fa-solid fa-user-plus"></i> Miembros
+            <span *ngIf="miembrosAsignados.length > 0" class="badge badge-primary ms-2">
+              {{ miembrosAsignados.length }}
+            </span>
+          </button>
         </div>
       </div>
 
       <!-- SCROLL DE SECCIONES -->
       <div class="scroll-sections">
+
+        
+        <!-- SECCIÓN DE MIEMBROS ASIGNADOS -->
+        <div class="trello-section" *ngIf="miembrosAsignados.length > 0">
+          <div class="section-header">
+            <button class="section-toggle" (click)="sectionsOpen.miembros = !sectionsOpen.miembros" [attr.aria-expanded]="sectionsOpen.miembros">
+              <i class="fa-solid" [ngClass]="sectionsOpen.miembros ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+            </button>
+            <i class="fa-solid fa-users section-icon"></i>
+            <h3>Miembros asignados</h3>
+            <span class="badge badge-primary ">{{ miembrosAsignados.length }}</span>
+          </div>
+
+          <div class="section-content" *ngIf="sectionsOpen.miembros">
+            <div class="miembros-grid">
+              <div 
+                *ngFor="let miembro of miembrosAsignados" 
+                class="miembro-card">
+                <div class="miembro-info">
+                  <img 
+                    [src]="miembro.avatar || defaultAvatar" 
+                    [alt]="miembro.name"
+                    class="miembro-avatar">
+                  <div class="miembro-details">
+                    <div class="miembro-name">{{ miembro.name }} {{ miembro.surname }}</div>
+                    <div class="miembro-email">{{ miembro.email }}</div>
+                  </div>
+                </div>
+                <div class="miembro-actions">
+                  <button 
+                    class="btn-icon btn-danger-soft" 
+                    (click)="desasignarMiembro(miembro.id)"
+                    title="Desasignar miembro">
+                    <i class="fa-solid fa-user-minus"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="empty-state" *ngIf="miembrosAsignados.length === 0">
+              <i class="fa-solid fa-users fa-3x mb-3 text-muted"></i>
+              <p class="text-muted">No hay miembros asignados a esta tarea</p>
+              <button class="btn btn-outline-primary btn-sm" (click)="abrirModalMiembros()">
+                <i class="fa-solid fa-user-plus me-2"></i>Asignar Miembros
+              </button>
+            </div>
+          </div>
+        </div>
 
         <!-- DESCRIPCIÓN -->
         <div class="section">
