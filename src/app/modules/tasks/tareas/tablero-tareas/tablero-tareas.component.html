@@ -140,7 +140,18 @@
             cdkDrag
             [cdkDragData]="TAREA"
             class="card mb-3 border-0 shadow-sm bg-white tarea-card"
-            [class.tarea-expanded]="TAREA.expanded">
+            [class.tarea-expanded]="TAREA.expanded"
+            [class.border-progreso]="TAREA.status === 'en_progreso'"
+            [class.border-completada]="TAREA.status === 'completada'">
+
+            <!-- 🆕 Encabezado con líneas de colores de etiquetas -->
+            <div class="etiquetas-header" *ngIf="TAREA.etiquetas && TAREA.etiquetas.length > 0">
+              <div 
+                *ngFor="let etiqueta of TAREA.etiquetas" 
+                class="etiqueta-line"
+                [style.background-color]="etiqueta.color">
+              </div>
+            </div>
             
             <div class="card-body p-3">
               <div class="d-flex justify-content-between align-items-start">
@@ -185,8 +196,51 @@
 
                     <span class="badge badge-sm bg-light text-dark" *ngIf="TAREA.due_date">
                       <i class="fa-solid fa-calendar fa-xs me-1"></i>
-                      {{ TAREA.due_date }}
+                      {{ TAREA.due_date | date: 'dd MMM'}}
                     </span>
+                  </div>
+
+                  <!-- 🆕 Pie de página con indicadores -->
+                  <div class="tarea-footer" *ngIf="tieneIndicadores(TAREA)">
+                    <div class="d-flex align-items-center justify-content-between">
+                      <div class="d-flex align-items-center gap-3">
+                        <!-- Indicador de adjuntos -->
+                        <div 
+                          class="footer-indicator" 
+                          *ngIf="getTotalAdjuntos(TAREA) > 0"
+                          title="Adjuntos">
+                          <i class="fa-solid fa-paperclip"></i>
+                          <span>{{ getTotalAdjuntos(TAREA) }}</span>
+                        </div>
+
+                        <!-- Indicador de checklist -->
+                        <div 
+                          class="footer-indicator"
+                          *ngIf="getTotalChecklistItems(TAREA) > 0"
+                          [class.checklist-completed]="isChecklistCompleted(TAREA)"
+                          [title]="getChecklistProgress(TAREA) + '% completado'">
+                          <i class="fa-solid fa-check-square"></i>
+                          <span>{{ getCompletedChecklistItems(TAREA) }}/{{ getTotalChecklistItems(TAREA) }}</span>
+                        </div>
+
+                        <!-- Indicador de comentarios -->
+                        <div 
+                          class="footer-indicator" 
+                          *ngIf="getTotalComentarios(TAREA) > 0"
+                          title="Comentarios">
+                          <i class="fa-solid fa-comment"></i>
+                          <span>{{ getTotalComentarios(TAREA) }}</span>
+                        </div>
+                      </div>
+
+                      <!-- Avatar del usuario asignado -->
+                      <div class="user-avatar" *ngIf="TAREA.user" [title]="TAREA.user.name">
+                        <img 
+                          [src]="TAREA.user.avatar || 'assets/media/avatars/blank.png'" 
+                          [alt]="TAREA.user.name"
+                          (error)="onAvatarError($event)">
+                      </div>
+                    </div>
                   </div>
 
                   <!-- Usuario asignado -->

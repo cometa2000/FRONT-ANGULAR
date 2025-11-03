@@ -266,20 +266,104 @@ export class TableroTareasComponent implements OnInit {
     });
   }
 
+  // listListas() {
+  //   this.tareaService.listListas(this.grupo_id).subscribe({
+  //     next: (resp: any) => {
+  //       this.LISTAS = resp.listas.map((lista: any) => ({
+  //         ...lista,
+  //         tareas: (lista.tareas || []).map((tarea: any) => ({
+  //           ...tarea,
+  //           expanded: false
+  //         }))
+  //       }));
+  //       this.cdr.detectChanges();
+  //     },
+  //     error: (error) => {
+  //       console.error('Error al cargar listas:', error);
+  //       this.toastr.error('No se pudieron cargar las listas', 'Error');
+  //     }
+  //   });
+  // }
+
   listListas() {
     this.tareaService.listListas(this.grupo_id).subscribe({
       next: (resp: any) => {
+        console.log('📋 ===== RESPUESTA DE listListas =====');
+        console.log('📋 Listas recibidas:', resp.listas?.length || 0);
+        
+        // Verificar estructura de datos de la primera tarea (si existe)
+        if (resp.listas && resp.listas[0]?.tareas && resp.listas[0].tareas[0]) {
+          const primeraLista = resp.listas[0];
+          const primeraTarea = primeraLista.tareas[0];
+          
+          console.log('🔍 Estructura de primera tarea:', {
+            id: primeraTarea.id,
+            name: primeraTarea.name,
+            status: primeraTarea.status,
+            priority: primeraTarea.priority,
+            tiene_etiquetas: !!primeraTarea.etiquetas,
+            num_etiquetas: primeraTarea.etiquetas?.length || 0,
+            tiene_adjuntos: !!primeraTarea.adjuntos,
+            estructura_adjuntos: primeraTarea.adjuntos,
+            tiene_checklists: !!primeraTarea.checklists,
+            num_checklists: primeraTarea.checklists?.length || 0,
+            tiene_comentarios: primeraTarea.comentarios !== undefined,
+            num_comentarios: primeraTarea.comentarios?.length || primeraTarea.comentarios_count || 0,
+            tiene_user: !!primeraTarea.user,
+            user_data: primeraTarea.user
+          });
+        }
+        
         this.LISTAS = resp.listas.map((lista: any) => ({
           ...lista,
-          tareas: (lista.tareas || []).map((tarea: any) => ({
-            ...tarea,
-            expanded: false
-          }))
+          tareas: (lista.tareas || []).map((tarea: any) => {
+            // Asegurar que la estructura de adjuntos esté correcta
+            const adjuntos = tarea.adjuntos || { archivos: [], enlaces: [] };
+            
+            // Si adjuntos es un array vacío, convertirlo a objeto
+            if (Array.isArray(adjuntos)) {
+              tarea.adjuntos = { archivos: [], enlaces: [] };
+            } else {
+              tarea.adjuntos = {
+                archivos: adjuntos.archivos || [],
+                enlaces: adjuntos.enlaces || []
+              };
+            }
+            
+            // Asegurar que etiquetas sea un array
+            if (!Array.isArray(tarea.etiquetas)) {
+              tarea.etiquetas = [];
+            }
+            
+            // Asegurar que checklists sea un array
+            if (!Array.isArray(tarea.checklists)) {
+              tarea.checklists = [];
+            }
+            
+            // Asegurar que haya un contador de comentarios
+            if (tarea.comentarios_count === undefined) {
+              tarea.comentarios_count = tarea.comentarios?.length || 0;
+            }
+            
+            console.log(`✅ Tarea procesada: ${tarea.name}`, {
+              etiquetas: tarea.etiquetas.length,
+              adjuntos: tarea.adjuntos.archivos.length + tarea.adjuntos.enlaces.length,
+              checklists: tarea.checklists.length,
+              comentarios: tarea.comentarios_count
+            });
+            
+            return {
+              ...tarea,
+              expanded: false
+            };
+          })
         }));
+        
+        console.log('✅ Listas procesadas correctamente');
         this.cdr.detectChanges();
       },
       error: (error) => {
-        console.error('Error al cargar listas:', error);
+        console.error('❌ Error al cargar listas:', error);
         this.toastr.error('No se pudieron cargar las listas', 'Error');
       }
     });
@@ -307,5 +391,99 @@ export class TableroTareasComponent implements OnInit {
 
   volverAGrupos() {
     this.router.navigate(['/tasks/grupos/list']);
+  }
+
+  /**
+   * Verifica si la tarea tiene indicadores para mostrar
+   */
+  tieneIndicadores(tarea: any): boolean {
+    return (
+      this.getTotalAdjuntos(tarea) > 0 ||
+      this.getTotalChecklistItems(tarea) > 0 ||
+      this.getTotalComentarios(tarea) > 0 ||
+      !!tarea.user
+    );
+  }
+
+  /**
+   * Obtiene el total de adjuntos (archivos + enlaces)
+   */
+  getTotalAdjuntos(tarea: any): number {
+    if (!tarea.adjuntos) return 0;
+    
+    const archivos = tarea.adjuntos.archivos?.length || 0;
+    const enlaces = tarea.adjuntos.enlaces?.length || 0;
+    
+    return archivos + enlaces;
+  }
+
+  /**
+   * Obtiene el total de items en todos los checklists
+   */
+  getTotalChecklistItems(tarea: any): number {
+    if (!tarea.checklists || !Array.isArray(tarea.checklists)) return 0;
+    
+    return tarea.checklists.reduce((total: number, checklist: any) => {
+      return total + (checklist.items?.length || 0);
+    }, 0);
+  }
+
+  /**
+   * Obtiene el total de items completados en los checklists
+   */
+  getCompletedChecklistItems(tarea: any): number {
+    if (!tarea.checklists || !Array.isArray(tarea.checklists)) return 0;
+    
+    return tarea.checklists.reduce((total: number, checklist: any) => {
+      if (!checklist.items) return total;
+      
+      const completados = checklist.items.filter((item: any) => item.completed).length;
+      return total + completados;
+    }, 0);
+  }
+
+  /**
+   * Calcula el progreso total del checklist en porcentaje
+   */
+  getChecklistProgress(tarea: any): number {
+    const total = this.getTotalChecklistItems(tarea);
+    if (total === 0) return 0;
+    
+    const completados = this.getCompletedChecklistItems(tarea);
+    return Math.round((completados / total) * 100);
+  }
+
+  /**
+   * Verifica si todos los items del checklist están completados
+   */
+  isChecklistCompleted(tarea: any): boolean {
+    const total = this.getTotalChecklistItems(tarea);
+    if (total === 0) return false;
+    
+    return this.getCompletedChecklistItems(tarea) === total;
+  }
+
+  /**
+   * Obtiene el total de comentarios
+   */
+  getTotalComentarios(tarea: any): number {
+    // Si la tarea tiene comentarios cargados directamente
+    if (tarea.comentarios && Array.isArray(tarea.comentarios)) {
+      return tarea.comentarios.length;
+    }
+    
+    // Si tiene un contador de comentarios
+    if (tarea.comentarios_count !== undefined) {
+      return tarea.comentarios_count;
+    }
+    
+    return 0;
+  }
+
+  /**
+   * Maneja errores de carga de avatar
+   */
+  onAvatarError(event: any): void {
+    event.target.src = 'assets/media/avatars/blank.png';
   }
 }
