@@ -8,39 +8,6 @@
     <i class="far fa-clock"></i>
     Añadir fecha
   </button>
-
-  <!-- Display de fechas existentes -->
-  <!-- <div class="fechas-display" *ngIf="hasDates">
-    <div class="fecha-info">
-      <i class="far fa-clock"></i>
-      <div class="fecha-details">
-        <div class="fecha-label">Vencimiento</div>
-        <div class="fecha-values">
-          <span class="fecha-value" *ngIf="currentStartDate">
-            {{ formatDate(currentStartDate) }}
-          </span>
-          <span class="separator" *ngIf="currentStartDate && currentDueDate">-</span>
-          <span 
-            class="fecha-value"
-            [class.overdue]="isOverdue()"
-            [class.due-soon]="isDueSoon()"
-            *ngIf="currentDueDate"
-          >
-            {{ formatDate(currentDueDate) }}
-            <span class="status-badge" *ngIf="isOverdue()">Vencida</span>
-            <span class="status-badge warning" *ngIf="isDueSoon() && !isOverdue()">Próxima</span>
-          </span>
-        </div>
-      </div>
-      <button 
-        class="btn-edit"
-        (click)="openModal()"
-        title="Editar fechas"
-      >
-        <i class="fas fa-pencil-alt"></i>
-      </button>
-    </div>
-  </div> -->
 </div>
 
 <!-- Modal para gestionar fechas -->
@@ -108,26 +75,53 @@
         </div>
       </div>
 
-      <!-- Sección de notificaciones (UI only) -->
+      <!-- 🆕 Sección de notificaciones (FUNCIONAL) -->
       <div class="notifications-section">
         <div class="section-header">
           <i class="far fa-bell"></i>
-          <span>Notificaciones</span>
-          <span class="badge-ui">UI</span>
+          <span>Notificaciones de Vencimiento</span>
         </div>
+        
+        <!-- Toggle para habilitar notificaciones -->
         <label class="toggle-label">
           <input 
             type="checkbox" 
             [(ngModel)]="enableNotifications"
             class="toggle-checkbox"
-            disabled
+            [disabled]="!enableDates || !dueDate"
           >
-          <span class="toggle-slider disabled"></span>
-          <span class="toggle-text">Recibir notificaciones (Próximamente)</span>
+          <span class="toggle-slider" [class.disabled]="!enableDates || !dueDate"></span>
+          <span class="toggle-text">Recibir notificaciones de vencimiento</span>
         </label>
-        <p class="info-text">
-          <i class="fas fa-info-circle"></i>
-          Esta funcionalidad estará disponible próximamente
+        
+        <!-- Selector de días antes del vencimiento -->
+        <div class="notification-config" *ngIf="enableNotifications">
+          <label>
+            <i class="fas fa-calendar-day"></i>
+            Notificar con anticipación
+          </label>
+          <select 
+            class="form-control"
+            [(ngModel)]="notificationDaysBefore"
+            [disabled]="!enableNotifications">
+            <option [value]="1">1 día antes</option>
+            <option [value]="2">2 días antes</option>
+            <option [value]="3">3 días antes</option>
+            <option [value]="4">4 días antes</option>
+            <option [value]="5">5 días antes (1 semana)</option>
+          </select>
+          <small class="notification-info">
+            <i class="fas fa-info-circle"></i>
+            Las notificaciones se enviarán a los miembros asignados a esta tarea.
+            Se enviará una notificación cuando falten {{ notificationDaysBefore }} día(s) 
+            y otra cuando la tarea ya haya vencido.
+          </small>
+        </div>
+        
+        <!-- Alerta si no hay fecha de vencimiento -->
+        <p class="info-text warning" *ngIf="!dueDate">
+          <i class="fas fa-exclamation-triangle"></i>
+          Debes establecer una fecha de vencimiento para habilitar las notificaciones
         </p>
       </div>
     </div>

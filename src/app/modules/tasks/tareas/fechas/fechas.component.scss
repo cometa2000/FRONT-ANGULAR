@@ -25,107 +25,6 @@
   }
 }
 
-.fechas-display {
-  animation: fadeIn 0.3s ease;
-
-  .fecha-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
-    background-color: #f4f5f7;
-    border-radius: 3px;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background-color: #ebecf0;
-
-      .btn-edit {
-        opacity: 1;
-      }
-    }
-
-    > i {
-      color: #5e6c84;
-      font-size: 16px;
-    }
-
-    .fecha-details {
-      flex: 1;
-
-      .fecha-label {
-        font-size: 12px;
-        font-weight: 600;
-        color: #5e6c84;
-        margin-bottom: 4px;
-        text-transform: uppercase;
-      }
-
-      .fecha-values {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-
-        .fecha-value {
-          font-size: 14px;
-          color: #172b4d;
-          font-weight: 500;
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-
-          &.overdue {
-            color: #EB5A46;
-            font-weight: 600;
-          }
-
-          &.due-soon {
-            color: #F2D600;
-            font-weight: 600;
-          }
-
-          .status-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            background-color: #EB5A46;
-            color: #fff;
-            border-radius: 3px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-
-            &.warning {
-              background-color: #F2D600;
-              color: #172b4d;
-            }
-          }
-        }
-
-        .separator {
-          color: #5e6c84;
-        }
-      }
-    }
-
-    .btn-edit {
-      padding: 6px 10px;
-      background: none;
-      border: none;
-      color: #5e6c84;
-      cursor: pointer;
-      border-radius: 3px;
-      opacity: 0;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background-color: #dfe1e6;
-        color: #172b4d;
-      }
-    }
-  }
-}
-
 // Modal styles
 .modal-overlay {
   position: fixed;
@@ -146,7 +45,7 @@
   border-radius: 3px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
   width: 90%;
-  max-width: 550px;
+  max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
   animation: slideUp 0.3s ease;
@@ -311,23 +210,26 @@
       }
     }
 
+    // 🆕 Estilos mejorados para la sección de notificaciones
     .notifications-section {
       margin-top: 24px;
-      padding: 16px;
-      background-color: #f4f5f7;
-      border-radius: 3px;
+      padding: 20px;
+      background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+      border-radius: 8px;
+      border: 2px solid #2196f3;
 
       .section-header {
         display: flex;
         align-items: center;
-        gap: 8px;
-        margin-bottom: 12px;
-        font-size: 14px;
+        gap: 10px;
+        margin-bottom: 16px;
+        font-size: 15px;
         font-weight: 600;
-        color: #172b4d;
+        color: #1565c0;
 
         i {
-          color: #5e6c84;
+          font-size: 18px;
+          color: #2196f3;
         }
 
         .badge-ui {
@@ -342,8 +244,73 @@
         }
       }
 
+      // 🆕 Configuración de notificaciones
+      .notification-config {
+        margin-top: 16px;
+        padding: 16px;
+        background-color: #ffffff;
+        border-radius: 6px;
+        border: 1px solid #90caf9;
+        animation: fadeIn 0.3s ease;
+
+        label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #1565c0;
+
+          i {
+            font-size: 14px;
+          }
+        }
+
+        select.form-control {
+          width: 100%;
+          padding: 10px 12px;
+          border: 2px solid #90caf9;
+          border-radius: 4px;
+          font-size: 14px;
+          font-weight: 500;
+          color: #172b4d;
+          background-color: #fff;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:focus {
+            outline: none;
+            border-color: #2196f3;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+          }
+
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+        }
+
+        .notification-info {
+          display: block;
+          margin-top: 12px;
+          padding: 10px;
+          background-color: #e3f2fd;
+          border-radius: 4px;
+          color: #0d47a1;
+          font-size: 12px;
+          line-height: 1.5;
+          border-left: 3px solid #2196f3;
+
+          i {
+            margin-right: 6px;
+            color: #2196f3;
+          }
+        }
+      }
+
       .info-text {
-        margin-top: 8px;
+        margin-top: 12px;
         font-size: 12px;
         color: #5e6c84;
         display: flex;
@@ -352,6 +319,14 @@
 
         i {
           font-size: 14px;
+        }
+
+        &.warning {
+          color: #e65100;
+          background-color: #fff3e0;
+          padding: 10px;
+          border-radius: 4px;
+          border-left: 3px solid #ff9800;
         }
       }
     }

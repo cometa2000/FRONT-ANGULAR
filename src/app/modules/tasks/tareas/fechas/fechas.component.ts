@@ -13,18 +13,23 @@ export class FechasComponent implements OnInit {
 
   showModal: boolean = false;
 
-  // formulario
+  // Formulario
   startDate: string = '';
   dueDate: string = '';
 
-  // estado actual mostrado en la tarjeta
+  // Estado actual mostrado en la tarjeta
   currentStartDate: string = '';
   currentDueDate: string = '';
   hasDates: boolean = false;
 
-  // flags que tu HTML usa
+  // Flags
   enableDates: boolean = true;
+  
+  // 🆕 Notificaciones
   enableNotifications: boolean = false;
+  notificationDaysBefore: number = 1;
+  currentNotificationsEnabled: boolean = false;
+  currentNotificationDaysBefore: number = 1;
 
   constructor(private tareaService: TareaService) {}
 
@@ -34,6 +39,7 @@ export class FechasComponent implements OnInit {
 
   loadFechas(): void {
     if (!this.tareaId) return;
+    
     this.tareaService.show(String(this.tareaId!)).subscribe({
       next: (resp: any) => {
         if (resp.tarea) {
@@ -41,12 +47,26 @@ export class FechasComponent implements OnInit {
           this.currentDueDate = resp.tarea.due_date || '';
           this.hasDates = !!(this.currentStartDate || this.currentDueDate);
 
-          // para abrir modal con lo actual
+          // Para abrir modal con lo actual
           this.startDate = this.currentStartDate || '';
           this.dueDate = this.currentDueDate || '';
 
           // enableDates en función de si hay fechas cargadas
           this.enableDates = this.hasDates;
+          
+          // 🆕 Cargar estado de notificaciones
+          this.currentNotificationsEnabled = resp.tarea.notifications_enabled || false;
+          this.currentNotificationDaysBefore = resp.tarea.notification_days_before || 1;
+          this.enableNotifications = this.currentNotificationsEnabled;
+          this.notificationDaysBefore = this.currentNotificationDaysBefore;
+          
+          console.log('📅 Fechas y notificaciones cargadas:', {
+            hasDates: this.hasDates,
+            start_date: this.currentStartDate,
+            due_date: this.currentDueDate,
+            notifications_enabled: this.currentNotificationsEnabled,
+            notification_days_before: this.currentNotificationDaysBefore
+          });
         }
       },
       error: (error) => {
@@ -57,21 +77,24 @@ export class FechasComponent implements OnInit {
 
   openModal(): void {
     this.showModal = true;
-    // sincronizamos el formulario con el estado actual
+    // Sincronizamos el formulario con el estado actual
     this.startDate = this.currentStartDate || new Date().toISOString().split('T')[0];
     this.dueDate = this.currentDueDate || '';
     this.enableDates = !!(this.currentStartDate || this.currentDueDate);
+    
+    // 🆕 Sincronizar notificaciones
+    this.enableNotifications = this.currentNotificationsEnabled;
+    this.notificationDaysBefore = this.currentNotificationDaysBefore || 1;
   }
 
   closeModal(): void {
     this.showModal = false;
   }
 
-  // Helpers que llama el HTML
   formatDate(dateStr?: string): string {
     if (!dateStr) return '';
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr; // si viene en formato raro, lo mostramos tal cual
+    if (isNaN(d.getTime())) return dateStr;
     return d.toLocaleDateString();
   }
 
@@ -80,7 +103,6 @@ export class FechasComponent implements OnInit {
     const today = new Date();
     const due = new Date(this.currentDueDate);
     if (isNaN(due.getTime())) return false;
-    // vencida si la fecha de vencimiento < hoy (sin horas)
     const t = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
     const d = new Date(due.getFullYear(), due.getMonth(), due.getDate()).getTime();
     return d < t;
@@ -98,7 +120,7 @@ export class FechasComponent implements OnInit {
     return d >= start && d <= endSoon;
   }
 
-  // Guardar (alias que pide el HTML)
+  // 🆕 Guardar fechas y notificaciones
   saveFechas(): void {
     this.saveDates();
   }
@@ -106,27 +128,59 @@ export class FechasComponent implements OnInit {
   saveDates(): void {
     if (!this.tareaId) return;
 
+    // 🆕 Validar que si se habilitan notificaciones, haya una fecha de vencimiento
+    if (this.enableNotifications && !this.dueDate) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Fecha requerida',
+        text: 'Debes establecer una fecha de vencimiento para habilitar las notificaciones',
+        confirmButtonColor: '#EB5A46'
+      });
+      return;
+    }
+
     const updateData: any = this.enableDates
       ? {
           start_date: this.startDate || null,
-          due_date: this.dueDate || null
+          due_date: this.dueDate || null,
+          // 🆕 Incluir configuración de notificaciones
+          notifications_enabled: this.enableNotifications,
+          notification_days_before: this.enableNotifications ? this.notificationDaysBefore : null
         }
       : {
           start_date: null,
-          due_date: null
+          due_date: null,
+          // 🆕 Si no hay fechas, deshabilitar notificaciones
+          notifications_enabled: false,
+          notification_days_before: null
         };
+
+    console.log('💾 Guardando fechas y notificaciones:', updateData);
 
     this.tareaService.update(String(this.tareaId!), updateData).subscribe({
       next: (resp: any) => {
         this.currentStartDate = resp.tarea?.start_date ?? (this.enableDates ? (this.startDate || '') : '');
         this.currentDueDate = resp.tarea?.due_date ?? (this.enableDates ? (this.dueDate || '') : '');
         this.hasDates = !!(this.currentStartDate || this.currentDueDate);
+        
+        // 🆕 Actualizar estado de notificaciones
+        this.currentNotificationsEnabled = resp.tarea?.notifications_enabled || false;
+        this.currentNotificationDaysBefore = resp.tarea?.notification_days_before || 1;
+        
         this.closeModal();
         this.fechasActualizadas.emit(resp.tarea);
+        
+        // 🆕 Mensaje de éxito más informativo
+        let successMessage = 'Fechas guardadas correctamente';
+        if (this.enableNotifications) {
+          successMessage += `. Recibirás notificaciones ${this.notificationDaysBefore} día(s) antes del vencimiento.`;
+        }
+        
         Swal.fire({
           icon: 'success',
-          title: 'Fechas guardadas',
-          timer: 1500,
+          title: 'Guardado',
+          text: successMessage,
+          timer: 3000,
           showConfirmButton: false
         });
       },
@@ -135,14 +189,14 @@ export class FechasComponent implements OnInit {
         Swal.fire({
           icon: 'error',
           title: 'Error',
-          text: 'No se pudieron guardar las fechas',
+          text: 'No se pudieron guardar las fechas y notificaciones',
           confirmButtonColor: '#EB5A46'
         });
       }
     });
   }
 
-  // Eliminar (alias que pide el HTML)
+  // 🆕 Eliminar fechas y notificaciones
   deleteFechas(): void {
     this.clearDates();
   }
@@ -152,7 +206,7 @@ export class FechasComponent implements OnInit {
 
     Swal.fire({
       title: '¿Eliminar fechas?',
-      text: '¿Estás seguro de eliminar las fechas de esta tarea?',
+      text: 'Se eliminarán las fechas y la configuración de notificaciones',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#EB5A46',
@@ -161,15 +215,31 @@ export class FechasComponent implements OnInit {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        const updateData = { start_date: null, due_date: null };
+        const updateData = { 
+          start_date: null, 
+          due_date: null,
+          // 🆕 Eliminar también notificaciones
+          notifications_enabled: false,
+          notification_days_before: null
+        };
 
         this.tareaService.update(String(this.tareaId!), updateData).subscribe({
           next: (resp: any) => {
             this.hasDates = false;
             this.currentStartDate = '';
             this.currentDueDate = '';
+            this.currentNotificationsEnabled = false;
+            this.currentNotificationDaysBefore = 1;
             this.closeModal();
             this.fechasActualizadas.emit(resp.tarea);
+            
+            Swal.fire({
+              icon: 'success',
+              title: 'Eliminado',
+              text: 'Fechas y notificaciones eliminadas correctamente',
+              timer: 1500,
+              showConfirmButton: false
+            });
           },
           error: (error) => {
             console.error('Error al eliminar fechas:', error);
