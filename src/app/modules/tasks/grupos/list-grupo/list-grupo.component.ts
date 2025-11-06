@@ -6,6 +6,8 @@ import { EditGrupoComponent } from '../edit-grupo/edit-grupo.component';
 import { DeleteGrupoComponent } from '../delete-grupo/delete-grupo.component';
 import { ShareGrupoComponent } from '../share-grupo/share-grupo.component';
 import { ToastrService } from 'ngx-toastr';
+import { PermisosGrupoModalComponent } from '../permisos-grupo-modal/permisos-grupo-modal.component';
+import { AuthService } from 'src/app/modules/auth';
 
 @Component({
   selector: 'app-list-grupo',
@@ -35,7 +37,8 @@ export class ListGrupoComponent {
     public modalService: NgbModal,
     public grupoService: GrupoService,
     private toast: ToastrService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    public authService: AuthService 
   ) {}
 
   ngOnInit(): void {
@@ -307,6 +310,9 @@ export class ListGrupoComponent {
       case 'shareGrupo':
         this.shareGrupo(grupo);
         break;
+      case 'configPermisos':
+        this.openPermissionsModal(grupo);
+        break;
       case 'editGrupo':
         this.editGrupo(grupo);
         break;
@@ -314,5 +320,29 @@ export class ListGrupoComponent {
         this.deleteGrupo(grupo);
         break;
     }
+  }
+
+  openPermissionsModal(grupo: any) {
+    // Solo el propietario puede acceder a los permisos
+    if (!grupo.is_owner) {
+      this.toast.warning('Solo el creador del grupo puede gestionar permisos');
+      return;
+    }
+
+    const modalRef = this.modalService.open(PermisosGrupoModalComponent, {
+      centered: true,
+      size: 'md'
+    });
+    
+    modalRef.componentInstance.GRUPO_SELECTED = grupo;
+    
+    modalRef.componentInstance.PermisosChanged.subscribe((grupoActualizado: any) => {
+      // Actualizar el grupo en la lista si es necesario
+      const index = this.GRUPOS.findIndex((g: any) => g.id === grupoActualizado.id);  // ✅ CAMBIAR A GRUPOS
+      if (index !== -1) {
+        this.GRUPOS[index] = { ...this.GRUPOS[index], ...grupoActualizado };  // ✅ CAMBIAR A GRUPOS
+      }
+      this.toast.success('Permisos actualizados correctamente');
+    });
   }
 }

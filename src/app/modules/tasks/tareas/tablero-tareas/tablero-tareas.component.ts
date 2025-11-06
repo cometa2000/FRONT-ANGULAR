@@ -27,6 +27,9 @@ export class TableroTareasComponent implements OnInit {
 
   openMenuId: number | null = null;
 
+  hasWriteAccess: boolean = true;
+  isOwner: boolean = false; 
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -52,6 +55,25 @@ export class TableroTareasComponent implements OnInit {
         this.router.navigate(['/tasks/grupos/list']);
       }
     });
+    // Verificar permisos de escritura
+    this.checkWritePermissions();
+  }
+
+  checkWritePermissions() {
+    if (this.grupo_id) {  // ✅ CAMBIAR A grupo_id
+      this.grupoService.checkWriteAccess(this.grupo_id).subscribe({  // ✅ CAMBIAR A grupo_id
+        next: (resp: any) => {
+          if (resp.message === 200) {
+            this.hasWriteAccess = resp.has_write_access;
+            this.isOwner = resp.is_owner;
+          }
+        },
+        error: (err: any) => {  // ✅ AGREGAR TIPADO
+          console.error('Error al verificar permisos:', err);
+          this.hasWriteAccess = false;
+        }
+      });
+    }
   }
 
   loadGrupoData() {
@@ -265,25 +287,6 @@ export class TableroTareasComponent implements OnInit {
       this.cdr.detectChanges();
     });
   }
-
-  // listListas() {
-  //   this.tareaService.listListas(this.grupo_id).subscribe({
-  //     next: (resp: any) => {
-  //       this.LISTAS = resp.listas.map((lista: any) => ({
-  //         ...lista,
-  //         tareas: (lista.tareas || []).map((tarea: any) => ({
-  //           ...tarea,
-  //           expanded: false
-  //         }))
-  //       }));
-  //       this.cdr.detectChanges();
-  //     },
-  //     error: (error) => {
-  //       console.error('Error al cargar listas:', error);
-  //       this.toastr.error('No se pudieron cargar las listas', 'Error');
-  //     }
-  //   });
-  // }
 
   listListas() {
     this.tareaService.listListas(this.grupo_id).subscribe({

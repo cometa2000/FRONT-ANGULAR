@@ -1,0 +1,86 @@
+<div class="modal-header">
+  <h5 class="modal-title">
+    <i class="fa-solid fa-user-lock me-2"></i>
+    Permisos Personalizados
+  </h5>
+  <button type="button" class="btn-close" (click)="modal.dismiss()" [disabled]="isSaving"></button>
+</div>
+
+<div class="modal-body">
+  <div *ngIf="isLoading" class="text-center py-4">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+
+  <div *ngIf="!isLoading">
+    <p class="text-muted mb-4">
+      Asigna permisos individuales para cada usuario que tiene acceso al grupo.
+    </p>
+
+    <div class="alert alert-warning" role="alert">
+      <i class="fa-solid fa-exclamation-triangle me-2"></i>
+      Los cambios afectarán inmediatamente la capacidad de los usuarios para editar contenido.
+    </div>
+
+    <!-- Lista de usuarios -->
+    <div class="users-list">
+      <div *ngFor="let user of users" class="user-item">
+        <div class="d-flex align-items-center">
+          <!-- Avatar -->
+          <div class="user-avatar me-3">
+            <img *ngIf="user.avatar" [src]="user.avatar" [alt]="user.name" class="rounded-circle">
+            <div *ngIf="!user.avatar" class="avatar-placeholder rounded-circle">
+              {{ getInitials(user.name, user.surname) }}
+            </div>
+          </div>
+
+          <!-- Información del usuario -->
+          <div class="flex-grow-1">
+            <h6 class="mb-0">{{ user.name }} {{ user.surname }}</h6>
+          </div>
+
+          <!-- Selector de permisos -->
+          <div class="permission-selector">
+            <div class="btn-group" role="group">
+              <button 
+                type="button" 
+                class="btn btn-outline-primary btn-sm"
+                [class.active]="user.permission_level === 'read'"
+                (click)="changePermission(user, 'read')"
+                [disabled]="isSaving">
+                <i class="fa-solid fa-eye me-1"></i>
+                Lectura
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-outline-primary btn-sm"
+                [class.active]="user.permission_level === 'write'"
+                (click)="changePermission(user, 'write')"
+                [disabled]="isSaving">
+                <i class="fa-solid fa-pen me-1"></i>
+                Lectura y escritura
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="users.length === 0" class="text-center text-muted py-4">
+        <i class="fa-solid fa-users-slash fa-3x mb-3"></i>
+        <p>No hay usuarios compartidos en este grupo</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-footer">
+  <button type="button" class="btn btn-secondary" (click)="modal.dismiss()" [disabled]="isSaving">
+    Cancelar
+  </button>
+  <button type="button" class="btn btn-primary" (click)="savePermissions()" [disabled]="isSaving || users.length === 0">
+    <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-2"></span>
+    <i *ngIf="!isSaving" class="fa-solid fa-check me-2"></i>
+    Guardar Permisos
+  </button>
+</div>

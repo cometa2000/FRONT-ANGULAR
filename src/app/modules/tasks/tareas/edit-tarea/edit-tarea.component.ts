@@ -7,6 +7,7 @@ import { EtiquetasService, Etiqueta } from '../service/etiquetas.service';
 import { NgbModal, NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { AdjuntarModalComponent, Enlace, Archivo } from '../adjuntar-modal/adjuntar-modal.component';
 import { AssignMembersTareaComponent } from '../assign-members-tarea/assign-members-tarea.component';
+import { GrupoService } from '../../grupos/service/grupo.service';
 
 export interface Tarea {
   id: number;
@@ -103,6 +104,8 @@ export class EditTareaComponent implements OnInit {
 
   miembrosAsignados: any[] = [];
 
+  hasWriteAccess: boolean = true;
+
   constructor(
     public modal: NgbActiveModal,
     private route: ActivatedRoute,
@@ -110,7 +113,8 @@ export class EditTareaComponent implements OnInit {
     private tareaService: TareaService,
     private checklistsService: ChecklistsService,
     private etiquetasService: EtiquetasService,
-    private modalService: NgbModal
+    private modalService: NgbModal,
+    private grupoService: GrupoService 
   ) {}
 
   ngOnInit(): void {
@@ -139,6 +143,23 @@ export class EditTareaComponent implements OnInit {
     console.log('✅ ID válido, cargando tarea:', this.tareaId);
     this.loadTarea();
     this.loadTimeline();
+    this.checkWritePermissions();
+  }
+
+  checkWritePermissions() {
+    if (this.tarea && this.tarea.grupo_id) {
+      this.grupoService.checkWriteAccess(this.tarea.grupo_id).subscribe({
+        next: (resp: any) => {
+          if (resp.message === 200) {
+            this.hasWriteAccess = resp.has_write_access;
+          }
+        },
+        error: (err: any) => {  // ✅ AGREGAR TIPADO
+          console.error('Error al verificar permisos:', err);
+          this.hasWriteAccess = false;
+        }
+      });
+    }
   }
 
   // =============================
@@ -1140,9 +1161,6 @@ export class EditTareaComponent implements OnInit {
   onAvatarError(event: any): void {
     event.target.src = this.defaultAvatar;
   }
-
-
-
 
   loadMiembrosAsignados() {
     console.log('🔄 Cargando miembros asignados...');

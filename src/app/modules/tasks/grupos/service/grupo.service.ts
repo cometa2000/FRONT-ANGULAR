@@ -98,4 +98,48 @@ export class GrupoService {
     let URL = URL_SERVICIOS + `/grupos/${grupoId}/shared-users`;
     return this.http.get(URL, {headers: headers});
   }
+
+  // Obtener permisos del grupo
+  getPermissions(grupoId: number) {
+    let headers = new HttpHeaders({'Authorization': 'Bearer ' + this.authservice.token});
+    let URL = URL_SERVICIOS + `/grupos/${grupoId}/permissions`;
+    return this.http.get(URL, {headers: headers});
+  }
+
+  // Actualizar tipo de permiso general
+  updatePermissionType(grupoId: number, permissionType: string) {
+    this.isLoadingSubject.next(true);
+    let headers = new HttpHeaders({'Authorization': 'Bearer ' + this.authservice.token});
+    let URL = URL_SERVICIOS + `/grupos/${grupoId}/permissions/type`;
+    return this.http.post(URL, { permission_type: permissionType }, {headers: headers}).pipe(
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
+  // Actualizar permiso de usuario específico
+  updateUserPermission(grupoId: number, userId: number, permissionLevel: string) {
+    this.isLoadingSubject.next(true);
+    let headers = new HttpHeaders({'Authorization': 'Bearer ' + this.authservice.token});
+    let URL = URL_SERVICIOS + `/grupos/${grupoId}/permissions/user/${userId}`;
+    return this.http.post(URL, { permission_level: permissionLevel }, {headers: headers}).pipe(
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
+  // Actualizar permisos en lote
+  batchUpdateUserPermissions(grupoId: number, users: any[]) {
+    this.isLoadingSubject.next(true);
+    let headers = new HttpHeaders({'Authorization': 'Bearer ' + this.authservice.token});
+    let URL = URL_SERVICIOS + `/grupos/${grupoId}/permissions/batch`;
+    return this.http.post(URL, { users: users }, {headers: headers}).pipe(
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
+  // Verificar acceso de escritura
+  checkWriteAccess(grupoId: number) {
+    let headers = new HttpHeaders({'Authorization': 'Bearer ' + this.authservice.token});
+    let URL = URL_SERVICIOS + `/grupos/${grupoId}/check-write-access`;
+    return this.http.get(URL, {headers: headers});
+  }
 }

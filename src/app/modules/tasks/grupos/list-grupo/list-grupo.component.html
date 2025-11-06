@@ -85,7 +85,7 @@
                                                 {{ GRUPO.is_starred ? 'Desmarcar' : 'Marcar' }}
                                             </button>
                                         </li>
-                                        
+
                                         <!-- Compartir (solo propietario) -->
                                         <li class="mb-2" *ngIf="GRUPO.is_owner">
                                             <button 
@@ -96,7 +96,18 @@
                                                 Compartir
                                             </button>
                                         </li>
-                                        
+
+                                        <!-- En el menú desplegable, agregar después del botón "Compartir" -->
+                                        <li class="mb-2" *ngIf="GRUPO.is_owner">
+                                          <button 
+                                            type="button"
+                                            class="btn btn-link text-decoration-none fw-bold text-dark d-block w-100 text-start p-2 rounded"
+                                            (click)="closeMenuAnd('configPermisos', GRUPO)">
+                                            <i class="fa-solid fa-lock me-2 text-warning"></i> 
+                                            Permisos
+                                          </button>
+                                        </li>
+
                                         <!-- Editar -->
                                         <li class="mb-2">
                                             <button 

@@ -13,6 +13,8 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgbModule, NgbModalModule, NgbPaginationModule } from '@ng-bootstrap/ng-bootstrap';
 import { InlineSVGModule } from 'ng-inline-svg-2';
 import { ShareGrupoComponent } from './share-grupo/share-grupo.component';
+import { PermisosGrupoModalComponent } from './permisos-grupo-modal/permisos-grupo-modal.component';
+import { PermisosPersonalizadosModalComponent } from './permisos-personalizados-modal/permisos-personalizados-modal.component';
 
 
 @NgModule({
@@ -22,7 +24,9 @@ import { ShareGrupoComponent } from './share-grupo/share-grupo.component';
     CreateGrupoComponent,
     DeleteGrupoComponent,
     EditGrupoComponent,
-    ShareGrupoComponent
+    ShareGrupoComponent,
+    PermisosGrupoModalComponent,
+    PermisosPersonalizadosModalComponent
   ],
   imports: [
     CommonModule,
