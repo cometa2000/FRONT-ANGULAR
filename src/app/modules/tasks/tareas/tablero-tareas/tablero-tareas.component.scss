@@ -213,7 +213,7 @@
     word-wrap: break-word;
     overflow-wrap: break-word;
     word-break: break-word; // 🔥 Fuerza el corte de palabras largas
-    hyphens: auto; // Agrega guiones si es posible
+    // hyphens: auto; // Agrega guiones si es posible
     color: #1a1a1a;
     max-width: 100%; // 🔥 Asegura que no se desborde del contenedor
   }
@@ -226,7 +226,7 @@
     word-wrap: break-word;
     overflow-wrap: break-word;
     word-break: break-word; // 🔥 Fuerza el corte de palabras largas
-    hyphens: auto; // Agrega guiones si es posible
+    // hyphens: auto; // Agrega guiones si es posible
     white-space: normal; // 🔥 Cambiado de pre-wrap a normal para mejor control
     transition: all 0.3s ease;
     max-height: 3.6rem; // ~3 líneas de texto
@@ -549,7 +549,7 @@
   scroll-snap-align: start;
   
   .card {
-    backdrop-filter: blur(10px); // Efecto de desenfoque en las cards
+    // backdrop-filter: blur(10px); // Efecto de desenfoque en las cards
   }
 }
 
@@ -632,7 +632,7 @@
 
 // Estado vacío
 .text-center.text-muted {
-  user-select: none;
+  // user-select: none;
 }
 
 // Responsive

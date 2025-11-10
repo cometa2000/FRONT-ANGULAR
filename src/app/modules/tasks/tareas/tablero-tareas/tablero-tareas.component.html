@@ -33,9 +33,19 @@
       </div>
     </div>
 
-    <button class="btn btn-primary" (click)="createLista()">
-      <i class="fa-solid fa-plus me-2"></i> Añadir lista
+    <!-- ✅ Solo mostrar botón de añadir lista si tiene permisos de escritura -->
+    <button 
+        *ngIf="permissionsLoaded && hasWriteAccess" 
+        class="btn btn-primary" 
+        (click)="createLista()">
+        <i class="fa-solid fa-plus me-2"></i> Añadir lista
     </button>
+
+    <!-- ✅ Badge de solo lectura - mostrar solo cuando los permisos estén cargados -->
+    <div *ngIf="permissionsLoaded && !hasWriteAccess && !isOwner" class="alert alert-warning d-flex align-items-center mb-0">
+        <i class="fa-solid fa-eye me-2"></i>
+        <span>Solo tienes permisos de lectura en este grupo</span>
+    </div>
   </div>
 
   <!-- Loading spinner general -->
@@ -43,20 +53,28 @@
     <span class="spinner-border spinner-border-lg text-primary"></span>
   </div>
 
-  <!-- ✅ TABLERO CON SISTEMA DE SNAP - Mover listas -->
+  <!-- ✅ TABLERO CON SISTEMA DE SNAP - Deshabilitado si no tiene permisos -->
   <div 
+    [cdkDropListDisabled]="!hasWriteAccess"
     cdkDropList
     cdkDropListOrientation="horizontal"
     (cdkDropListDropped)="onListDrop($event)"
     class="kanban-container-snap pb-3" 
-    *ngIf="!(isLoading$ | async)">
+    *ngIf="!(isLoading$ | async) && permissionsLoaded">
     
     <!-- Lista vacía -->
     <div *ngIf="LISTAS.length === 0" class="text-center py-5 w-100">
       <i class="fa-solid fa-clipboard-list fa-3x text-muted mb-3"></i>
       <h5 class="text-muted">No hay listas en este grupo</h5>
-      <p class="text-muted small">Crea tu primera lista para comenzar a organizar tus tareas</p>
-      <button class="btn btn-primary mt-3" (click)="createLista()">
+      <p class="text-muted small">
+        <span *ngIf="hasWriteAccess">Crea tu primera lista para comenzar a organizar tus tareas</span>
+        <span *ngIf="!hasWriteAccess">Este grupo aún no tiene listas</span>
+      </p>
+      <!-- ✅ Solo mostrar botón si tiene permisos -->
+      <button 
+        *ngIf="hasWriteAccess" 
+        class="btn btn-primary mt-3" 
+        (click)="createLista()">
         <i class="fa-solid fa-plus me-2"></i> Crear primera lista
       </button>
     </div>
@@ -64,72 +82,75 @@
     <!-- ✅ Listas con tareas (con snap grid) -->
     <div 
       *ngFor="let LISTA of LISTAS; let i = index" 
+      [cdkDragDisabled]="!hasWriteAccess"
       cdkDrag
       class="kanban-list-snap">
       
       <div class="card bg-light border-0 shadow-sm h-100">
         
         <!-- HEADER DE LISTA -->
-        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center" cdkDragHandle>
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
           
-          <h5 class="fw-bold text-dark mb-0 cursor-move">
-            <i class="fa-solid fa-grip-vertical text-muted me-2"></i>
+          <h5 class="fw-bold text-dark mb-0" [ngClass]="{'cursor-move': hasWriteAccess}">
+            <i *ngIf="hasWriteAccess" class="fa-solid fa-grip-vertical text-muted me-2"></i>
+            <i *ngIf="!hasWriteAccess" class="fa-solid fa-list text-muted me-2"></i>
             {{ LISTA.name }}
             <span class="badge bg-secondary ms-2">{{ LISTA.tareas?.length || 0 }}</span>
           </h5>
 
-          <!-- Menú de opciones de lista -->
-          <div class="card-toolbar position-relative">
-            <button
-              class="btn btn-sm btn-icon btn-color-primary btn-active-light-primary"
-              (click)="toggleMenu(i, $event)">
-              <i class="fa-solid fa-ellipsis-vertical"></i>
-            </button>
+          <!-- ✅ Menú de opciones de lista - Solo mostrar si tiene permisos de escritura -->
+          <div class="card-toolbar position-relative" *ngIf="hasWriteAccess">
+              <button
+                  class="btn btn-sm btn-icon btn-color-primary btn-active-light-primary"
+                  (click)="toggleMenu(i, $event)">
+                  <i class="fa-solid fa-ellipsis-vertical"></i>
+              </button>
 
-            <div 
-              *ngIf="openMenuId === i"
-              class="menu-dropdown bg-white border rounded shadow position-absolute end-0 mt-2 p-3 zindex-dropdown"
-              style="min-width: 200px; z-index: 1000;">
-              
-              <div class="fs-6 fw-bold text-gray-900 mb-2">Opciones</div>
-              <ul class="list-unstyled mb-0">
-                <li class="mb-2">
-                  <button 
-                    type="button"
-                    class="btn btn-link text-decoration-none fw-bold text-dark d-block w-100 text-start p-2 rounded"
-                    (click)="closeMenuAnd('editLista', LISTA)">
-                    <i class="fa-solid fa-pen-to-square me-2 text-primary"></i> Editar lista
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    type="button"
-                    class="btn btn-link text-decoration-none fw-bold text-danger d-block w-100 text-start p-2 rounded"
-                    (click)="closeMenuAnd('deleteLista', LISTA)">
-                    <i class="fa-solid fa-trash me-2"></i> Eliminar lista
-                  </button>
-                </li>
-              </ul>
-            </div>
+              <div 
+                  *ngIf="openMenuId === i"
+                  class="menu-dropdown bg-white border rounded shadow position-absolute end-0 mt-2 p-3 zindex-dropdown"
+                  style="min-width: 200px; z-index: 1000;">
+                  
+                  <div class="fs-6 fw-bold text-gray-900 mb-2">Opciones</div>
+                  <ul class="list-unstyled mb-0">
+                      <li class="mb-2">
+                          <button 
+                              type="button"
+                              class="btn btn-link text-decoration-none fw-bold text-dark d-block w-100 text-start p-2 rounded"
+                              (click)="closeMenuAnd('editLista', LISTA)">
+                              <i class="fa-solid fa-pen-to-square me-2 text-primary"></i> Editar lista
+                          </button>
+                      </li>
+                      <li>
+                          <button 
+                              type="button"
+                              class="btn btn-link text-decoration-none fw-bold text-danger d-block w-100 text-start p-2 rounded"
+                              (click)="closeMenuAnd('deleteLista', LISTA)">
+                              <i class="fa-solid fa-trash me-2"></i> Eliminar lista
+                          </button>
+                      </li>
+                  </ul>
+              </div>
           </div>
         </div>
 
-        <!-- BOTÓN PARA AGREGAR TAREA -->
-        <div class="card-body border-0 shadow-sm p-3 bg-white mb-3">
-          <button
-            type="button"
-            class="btn btn-light w-100 text-dark border"
-            (click)="createTarea(LISTA.id)">
-            <i class="fa-solid fa-plus me-2"></i> Agregar Tarea
-          </button>
+        <!-- ✅ BOTÓN PARA AGREGAR TAREA - Solo mostrar si tiene permisos de escritura -->
+        <div class="card-body border-0 shadow-sm p-3 bg-white mb-3" *ngIf="hasWriteAccess">
+            <button
+                type="button"
+                class="btn btn-light w-100 text-dark border"
+                (click)="createTarea(LISTA.id)">
+                <i class="fa-solid fa-plus me-2"></i> Agregar Tarea
+            </button>
         </div>
 
-        <!-- ✅ CONTENEDOR DE TAREAS (Drag & Drop entre listas) -->
+        <!-- ✅ CONTENEDOR DE TAREAS (Drag & Drop entre listas - deshabilitado si no tiene permisos) -->
         <div
           cdkDropList
           [cdkDropListData]="LISTA.tareas"
           [id]="'lista-' + LISTA.id"
           [cdkDropListConnectedTo]="getConnectedLists()"
+          [cdkDropListDisabled]="!hasWriteAccess"
           class="card-body pt-0"
           style="min-height: 200px;"
           (cdkDropListDropped)="onTaskDrop($event, LISTA)">
@@ -137,6 +158,7 @@
           <!-- Tareas arrastrables -->
           <div
             *ngFor="let TAREA of LISTA.tareas; let taskIndex = index"
+            [cdkDragDisabled]="!hasWriteAccess"
             cdkDrag
             [cdkDragData]="TAREA"
             class="card mb-3 border-0 shadow-sm bg-white tarea-card"
@@ -173,16 +195,7 @@
 
                   <!-- Badges de información -->
                   <div class="d-flex flex-wrap gap-2 mb-2">
-                    <span 
-                      class="badge badge-sm" 
-                      [ngClass]="{
-                        'bg-danger text-white': TAREA.priority === 'high',
-                        'bg-warning text-dark': TAREA.priority === 'medium',
-                        'bg-success': TAREA.priority === 'low'
-                      }">
-                      <i class="fa-solid fa-flag fa-xs me-1"></i>
-                      {{ TAREA.priority === 'high' ? 'Alta' : TAREA.priority === 'medium' ? 'Media' : 'Baja' }}
-                    </span>
+                    
 
                     <span 
                       class="badge badge-sm"
@@ -258,8 +271,8 @@
 
                 </div>
 
-                <!-- Botones de acción -->
-                <div class="d-flex flex-column gap-2 ms-2 tarea-actions">
+                <!-- ✅ Botones de acción - Solo mostrar si tiene permisos -->
+                <div class="d-flex flex-column gap-2 ms-2 tarea-actions" *ngIf="hasWriteAccess">
                   <button 
                     *ngIf="TAREA.description && TAREA.description.length > 30"
                     type="button"
@@ -290,7 +303,8 @@
             class="text-center text-muted mt-4 py-5">
             <i class="fa-solid fa-inbox fa-2x mb-2 opacity-50"></i>
             <p class="small">Sin tareas</p>
-            <p class="small text-muted">Arrastra tareas aquí o crea una nueva</p>
+            <p class="small text-muted" *ngIf="hasWriteAccess">Arrastra tareas aquí o crea una nueva</p>
+            <p class="small text-muted" *ngIf="!hasWriteAccess">No hay tareas en esta lista</p>
           </div>
         </div>
 

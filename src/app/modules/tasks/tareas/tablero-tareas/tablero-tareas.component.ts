@@ -27,8 +27,11 @@ export class TableroTareasComponent implements OnInit {
 
   openMenuId: number | null = null;
 
-  hasWriteAccess: boolean = true;
+  // ✅ CAMBIO: Inicializar como false por seguridad hasta verificar permisos
+  hasWriteAccess: boolean = false;
   isOwner: boolean = false; 
+  // ✅ NUEVO: Flag para saber si ya se cargaron los permisos
+  permissionsLoaded: boolean = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -47,30 +50,56 @@ export class TableroTareasComponent implements OnInit {
       this.grupo_id = +params['grupo_id'];
       
       if (this.grupo_id) {
-        this.loadGrupoData();
-        this.listListas();
-        this.configAll();
+        // ✅ CAMBIO: Verificar permisos PRIMERO antes de cargar nada
+        this.checkWritePermissions(() => {
+          // Solo después de verificar permisos, cargar los datos
+          this.loadGrupoData();
+          this.listListas();
+          this.configAll();
+        });
       } else {
         this.toastr.warning('No se proporcionó un grupo válido', 'Advertencia');
         this.router.navigate(['/tasks/grupos/list']);
       }
     });
-    // Verificar permisos de escritura
-    this.checkWritePermissions();
   }
 
-  checkWritePermissions() {
-    if (this.grupo_id) {  // ✅ CAMBIAR A grupo_id
-      this.grupoService.checkWriteAccess(this.grupo_id).subscribe({  // ✅ CAMBIAR A grupo_id
+  // ✅ MEJORADO: Verificar permisos con callback para ejecutar después
+  checkWritePermissions(callback?: () => void) {
+    if (this.grupo_id) {
+      this.grupoService.checkWriteAccess(this.grupo_id).subscribe({
         next: (resp: any) => {
           if (resp.message === 200) {
             this.hasWriteAccess = resp.has_write_access;
             this.isOwner = resp.is_owner;
+            this.permissionsLoaded = true;
+            
+            // ✅ NUEVO: Mostrar mensaje si es solo lectura
+            if (!this.hasWriteAccess && !this.isOwner) {
+              console.log('👁️ Usuario tiene solo permisos de lectura');
+              this.toastr.info('Tienes permisos de solo lectura en este grupo', 'Información', {
+                timeOut: 4000
+              });
+            }
+            
+            // ✅ Forzar detección de cambios para actualizar la vista
+            this.cdr.detectChanges();
+            
+            // Ejecutar callback si existe
+            if (callback) {
+              callback();
+            }
           }
         },
-        error: (err: any) => {  // ✅ AGREGAR TIPADO
+        error: (err: any) => {
           console.error('Error al verificar permisos:', err);
           this.hasWriteAccess = false;
+          this.permissionsLoaded = true;
+          this.toastr.error('Error al verificar permisos de acceso', 'Error');
+          // Aún así ejecutar el callback para cargar los datos en modo lectura
+          if (callback) {
+            callback();
+          }
         }
       });
     }
@@ -105,10 +134,16 @@ export class TableroTareasComponent implements OnInit {
     tarea.expanded = !tarea.expanded;
   }
 
-  // ✅ NUEVO: Manejo mejorado de drop de listas con snap
+  // ✅ MEJORADO: Verificar permisos antes de permitir reordenar
   onListDrop(event: CdkDragDrop<any[]>) {
+    // ✅ NUEVO: Verificación adicional de permisos
+    if (!this.hasWriteAccess) {
+      this.toastr.warning('No tienes permisos para reordenar listas', 'Permiso denegado');
+      return;
+    }
+
     if (event.previousIndex === event.currentIndex) {
-      return; // No cambió de posición
+      return;
     }
 
     console.log('📋 Moviendo lista:', {
@@ -116,20 +151,16 @@ export class TableroTareasComponent implements OnInit {
       to: event.currentIndex
     });
 
-    // Mover en el array local
     moveItemInArray(this.LISTAS, event.previousIndex, event.currentIndex);
 
-    // Actualizar el campo 'orden' de cada lista
     const updatedListas = this.LISTAS.map((lista, index) => ({
       id: lista.id,
       orden: index
     }));
 
-    // Guardar en el servidor
     this.saveListOrder(updatedListas);
   }
 
-  // ✅ NUEVO: Guardar orden de listas
   saveListOrder(listas: { id: number, orden: number }[]) {
     this.tareaService.reorderListas(listas).subscribe({
       next: (resp: any) => {
@@ -140,7 +171,6 @@ export class TableroTareasComponent implements OnInit {
       error: (error) => {
         console.error('❌ Error al guardar orden:', error);
         this.toastr.error('No se pudo guardar el orden', 'Error');
-        // Recargar listas para restaurar el orden original
         this.listListas();
       }
     });
@@ -149,8 +179,15 @@ export class TableroTareasComponent implements OnInit {
   getConnectedLists(): string[] {
     return this.LISTAS.map(lista => 'lista-' + lista.id);
   }
-  // 🔄 Manejo de drop de tareas con actualización de lista_id
+
+  // ✅ MEJORADO: Verificar permisos antes de permitir mover tareas
   onTaskDrop(event: CdkDragDrop<any[]>, targetList: any) {
+    // ✅ NUEVO: Verificación adicional de permisos
+    if (!this.hasWriteAccess) {
+      this.toastr.warning('No tienes permisos para mover tareas', 'Permiso denegado');
+      return;
+    }
+
     if (event.previousContainer === event.container) {
       moveItemInArray(targetList.tareas, event.previousIndex, event.currentIndex);
     } else {
@@ -196,7 +233,13 @@ export class TableroTareasComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  // ✅ MEJORADO: Verificar permisos antes de crear lista
   createLista() {
+    if (!this.hasWriteAccess) {
+      this.toastr.warning('No tienes permisos para crear listas', 'Permiso denegado');
+      return;
+    }
+
     const modalRef = this.modalService.open(CreateListaComponent, { centered: true, size: 'md' });
     modalRef.componentInstance.grupo_id = this.grupo_id;
     
@@ -209,7 +252,13 @@ export class TableroTareasComponent implements OnInit {
     });
   }
 
+  // ✅ MEJORADO: Verificar permisos antes de crear tarea
   createTarea(listaId: number) {
+    if (!this.hasWriteAccess) {
+      this.toastr.warning('No tienes permisos para crear tareas', 'Permiso denegado');
+      return;
+    }
+
     const modalRef = this.modalService.open(CreateTareaComponent, { centered: true, size: 'md' });
     modalRef.componentInstance.lista_id = listaId;
     modalRef.componentInstance.grupo_id = this.grupo_id;
@@ -227,6 +276,7 @@ export class TableroTareasComponent implements OnInit {
     });
   }
 
+  // ✅ MEJORADO: Pasar permisos al modal de edición
   editTarea(TAREA: any) {
     const modalRef = this.modalService.open(EditTareaComponent, { 
       centered: true, 
@@ -235,12 +285,16 @@ export class TableroTareasComponent implements OnInit {
     modalRef.componentInstance.TAREA_SELECTED = TAREA;
     modalRef.componentInstance.users = this.users;
     modalRef.componentInstance.sucursales = this.sucursales;
+    // ✅ NUEVO: Pasar información de permisos al modal
+    modalRef.componentInstance.grupo_id = this.grupo_id;
+    modalRef.componentInstance.hasWriteAccess = this.hasWriteAccess;
+    modalRef.componentInstance.isOwner = this.isOwner;
     
     modalRef.componentInstance.TareaE.subscribe((tareaEditada: any) => {
       this.LISTAS.forEach(lista => {
         const index = lista.tareas.findIndex((t: any) => t.id === tareaEditada.id);
         if (index !== -1) {
-          lista.tareas[index] = { ...tareaEditada, expanded: lista.tareas[index].expanded };
+          lista.tareas[index] = { ...lista.tareas[index], ...tareaEditada };
         }
       });
       this.toastr.success('Tarea actualizada correctamente', 'Éxito');
@@ -248,7 +302,13 @@ export class TableroTareasComponent implements OnInit {
     });
   }
 
+  // ✅ MEJORADO: Verificar permisos antes de editar lista
   editLista(LISTA: any) {
+    if (!this.hasWriteAccess) {
+      this.toastr.warning('No tienes permisos para editar listas', 'Permiso denegado');
+      return;
+    }
+
     const modalRef = this.modalService.open(EditListaComponent, { centered: true, size: 'md' });
     modalRef.componentInstance.LISTA_SELECTED = LISTA;
     
@@ -262,8 +322,14 @@ export class TableroTareasComponent implements OnInit {
     });
   }
 
+  // ✅ MEJORADO: Verificar permisos antes de eliminar tarea
   deleteTarea(TAREA: any, event?: MouseEvent) {
     if (event) event.stopPropagation();
+    
+    if (!this.hasWriteAccess) {
+      this.toastr.warning('No tienes permisos para eliminar tareas', 'Permiso denegado');
+      return;
+    }
     
     const modalRef = this.modalService.open(DeleteTareaComponent, { centered: true, size: 'md' });
     modalRef.componentInstance.TAREA_SELECTED = TAREA;
@@ -277,7 +343,13 @@ export class TableroTareasComponent implements OnInit {
     });
   }
 
+  // ✅ MEJORADO: Verificar permisos antes de eliminar lista
   deleteLista(LISTA: any) {
+    if (!this.hasWriteAccess) {
+      this.toastr.warning('No tienes permisos para eliminar listas', 'Permiso denegado');
+      return;
+    }
+
     const modalRef = this.modalService.open(DelteListaComponent, { centered: true, size: 'md' });
     modalRef.componentInstance.LISTA_SELECTED = LISTA;
     
@@ -294,7 +366,6 @@ export class TableroTareasComponent implements OnInit {
         console.log('📋 ===== RESPUESTA DE listListas =====');
         console.log('📋 Listas recibidas:', resp.listas?.length || 0);
         
-        // Verificar estructura de datos de la primera tarea (si existe)
         if (resp.listas && resp.listas[0]?.tareas && resp.listas[0].tareas[0]) {
           const primeraLista = resp.listas[0];
           const primeraTarea = primeraLista.tareas[0];
@@ -320,10 +391,8 @@ export class TableroTareasComponent implements OnInit {
         this.LISTAS = resp.listas.map((lista: any) => ({
           ...lista,
           tareas: (lista.tareas || []).map((tarea: any) => {
-            // Asegurar que la estructura de adjuntos esté correcta
             const adjuntos = tarea.adjuntos || { archivos: [], enlaces: [] };
             
-            // Si adjuntos es un array vacío, convertirlo a objeto
             if (Array.isArray(adjuntos)) {
               tarea.adjuntos = { archivos: [], enlaces: [] };
             } else {
@@ -333,17 +402,14 @@ export class TableroTareasComponent implements OnInit {
               };
             }
             
-            // Asegurar que etiquetas sea un array
             if (!Array.isArray(tarea.etiquetas)) {
               tarea.etiquetas = [];
             }
             
-            // Asegurar que checklists sea un array
             if (!Array.isArray(tarea.checklists)) {
               tarea.checklists = [];
             }
             
-            // Asegurar que haya un contador de comentarios
             if (tarea.comentarios_count === undefined) {
               tarea.comentarios_count = tarea.comentarios?.length || 0;
             }
@@ -396,9 +462,6 @@ export class TableroTareasComponent implements OnInit {
     this.router.navigate(['/tasks/grupos/list']);
   }
 
-  /**
-   * Verifica si la tarea tiene indicadores para mostrar
-   */
   tieneIndicadores(tarea: any): boolean {
     return (
       this.getTotalAdjuntos(tarea) > 0 ||
@@ -408,9 +471,6 @@ export class TableroTareasComponent implements OnInit {
     );
   }
 
-  /**
-   * Obtiene el total de adjuntos (archivos + enlaces)
-   */
   getTotalAdjuntos(tarea: any): number {
     if (!tarea.adjuntos) return 0;
     
@@ -420,9 +480,6 @@ export class TableroTareasComponent implements OnInit {
     return archivos + enlaces;
   }
 
-  /**
-   * Obtiene el total de items en todos los checklists
-   */
   getTotalChecklistItems(tarea: any): number {
     if (!tarea.checklists || !Array.isArray(tarea.checklists)) return 0;
     
@@ -431,9 +488,6 @@ export class TableroTareasComponent implements OnInit {
     }, 0);
   }
 
-  /**
-   * Obtiene el total de items completados en los checklists
-   */
   getCompletedChecklistItems(tarea: any): number {
     if (!tarea.checklists || !Array.isArray(tarea.checklists)) return 0;
     
@@ -445,9 +499,6 @@ export class TableroTareasComponent implements OnInit {
     }, 0);
   }
 
-  /**
-   * Calcula el progreso total del checklist en porcentaje
-   */
   getChecklistProgress(tarea: any): number {
     const total = this.getTotalChecklistItems(tarea);
     if (total === 0) return 0;
@@ -456,9 +507,6 @@ export class TableroTareasComponent implements OnInit {
     return Math.round((completados / total) * 100);
   }
 
-  /**
-   * Verifica si todos los items del checklist están completados
-   */
   isChecklistCompleted(tarea: any): boolean {
     const total = this.getTotalChecklistItems(tarea);
     if (total === 0) return false;
@@ -466,16 +514,11 @@ export class TableroTareasComponent implements OnInit {
     return this.getCompletedChecklistItems(tarea) === total;
   }
 
-  /**
-   * Obtiene el total de comentarios
-   */
   getTotalComentarios(tarea: any): number {
-    // Si la tarea tiene comentarios cargados directamente
     if (tarea.comentarios && Array.isArray(tarea.comentarios)) {
       return tarea.comentarios.length;
     }
     
-    // Si tiene un contador de comentarios
     if (tarea.comentarios_count !== undefined) {
       return tarea.comentarios_count;
     }
@@ -483,9 +526,6 @@ export class TableroTareasComponent implements OnInit {
     return 0;
   }
 
-  /**
-   * Maneja errores de carga de avatar
-   */
   onAvatarError(event: any): void {
     event.target.src = 'assets/media/avatars/blank.png';
   }

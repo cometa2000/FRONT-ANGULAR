@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, EventEmitter, Output } from '@angular/core';
+import { Component, Input, OnInit, EventEmitter, Output, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { TareaService } from '../service/tarea.service';
@@ -8,6 +8,7 @@ import { NgbModal, NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { AdjuntarModalComponent, Enlace, Archivo } from '../adjuntar-modal/adjuntar-modal.component';
 import { AssignMembersTareaComponent } from '../assign-members-tarea/assign-members-tarea.component';
 import { GrupoService } from '../../grupos/service/grupo.service';
+import { ToastrService } from 'ngx-toastr';
 
 export interface Tarea {
   id: number;
@@ -47,6 +48,7 @@ export class EditTareaComponent implements OnInit {
 
   @Input() TAREA_SELECTED?: { id: number };
   @Input() users: any[] = [];
+  @Input() grupo_id?: number;
   @Output() TareaE = new EventEmitter<any>();
 
   tareaId!: number;
@@ -105,6 +107,9 @@ export class EditTareaComponent implements OnInit {
   miembrosAsignados: any[] = [];
 
   hasWriteAccess: boolean = true;
+  isOwner: boolean = false;
+  permissionLevel: string = 'write';
+  isReadOnly: boolean = false;  
 
   constructor(
     public modal: NgbActiveModal,
@@ -114,7 +119,9 @@ export class EditTareaComponent implements OnInit {
     private checklistsService: ChecklistsService,
     private etiquetasService: EtiquetasService,
     private modalService: NgbModal,
-    private grupoService: GrupoService 
+    private grupoService: GrupoService,
+    private toastr: ToastrService,      
+  private cdr: ChangeDetectorRef 
   ) {}
 
   ngOnInit(): void {
@@ -146,21 +153,51 @@ export class EditTareaComponent implements OnInit {
     this.checkWritePermissions();
   }
 
-  checkWritePermissions() {
-    if (this.tarea && this.tarea.grupo_id) {
-      this.grupoService.checkWriteAccess(this.tarea.grupo_id).subscribe({
-        next: (resp: any) => {
-          if (resp.message === 200) {
-            this.hasWriteAccess = resp.has_write_access;
-          }
-        },
-        error: (err: any) => {  // ✅ AGREGAR TIPADO
-          console.error('Error al verificar permisos:', err);
-          this.hasWriteAccess = false;
-        }
-      });
+  toggleDescriptionEdit(): void {
+    if (this.isReadOnly) {
+      this.toastr.warning('No tienes permisos para editar esta tarea', 'Permiso denegado');
+      return;
     }
+    this.editingDescription = !this.editingDescription;
   }
+
+  checkWritePermissions() {
+    // Verificar si tenemos grupo_id disponible
+    if (!this.grupo_id) {
+      console.warn('⚠️ No se proporcionó grupo_id al componente');
+      this.hasWriteAccess = false;
+      return;
+    }
+    
+    console.log('🔍 Verificando permisos para grupo:', this.grupo_id);
+    
+    this.grupoService.checkWriteAccess(this.grupo_id).subscribe({
+      next: (resp: any) => {
+        if (resp.message === 200) {
+          this.hasWriteAccess = resp.has_write_access;
+          this.isOwner = resp.is_owner;
+          
+          console.log('✅ Permisos cargados:', {
+            hasWriteAccess: this.hasWriteAccess,
+            isOwner: this.isOwner,
+            permissionLevel: resp.permission_level
+          });
+          
+          // Si es solo lectura, mostrar mensaje
+          if (!this.hasWriteAccess && !this.isOwner) {
+            console.log('👁️ Usuario tiene solo permisos de lectura');
+          }
+        }
+      },
+      error: (err) => {
+        console.error('❌ Error al verificar permisos:', err);
+        this.hasWriteAccess = false;
+        // No mostrar toast aquí para no molestar al usuario
+      }
+    });
+  }
+
+  
 
   // =============================
   // 🧱 CARGA DE TAREA

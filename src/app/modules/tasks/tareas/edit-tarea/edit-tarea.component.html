@@ -3,12 +3,19 @@
        HEADER
        ======================================== -->
   <div class="trello-header">
-    <div class="status-dropdown">
+    <!-- ✅ Solo mostrar dropdown de estado si tiene permisos -->
+    <div class="status-dropdown" *ngIf="hasWriteAccess">
       <select [(ngModel)]="tarea.status" (change)="updateStatus()">
         <option value="pendiente">Pendiente</option>
         <option value="en_progreso">En proceso</option>
         <option value="completada">Hecho</option>
       </select>
+    </div>
+
+    <!-- ✅ NUEVO: Badge de solo lectura si no tiene permisos -->
+    <div *ngIf="!hasWriteAccess" class="read-only-badge">
+      <i class="fa-solid fa-eye me-2"></i>
+      <span>Solo lectura</span>
     </div>
 
     <div class="btn btn-icon btn-sm btn-active-icon-primary" data-kt-users-modal-action="close" (click)="modal.dismiss()">
@@ -35,24 +42,33 @@
       <div class="tarea-header-section">
         <h2 class="tarea-title">{{ tarea.name || 'Sin título' }}</h2>
 
-        <div class="tarea-actions">
-          <app-etiquetas [tareaId]="tarea.id" (etiquetasChanged)="loadTarea()"></app-etiquetas>
-          <app-fechas [tareaId]="tarea.id" (fechasChanged)="loadTarea()"></app-fechas>
-          <app-checklists [tareaId]="tarea.id" (checklistsChanged)="loadTarea()"></app-checklists>
-
-          <button class="btn-light" (click)="abrirModalAdjuntar()">
-            <i class="fa-solid fa-paperclip"></i> Adjuntar
-            <span *ngIf="adjuntos.archivos.length > 0 || adjuntos.enlaces.length > 0" class="badge badge-primary ms-2">
-              {{ adjuntos.archivos.length + adjuntos.enlaces.length }}
-            </span>
-          </button>
-
-          <button class="btn-light" (click)="abrirModalMiembros()">
-            <i class="fa-solid fa-user-plus"></i> Miembros
-            <span *ngIf="miembrosAsignados.length > 0" class="badge badge-primary ms-2">
-              {{ miembrosAsignados.length }}
-            </span>
-          </button>
+        <!-- ✅ ACCIONES LATERALES - Solo mostrar si tiene permisos -->
+        <div class="tarea-actions" *ngIf="hasWriteAccess">
+          <div class="mb-3">
+               <app-etiquetas [tareaId]="tarea.id" (etiquetasChanged)="loadTarea()"></app-etiquetas>
+          </div>
+          <div class="mb-3">
+               <app-fechas [tareaId]="tarea.id" (fechasChanged)="loadTarea()"></app-fechas>
+          </div>
+          <div class="mb-3">
+               <app-checklists [tareaId]="tarea.id" (checklistsChanged)="loadTarea()"></app-checklists>
+          </div>
+          <div class="mb-3">
+              <button class="btn-light" (click)="abrirModalAdjuntar()">
+                <i class="fa-solid fa-paperclip"></i> Adjuntar
+                <span *ngIf="adjuntos.archivos.length > 0 || adjuntos.enlaces.length > 0" class="badge badge-primary ms-2">
+                  {{ adjuntos.archivos.length + adjuntos.enlaces.length }}
+                </span>
+              </button>
+          </div>
+          <div class="mb-3">
+              <button class="btn-light" (click)="abrirModalMiembros()">
+                <i class="fa-solid fa-user-plus"></i> Miembros
+                <span *ngIf="miembrosAsignados.length > 0" class="badge badge-primary ms-2">
+                  {{ miembrosAsignados.length }}
+                </span>
+              </button>
+          </div>
         </div>
       </div>
 
@@ -87,7 +103,8 @@
                     <div class="miembro-email">{{ miembro.email }}</div>
                   </div>
                 </div>
-                <div class="miembro-actions">
+                <!-- ✅ Solo mostrar botón de desasignar si tiene permisos -->
+                <div class="miembro-actions" *ngIf="hasWriteAccess">
                   <button 
                     class="btn-icon btn-danger-soft" 
                     (click)="desasignarMiembro(miembro.id)"
@@ -101,7 +118,8 @@
             <div class="empty-state" *ngIf="miembrosAsignados.length === 0">
               <i class="fa-solid fa-users fa-3x mb-3 text-muted"></i>
               <p class="text-muted">No hay miembros asignados a esta tarea</p>
-              <button class="btn btn-outline-primary btn-sm" (click)="abrirModalMiembros()">
+              <!-- ✅ Solo mostrar botón si tiene permisos -->
+              <button *ngIf="hasWriteAccess" class="btn btn-outline-primary btn-sm" (click)="abrirModalMiembros()">
                 <i class="fa-solid fa-user-plus me-2"></i>Asignar Miembros
               </button>
             </div>
@@ -122,8 +140,9 @@
                 <span class="etiqueta-tag" [ngClass]="getEtiquetaColorClass(etiqueta.color)">
                   {{ etiqueta.name }}
                 </span>
-  
-                <div class="etiqueta-actions">
+
+                <!-- ✅ Solo mostrar acciones si tiene permisos -->
+                <div class="etiqueta-actions" *ngIf="hasWriteAccess">
                   <button 
                     class="etiqueta-action-btn" 
                     (click)="openEditEtiquetaModal(etiqueta)"
@@ -143,18 +162,34 @@
         </div>
         
         <!-- DESCRIPCIÓN -->
-        <div class="section">
+        <div class="section" >
           <div class="section-header">
             <i class="fa-solid fa-bars"></i>
             <h3>Descripción</h3>
-            <button class="link-btn" *ngIf="!editingDescription && tarea.description" (click)="toggleEditDescription()">Editar</button>
+            <!-- ✅ Solo mostrar botón editar si tiene permisos -->
+            <button *ngIf="hasWriteAccess && !editingDescription && tarea.description" class="link-btn" (click)="toggleEditDescription()">Editar</button>
           </div>
 
           <div class="section-body">
-            <p *ngIf="tarea.description && !editingDescription" class="desc-text" (click)="toggleEditDescription()">{{ tarea.description }}</p>
-            <p *ngIf="!tarea.description && !editingDescription" class="desc-placeholder" (click)="toggleEditDescription()">Añadir descripción…</p>
+            <!-- ✅ Permitir edición solo con permisos -->
+            <p *ngIf="tarea.description && !editingDescription" 
+               class="desc-text" 
+               [class.cursor-pointer]="hasWriteAccess"
+               (click)="hasWriteAccess ? toggleEditDescription() : null">
+              {{ tarea.description }}
+            </p>
+            
+            <p *ngIf="!tarea.description && !editingDescription && hasWriteAccess" 
+               class="desc-placeholder" 
+               (click)="toggleEditDescription()">
+              Añadir descripción…
+            </p>
 
-            <div *ngIf="editingDescription">
+            <p *ngIf="!tarea.description && !hasWriteAccess" class="text-muted">
+              Sin descripción
+            </p>
+
+            <div *ngIf="editingDescription && hasWriteAccess">
               <textarea [(ngModel)]="tarea.description" rows="4"></textarea>
               <div class="action-row">
                 <button class="btn-blue" (click)="saveDescription()">Guardar</button>
@@ -169,7 +204,8 @@
           <div class="section-header">
             <i class="fa-solid fa-paperclip"></i>
             <h3>Adjuntos</h3>
-            <button class="link-btn" (click)="abrirModalAdjuntar()">
+            <!-- ✅ Solo mostrar botón agregar si tiene permisos -->
+            <button *ngIf="hasWriteAccess" class="link-btn" (click)="abrirModalAdjuntar()">
               <i class="fa-solid fa-plus"></i> Agregar
             </button>
           </div>
@@ -194,7 +230,8 @@
 
                   <div class="adjunto-acciones">
                     <button class="btn-icon" (click)="abrirEnlace(enlace.url)"><i class="fa-solid fa-external-link-alt"></i></button>
-                    <button class="btn-icon delete" (click)="eliminarEnlace(i)"><i class="fa-solid fa-trash"></i></button>
+                    <!-- ✅ Solo mostrar botón eliminar si tiene permisos -->
+                    <button *ngIf="hasWriteAccess" class="btn-icon delete" (click)="eliminarEnlace(i)"><i class="fa-solid fa-trash"></i></button>
                   </div>
                 </div>
               </div>
@@ -233,7 +270,9 @@
                       title="Descargar archivo">
                       <i class="fa-solid fa-download"></i>
                     </button>
+                    <!-- ✅ Solo mostrar botón eliminar si tiene permisos -->
                     <button 
+                      *ngIf="hasWriteAccess"
                       class="btn-icon delete" 
                       (click)="eliminarArchivo(i)"
                       title="Eliminar archivo">
@@ -252,8 +291,9 @@
           <div class="section-header">
             <i class="fa-regular fa-clock"></i>
             <h3>Vencimiento</h3>
-            <button class="link-btn" *ngIf="!editingFechas" (click)="toggleEditFechas()"><i class="fa-solid fa-pencil"></i> Editar</button>
-            <button class="link-btn" (click)="deleteFechas()"><i class="fa-solid fa-trash"></i> Eliminar fechas</button>
+            <!-- ✅ Solo mostrar botones editar/eliminar si tiene permisos -->
+            <button *ngIf="hasWriteAccess && !editingFechas" class="link-btn" (click)="toggleEditFechas()"><i class="fa-solid fa-pencil"></i> Editar</button>
+            <button *ngIf="hasWriteAccess" class="link-btn" (click)="deleteFechas()"><i class="fa-solid fa-trash"></i> Eliminar fechas</button>
           </div>
 
           <div class="section-body">
@@ -265,7 +305,7 @@
               </div>
             </div>
 
-            <div *ngIf="editingFechas">
+            <div *ngIf="editingFechas && hasWriteAccess">
               <div class="date-form">
                 <div class="form-group">
                   <label>Fecha de inicio</label>
@@ -301,7 +341,8 @@
 
               <div class="checklist-header">
                 <h4><i class="fa-regular fa-square-check"></i> {{ checklist.name }}</h4>
-                <button class="delete-checklist-btn" (click)="deleteChecklist(checklist.id)">Eliminar</button>
+                <!-- ✅ Solo mostrar botón eliminar si tiene permisos -->
+                <button *ngIf="hasWriteAccess" class="delete-checklist-btn" (click)="deleteChecklist(checklist.id)">Eliminar</button>
               </div>
 
               <div class="checklist-progress" *ngIf="checklist.items.length > 0">
@@ -317,14 +358,17 @@
               <div class="checklist-items">
                 <div *ngFor="let item of checklist.items" class="checklist-item">
 
+                  <!-- ✅ Deshabilitar checkbox si no tiene permisos -->
                   <input type="checkbox"
                          [checked]="item.completed"
+                         [disabled]="!hasWriteAccess"
                          (change)="toggleChecklistItem(checklist.id, item.id)">
 
                   <div class="item-content">
                     <span class="item-name" [ngClass]="{'completed': item.completed}">{{ item.name }}</span>
 
-                    <div class="item-actions">
+                    <!-- ✅ Solo mostrar acciones si tiene permisos -->
+                    <div class="item-actions" *ngIf="hasWriteAccess">
                       <button (click)="deleteChecklistItem(checklist.id, item.id)">Eliminar</button>
                     </div>
                   </div>
@@ -332,7 +376,8 @@
                 </div>
               </div>
 
-              <div class="add-item-container" *ngIf="checklist.addingItem">
+              <!-- ✅ Solo permitir agregar items si tiene permisos -->
+              <div class="add-item-container" *ngIf="hasWriteAccess && checklist.addingItem">
                 <input type="text" [(ngModel)]="checklist.newItemName" (keyup.enter)="addChecklistItem(checklist)" placeholder="Añadir un elemento" class="add-item-input">
 
                 <div class="item-actions">
@@ -341,7 +386,7 @@
                 </div>
               </div>
 
-              <button *ngIf="!checklist.addingItem" class="add-checklist-btn" (click)="showAddItemInput(checklist)">
+              <button *ngIf="hasWriteAccess && !checklist.addingItem" class="add-checklist-btn" (click)="showAddItemInput(checklist)">
                 <i class="fa-solid fa-plus"></i> Añade un elemento
               </button>
 
@@ -359,9 +404,15 @@
       <div class="sidebar-section">
         <h3><i class="fa-regular fa-comments"></i> Comentarios y Actividad</h3>
 
-        <div class="comment-box">
+        <!-- ✅ Solo mostrar caja de comentarios si tiene permisos -->
+        <div class="comment-box" *ngIf="hasWriteAccess">
           <textarea [(ngModel)]="newComment" placeholder="Escribe un comentario..." rows="3"></textarea>
           <button class="btn-blue" (click)="addComment()" [disabled]="!newComment.trim()">Comentar</button>
+        </div>
+
+        <div *ngIf="!hasWriteAccess" class="alert alert-info">
+          <i class="fa-solid fa-info-circle me-2"></i>
+          No puedes agregar comentarios con permisos de solo lectura
         </div>
 
         <div class="activity-feed" *ngIf="timeline.length > 0; else noActivity">
@@ -381,7 +432,8 @@
               <p *ngIf="item.type === 'comentario'" class="comment-text">{{ item.content }}</p>
               <small class="time">{{ item.created_at | date: 'dd MMM yyyy, HH:mm' }}</small>
 
-              <div *ngIf="item.type === 'comentario'" class="item-actions">
+              <!-- ✅ Solo mostrar acciones de comentario si tiene permisos -->
+              <div *ngIf="hasWriteAccess && item.type === 'comentario'" class="item-actions">
                 <button (click)="editComment(item.id)">Editar</button>
                 <button (click)="deleteComment(item.id)">Eliminar</button>
               </div>
@@ -399,8 +451,8 @@
   </div>
 </div>
 
-<!-- MODAL EDITAR ETIQUETA -->
-<div class="modal-overlay" *ngIf="showEtiquetaModal" (click)="closeEtiquetaModal()">
+<!-- MODAL EDITAR ETIQUETA - Solo accesible si tiene permisos -->
+<div class="modal-overlay" *ngIf="hasWriteAccess && showEtiquetaModal" (click)="closeEtiquetaModal()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3>Editar Etiqueta</h3>
