@@ -3,6 +3,8 @@ import { SucursalService } from '../service/sucursal.service';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-delete-sucursal',
   templateUrl: './delete-sucursal.component.html',
@@ -25,18 +27,53 @@ export class DeleteSucursalComponent {
   ngOnInit(): void {
   }
 
-  delete(){
-    
-    this.sucursalesService.deleteSucursal(this.SUCURSAL_SELECTED.id).subscribe((resp:any) => {
-      console.log(resp);
-      if(resp.message == 403){
-        this.toast.error("Validación",resp.message_text);
-      }else{
-        this.toast.success("Exito","La sucursal se elimino correctamente");
-        this.SucursalD.emit(resp.message);
-        this.modal.close();
-      }
-    })
+  delete() {
+
+    this.sucursalesService.deleteSucursal(this.SUCURSAL_SELECTED.id)
+      .subscribe({
+        next: (resp: any) => {
+          console.log(resp);
+
+          if (resp.message == 403) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Validación',
+              text: resp.message_text,
+              timer: 3000,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+          } else {
+            Swal.fire({
+              icon: 'success',
+              title: 'Sucursal eliminada',
+              text: 'La sucursal se eliminó correctamente',
+              timer: 3000,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+
+            this.SucursalD.emit(resp.message);
+            this.modal.close();
+          }
+        },
+
+        error: (err) => {
+          console.error(err);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo eliminar la sucursal',
+            timer: 3000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+        }
+      });
   }
+
 
 }

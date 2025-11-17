@@ -41,7 +41,6 @@ export class CreateListaComponent {
         if (resp.message === 200) {
           this.toast.success('La lista se registró correctamente', 'Éxito');
           this.ListaC.emit(resp.lista);
-          this.modal.close();
         } else {
           this.toast.error('Error al registrar la lista', 'Error');
         }

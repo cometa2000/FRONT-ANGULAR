@@ -201,7 +201,7 @@
                       class="badge badge-sm"
                       [ngClass]="{
                         'bg-success': TAREA.status === 'completada',
-                        'bg-primary': TAREA.status === 'en_progreso',
+                        'bg-warning': TAREA.status === 'en_progreso',
                         'bg-secondary': TAREA.status === 'pendiente'
                       }">
                       {{ TAREA.status === 'completada' ? 'Completada' : TAREA.status === 'en_progreso' ? 'En progreso' : 'Pendiente' }}

@@ -1,0 +1,138 @@
+// Estilos para el visor de documentos
+
+.modal-content {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+
+  .modal-title {
+    color: white;
+    margin: 0;
+  }
+
+  .text-muted {
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+
+  .btn-light-primary {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.3);
+      color: white;
+    }
+  }
+}
+
+.modal-body {
+  padding: 0;
+  background-color: #f8f9fa;
+}
+
+// Visor de imágenes
+.image-viewer {
+  background: repeating-linear-gradient(
+    45deg,
+    #f0f0f0,
+    #f0f0f0 10px,
+    #ffffff 10px,
+    #ffffff 20px
+  );
+}
+
+// Visor de PDFs
+iframe {
+  border: none;
+}
+
+// OnlyOffice container
+#onlyoffice-editor {
+  border: none;
+  background-color: white;
+}
+
+// Loading state
+.spinner-border {
+  animation: spinner-border 0.75s linear infinite;
+}
+
+// Badge de ayuda
+.badge {
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+
+  &.badge-light-info {
+    background-color: rgba(0, 123, 255, 0.1);
+    color: #007bff;
+  }
+
+  &.badge-light-success {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+  }
+}
+
+// Footer
+.modal-footer {
+  background-color: #f8f9fa;
+  padding: 1rem 1.5rem;
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .modal-header {
+    padding: 1rem;
+
+    .modal-title {
+      font-size: 1rem;
+      
+      i {
+        font-size: 1.5rem !important;
+      }
+    }
+  }
+
+  #onlyoffice-editor {
+    height: 60vh !important;
+  }
+}
+
+// Animación suave para el modal
+.modal-content {
+  animation: fadeInScale 0.3s ease-out;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// Mejoras visuales para el visor desconocido
+.unknown-viewer {
+  i.ki-file-down {
+    opacity: 0.5;
+  }
+
+  h3 {
+    margin-top: 1rem;
+  }
+
+  p {
+    max-width: 500px;
+    line-height: 1.6;
+  }
+}

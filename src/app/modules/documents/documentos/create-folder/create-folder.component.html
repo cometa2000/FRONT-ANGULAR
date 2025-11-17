@@ -1,0 +1,111 @@
+<div class="modal-content">
+  <!-- Modal Header -->
+  <div class="modal-header">
+    <h2 class="modal-title">
+      <i class="ki-duotone ki-folder-added fs-1 me-2">
+        <span class="path1"></span>
+        <span class="path2"></span>
+      </i>
+      Crear Nueva Carpeta
+    </h2>
+    <button type="button" class="btn btn-icon btn-sm btn-light-primary" (click)="modal.dismiss()">
+      <i class="ki-duotone ki-cross fs-1">
+        <span class="path1"></span>
+        <span class="path2"></span>
+      </i>
+    </button>
+  </div>
+
+  <!-- Modal Body -->
+  <div class="modal-body">
+    <!-- Ubicación actual -->
+    <div class="alert alert-info d-flex align-items-center mb-5">
+      <i class="ki-duotone ki-information-5 fs-2x text-info me-3">
+        <span class="path1"></span>
+        <span class="path2"></span>
+        <span class="path3"></span>
+      </i>
+      <div class="d-flex flex-column">
+        <span class="fw-bold">Ubicación:</span>
+        <span class="text-gray-700">{{ parent_name }}</span>
+      </div>
+    </div>
+
+    <!-- Formulario -->
+    <form>
+      <!-- Nombre de la carpeta -->
+      <div class="mb-5">
+        <label class="required form-label">Nombre de la carpeta</label>
+        <div class="input-group">
+          <span class="input-group-text">
+            <i class="ki-duotone ki-folder fs-2">
+              <span class="path1"></span>
+              <span class="path2"></span>
+            </i>
+          </span>
+          <input 
+            type="text" 
+            class="form-control form-control-solid" 
+            placeholder="Ej: Facturas 2024"
+            [(ngModel)]="name"
+            name="name"
+            maxlength="255"
+            [disabled]="isLoading"
+            (keyup.enter)="createFolder()"
+            autofocus>
+        </div>
+        <div class="form-text">El nombre debe ser único en esta ubicación</div>
+      </div>
+
+      <!-- Descripción (opcional) -->
+      <div class="mb-5">
+        <label class="form-label">Descripción <span class="text-muted">(opcional)</span></label>
+        <div class="input-group">
+          <span class="input-group-text">
+            <i class="ki-duotone ki-text fs-2">
+              <span class="path1"></span>
+              <span class="path2"></span>
+              <span class="path3"></span>
+            </i>
+          </span>
+          <textarea 
+            class="form-control form-control-solid" 
+            rows="3"
+            placeholder="Describe el contenido de esta carpeta..."
+            [(ngModel)]="description"
+            name="description"
+            maxlength="500"
+            [disabled]="isLoading"></textarea>
+        </div>
+        <div class="form-text">{{ description.length }}/500 caracteres</div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Modal Footer -->
+  <div class="modal-footer">
+    <button 
+      type="button" 
+      class="btn btn-light" 
+      (click)="modal.dismiss()"
+      [disabled]="isLoading">
+      <i class="ki-duotone ki-cross fs-2 me-1">
+        <span class="path1"></span>
+        <span class="path2"></span>
+      </i>
+      Cancelar
+    </button>
+    <button 
+      type="button" 
+      class="btn btn-primary" 
+      (click)="createFolder()"
+      [disabled]="isLoading || !name || name.trim() === ''">
+      <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+      <i *ngIf="!isLoading" class="ki-duotone ki-check fs-2 me-1">
+        <span class="path1"></span>
+        <span class="path2"></span>
+      </i>
+      {{ isLoading ? 'Creando...' : 'Crear Carpeta' }}
+    </button>
+  </div>
+</div>

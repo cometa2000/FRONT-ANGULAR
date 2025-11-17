@@ -1,5 +1,7 @@
-import { Component, HostBinding, OnInit } from '@angular/core';
-import { LayoutService } from '../../../../../layout';
+import { Component, HostBinding, OnInit, OnDestroy } from '@angular/core';
+import { Router } from '@angular/router';
+import { NotificationService, Notification } from 'src/app/services/notification.service';
+import { Subscription } from 'rxjs';
 
 export type NotificationsTabsType =
   | 'kt_topbar_notifications_1'
@@ -10,146 +12,203 @@ export type NotificationsTabsType =
   selector: 'app-notifications-inner',
   templateUrl: './notifications-inner.component.html',
 })
-export class NotificationsInnerComponent implements OnInit {
+export class NotificationsInnerComponent implements OnInit, OnDestroy {
   @HostBinding('class') class =
     'menu menu-sub menu-sub-dropdown menu-column w-350px w-lg-375px';
   @HostBinding('attr.data-kt-menu') dataKtMenu = 'true';
 
-  activeTabId: NotificationsTabsType = 'kt_topbar_notifications_2';
-  alerts: Array<AlertModel> = defaultAlerts;
-  logs: Array<LogModel> = defaultLogs;
-  constructor() {}
+  activeTabId: NotificationsTabsType = 'kt_topbar_notifications_1';
+  notifications: Notification[] = [];
+  unreadNotifications: Notification[] = [];
+  readNotifications: Notification[] = [];
+  unreadCount: number = 0;
+  isLoading: boolean = false;
+  error: string = '';
+  
+  private subscription: Subscription = new Subscription();
 
-  ngOnInit(): void {}
+  constructor(
+    private notificationService: NotificationService,
+    private router: Router
+  ) {}
 
-  setActiveTabId(tabId: NotificationsTabsType) {
+  ngOnInit(): void {
+    this.loadNotifications();
+    
+    // Suscribirse a cambios en notificaciones
+    this.subscription.add(
+      this.notificationService.notifications$.subscribe((notifications: Notification[]) => {
+        this.notifications = notifications;
+        this.updateNotificationLists();
+      })
+    );
+
+    // Suscribirse al contador de no leídas
+    this.subscription.add(
+      this.notificationService.unreadCount$.subscribe((count: number) => {
+        this.unreadCount = count;
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
+  }
+
+  /**
+   * Cargar notificaciones
+   */
+  loadNotifications(): void {
+    this.isLoading = true;
+    this.error = '';
+    
+    this.notificationService.getAllNotifications(20).subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          this.notifications = response.notifications;
+          this.unreadCount = response.unread_count;
+          this.updateNotificationLists();
+          this.isLoading = false;
+        }
+      },
+      error: (error: any) => {
+        console.error('Error al cargar notificaciones:', error);
+        this.error = 'Error al cargar las notificaciones';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  /**
+   * Actualizar listas de notificaciones leídas y no leídas
+   */
+  updateNotificationLists(): void {
+    this.unreadNotifications = this.notifications.filter(n => !n.is_read);
+    this.readNotifications = this.notifications.filter(n => n.is_read);
+  }
+
+  /**
+   * Cambiar tab activo
+   */
+  setActiveTabId(tabId: NotificationsTabsType): void {
     this.activeTabId = tabId;
   }
+
+  /**
+   * Marcar notificación como leída
+   */
+  markAsRead(notification: Notification, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    
+    if (!notification.is_read) {
+      this.notificationService.markAsRead(notification.id).subscribe({
+        next: (response: any) => {
+          if (response.success) {
+            notification.is_read = true;
+            this.updateNotificationLists();
+          }
+        },
+        error: (error: any) => {
+          console.error('Error al marcar notificación:', error);
+        }
+      });
+    }
+  }
+
+  /**
+   * Marcar todas como leídas
+   */
+  markAllAsRead(): void {
+    if (this.unreadCount === 0) return;
+    
+    this.notificationService.markAllAsRead().subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          this.notifications.forEach(n => n.is_read = true);
+          this.updateNotificationLists();
+        }
+      },
+      error: (error: any) => {
+        console.error('Error al marcar todas las notificaciones:', error);
+      }
+    });
+  }
+
+  /**
+   * Eliminar notificación
+   */
+  deleteNotification(notificationId: number, event: Event): void {
+    event.stopPropagation();
+    
+    if (confirm('¿Estás seguro de eliminar esta notificación?')) {
+      this.notificationService.deleteNotification(notificationId).subscribe({
+        next: (response: any) => {
+          if (response.success) {
+            this.notifications = this.notifications.filter(n => n.id !== notificationId);
+            this.updateNotificationLists();
+          }
+        },
+        error: (error: any) => {
+          console.error('Error al eliminar notificación:', error);
+        }
+      });
+    }
+  }
+
+  /**
+   * Eliminar todas las leídas
+   */
+  deleteAllRead(): void {
+    if (this.readNotifications.length === 0) return;
+    
+    if (confirm('¿Estás seguro de eliminar todas las notificaciones leídas?')) {
+      this.notificationService.deleteAllRead().subscribe({
+        next: (response: any) => {
+          if (response.success) {
+            this.notifications = this.unreadNotifications;
+            this.updateNotificationLists();
+          }
+        },
+        error: (error: any) => {
+          console.error('Error al eliminar notificaciones:', error);
+        }
+      });
+    }
+  }
+
+  /**
+   * Ir a la tarea de la notificación
+   */
+  goToTarea(notification: Notification): void {
+    // Marcar como leída
+    this.markAsRead(notification);
+    
+    // Navegar si tiene tarea
+    if (notification.tarea) {
+      this.router.navigate(['/tasks/tareas', notification.tarea.id]);
+    }
+  }
+
+  /**
+   * Refrescar notificaciones
+   */
+  refresh(): void {
+    this.loadNotifications();
+  }
+
+  /**
+   * Obtener clase del ícono
+   */
+  getIconClass(notification: Notification): string {
+    return `bg-light-${notification.color}`;
+  }
+
+  /**
+   * Obtener clase del badge
+   */
+  getBadgeClass(notification: Notification): string {
+    return notification.is_read ? 'badge-light' : `badge-light-${notification.color}`;
+  }
 }
-
-interface AlertModel {
-  title: string;
-  description: string;
-  time: string;
-  icon: string;
-  state: 'primary' | 'danger' | 'warning' | 'success' | 'info';
-}
-
-const defaultAlerts: Array<AlertModel> = [
-  {
-    title: 'Project Alice',
-    description: 'Phase 1 development',
-    time: '1 hr',
-    icon: 'icons/duotune/technology/teh008.svg',
-    state: 'primary',
-  },
-  {
-    title: 'HR Confidential',
-    description: 'Confidential staff documents',
-    time: '2 hrs',
-    icon: 'icons/duotune/general/gen044.svg',
-    state: 'danger',
-  },
-  {
-    title: 'Company HR',
-    description: 'Corporeate staff profiles',
-    time: '5 hrs',
-    icon: 'icons/duotune/finance/fin006.svg',
-    state: 'warning',
-  },
-  {
-    title: 'Project Redux',
-    description: 'New frontend admin theme',
-    time: '2 days',
-    icon: 'icons/duotune/files/fil023.svg',
-    state: 'success',
-  },
-  {
-    title: 'Project Breafing',
-    description: 'Product launch status update',
-    time: '21 Jan',
-    icon: 'icons/duotune/maps/map001.svg',
-    state: 'primary',
-  },
-  {
-    title: 'Banner Assets',
-    description: 'Collection of banner images',
-    time: '21 Jan',
-    icon: 'icons/duotune/general/gen006.svg',
-    state: 'info',
-  },
-  {
-    title: 'Icon Assets',
-    description: 'Collection of SVG icons',
-    time: '20 March',
-    icon: 'icons/duotune/art/art002.svg',
-    state: 'warning',
-  },
-];
-
-interface LogModel {
-  code: string;
-  state: 'success' | 'danger' | 'warning';
-  message: string;
-  time: string;
-}
-
-const defaultLogs: Array<LogModel> = [
-  { code: '200 OK', state: 'success', message: 'New order', time: 'Just now' },
-  { code: '500 ERR', state: 'danger', message: 'New customer', time: '2 hrs' },
-  {
-    code: '200 OK',
-    state: 'success',
-    message: 'Payment process',
-    time: '5 hrs',
-  },
-  {
-    code: '300 WRN',
-    state: 'warning',
-    message: 'Search query',
-    time: '2 days',
-  },
-  {
-    code: '200 OK',
-    state: 'success',
-    message: 'API connection',
-    time: '1 week',
-  },
-  {
-    code: '200 OK',
-    state: 'success',
-    message: 'Database restore',
-    time: 'Mar 5',
-  },
-  {
-    code: '300 WRN',
-    state: 'warning',
-    message: 'System update',
-    time: 'May 15',
-  },
-  {
-    code: '300 WRN',
-    state: 'warning',
-    message: 'Server OS update',
-    time: 'Apr 3',
-  },
-  {
-    code: '300 WRN',
-    state: 'warning',
-    message: 'API rollback',
-    time: 'Jun 30',
-  },
-  {
-    code: '500 ERR',
-    state: 'danger',
-    message: 'Refund process',
-    time: 'Jul 10',
-  },
-  {
-    code: '500 ERR',
-    state: 'danger',
-    message: 'Withdrawal process',
-    time: 'Sep 10',
-  },
-  { code: '500 ERR', state: 'danger', message: 'Mail tasks', time: 'Dec 10' },
-];

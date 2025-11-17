@@ -26,7 +26,7 @@ export class Error404Component implements OnInit, OnDestroy {
       document.body.style.backgroundImage =
         mode === 'dark'
           ? 'url(./assets/media/auth/bg1-dark.jpg)'
-          : 'url(./assets/media/auth/bg1.jpg)';
+          : 'url(./assets/media/misc/auth-bg-fondo.png)';
     });
     this.unsubscribe.push(subscr);
   }

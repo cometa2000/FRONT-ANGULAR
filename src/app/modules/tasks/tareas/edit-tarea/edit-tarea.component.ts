@@ -37,6 +37,7 @@ export interface Tarea {
     enlaces: Enlace[];
     archivos: Archivo[];
   };
+  assigned_members?: any[];  // 🆕 AGREGADO: Miembros asignados a la tarea
 }
 
 @Component({
@@ -391,11 +392,27 @@ export class EditTareaComponent implements OnInit {
     console.log('💾 Guardando fechas:', data);
 
     this.tareaService.updateTarea(this.tareaId, data).subscribe({
-      next: () => {
+      next: (resp: any) => {
         console.log('✅ Fechas guardadas');
         this.editingFechas = false;
+        
+        // 🆕 SOLUCIÓN: Actualizar la tarea localmente de inmediato
+        if (this.tarea) {
+          this.tarea.due_date = this.dueDate;
+          if (this.startDate) {
+            this.tarea.start_date = this.startDate;
+          }
+          
+          // Forzar detección de cambios para que la sección aparezca inmediatamente
+          this.cdr.detectChanges();
+          
+          // Emitir la tarea actualizada al componente padre
+          this.TareaE.emit(this.tarea);
+        }
+        
+        // Cargar la tarea completa del backend para sincronizar
         this.loadTarea();
-        this.TareaE.emit(this.tarea);
+        
         Swal.fire({ 
           icon: 'success', 
           title: 'Fechas guardadas', 
@@ -1261,11 +1278,18 @@ export class EditTareaComponent implements OnInit {
     
     modalRef.componentInstance.MembersAssigned.subscribe((tareaActualizada: any) => {
       
+      // 🆕 SOLUCIÓN: Actualizar los miembros asignados localmente de inmediato
       this.loadMiembrosAsignados();
       this.loadTimeline();
       
+      // 🆕 Si la tarea actualizada incluye assigned_members, actualizarlos localmente
+      if (tareaActualizada && tareaActualizada.assigned_members && this.tarea) {
+        this.tarea = { ...this.tarea, assigned_members: tareaActualizada.assigned_members };
+        this.cdr.detectChanges();
+      }
+      
       // Emitir cambios al componente padre
-      this.TareaE.emit(tareaActualizada);
+      this.TareaE.emit(tareaActualizada || this.tarea);
     });
   }
 
@@ -1291,6 +1315,12 @@ export class EditTareaComponent implements OnInit {
           next: (resp: any) => {
             if (resp.message === 200) {
               this.miembrosAsignados = this.miembrosAsignados.filter(m => m.id !== userId);
+              
+              // 🆕 SOLUCIÓN: Actualizar la tarea localmente de inmediato
+              if (this.tarea && this.tarea.assigned_members) {
+                this.tarea.assigned_members = this.tarea.assigned_members.filter((m: any) => m.id !== userId);
+                this.cdr.detectChanges();
+              }
               
               Swal.fire({
                 icon: 'success',

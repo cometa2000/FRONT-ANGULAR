@@ -3,6 +3,8 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { SucursalService } from '../service/sucursal.service';
 
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-edit-sucursal',
   templateUrl: './edit-sucursal.component.html',
@@ -35,28 +37,71 @@ export class EditSucursalComponent {
     this.state = this.SUCURSAL_SELECTED.state;
   }
 
-  store(){
-    if(!this.name){
-      this.toast.error("Validación","El nombre de la sucursal es requerido");
+  store() {
+    if (!this.name) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El nombre de la sucursal es requerido',
+        timer: 3000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
       return false;
     }
 
     let data = {
       name: this.name,
-      address:this.address,
+      address: this.address,
       state: this.state,
-    }
+    };
 
-    this.sucursalService.updateSucursal(this.SUCURSAL_SELECTED.id,data).subscribe((resp:any) => {
-      console.log(resp);
-      if(resp.message == 403){
-        this.toast.error("Validación",resp.message_text);
-      }else{
-        this.toast.success("Exito","La sucursal se edito correctamente");
-        this.SucursalE.emit(resp.sucursal);
-        this.modal.close();
-      }
-    })
+    this.sucursalService.updateSucursal(this.SUCURSAL_SELECTED.id, data)
+      .subscribe({
+        next: (resp: any) => {
+          console.log(resp);
+
+          if (resp.message == 403) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Validación',
+              text: resp.message_text,
+              timer: 3000,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+          } else {
+            Swal.fire({
+              icon: 'success',
+              title: 'Sucursal editada',
+              text: 'La sucursal se editó correctamente',
+              timer: 3000,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+
+            this.SucursalE.emit(resp.sucursal);
+            this.modal.close();
+          }
+        },
+
+        error: (err) => {
+          console.error(err);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo actualizar la sucursal',
+            timer: 3000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+        }
+      });
   }
-  
+
+
 }

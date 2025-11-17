@@ -2,175 +2,317 @@
   class="d-flex flex-column bgi-no-repeat rounded-top"
   [style.background-image]="'url(./assets/media/misc/menu-header-bg.jpg)'"
 >
-  <h3 class="text-white fw-bold px-9 mt-10 mb-6">
-    Notifications <span class="fs-8 opacity-75 ps-3">24 reports</span>
-  </h3>
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between px-9 mt-10 mb-6">
+    <h3 class="text-white fw-bold m-0">
+      Notificaciones
+      <span *ngIf="unreadCount > 0" class="badge badge-danger ms-2">{{ unreadCount }}</span>
+    </h3>
+    
+    <!-- Acciones -->
+    <div class="d-flex">
+      <button
+        *ngIf="unreadCount > 0"
+        class="btn btn-sm btn-icon btn-active-light-primary me-2"
+        (click)="markAllAsRead()"
+        title="Marcar todas como leídas"
+      >
+        <app-keenicon name="double-check" class="fs-3 text-white"></app-keenicon>
+      </button>
+      
+      <button
+        class="btn btn-sm btn-icon btn-active-light-primary"
+        (click)="refresh()"
+        [disabled]="isLoading"
+        title="Refrescar"
+      >
+        <app-keenicon 
+          name="arrows-circle" 
+          class="fs-3 text-white"
+          [ngClass]="{'spinner-border spinner-border-sm': isLoading}"
+        ></app-keenicon>
+      </button>
+    </div>
+  </div>
 
+  <!-- Tabs -->
   <ul class="nav nav-line-tabs nav-line-tabs-2x nav-stretch fw-bold px-9">
-    <li class ="nav-item">
+    <li class="nav-item">
       <a
-        class="
-          nav-link
-          text-white
-          opacity-75 opacity-state-100
-          pb-4
-          cursor-pointer
-        "
+        class="nav-link text-white opacity-75 opacity-state-100 pb-4 cursor-pointer"
         data-bs-toggle="tab"
         [ngClass]="activeTabId === 'kt_topbar_notifications_1' ? 'active' : ''"
         (click)="setActiveTabId('kt_topbar_notifications_1')"
       >
-        Alerts
+        Todas
+        <span class="badge badge-light-primary ms-2">{{ notifications.length }}</span>
       </a>
     </li>
 
     <li class="nav-item">
       <a
-        class="
-          nav-link
-          text-white
-          opacity-75 opacity-state-100
-          pb-4
-          cursor-pointer
-        "
+        class="nav-link text-white opacity-75 opacity-state-100 pb-4 cursor-pointer"
         data-bs-toggle="tab"
         [ngClass]="activeTabId === 'kt_topbar_notifications_2' ? 'active' : ''"
         (click)="setActiveTabId('kt_topbar_notifications_2')"
       >
-        Updates
+        No leídas
+        <span *ngIf="unreadCount > 0" class="badge badge-danger ms-2">{{ unreadCount }}</span>
       </a>
     </li>
 
     <li class="nav-item">
       <a
-        class="
-          nav-link
-          text-white
-          opacity-75 opacity-state-100
-          pb-4
-          cursor-pointer
-        "
+        class="nav-link text-white opacity-75 opacity-state-100 pb-4 cursor-pointer"
         data-bs-toggle="tab"
         [ngClass]="activeTabId === 'kt_topbar_notifications_3' ? 'active' : ''"
         (click)="setActiveTabId('kt_topbar_notifications_3')"
       >
-        Logs
+        Leídas
+        <span class="badge badge-light ms-2">{{ readNotifications.length }}</span>
       </a>
     </li>
   </ul>
 </div>
 
 <div class="tab-content">
+  <!-- Tab 1: Todas las notificaciones -->
   <div
     class="tab-pane fade"
     id="kt_topbar_notifications_1"
     role="tabpanel"
     [ngClass]="activeTabId === 'kt_topbar_notifications_1' ? 'show active' : ''"
   >
-    <div class="scroll-y mh-325px my-5 px-8">
-      <div *ngFor="let alert of alerts" class="d-flex flex-stack py-4">
-        <div class="d-flex align-items-center">
-          <div class="symbol symbol-35px me-4">
-            <span class="symbol-label" [ngClass]="'bg-light-' + alert.state">
-              <span
-                [inlineSVG]="'./assets/media/' + alert.icon"
-                class="svg-icon fs-2"
-                [ngClass]="'svg-icon-' + alert.state"
-              ></span>
-            </span>
-          </div>
-
-          <div class="mb-0 me-2">
-            <a href="#" class="fs-6 text-gray-800 text-hover-primary fw-bolder">
-              {{ alert.title }}
-            </a>
-            <div class="text-gray-500 fs-7">{{ alert.description }}</div>
-          </div>
-        </div>
-
-        <span class="badge badge-light fs-8">{{ alert.time }}</span>
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="text-center py-10">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
       </div>
     </div>
 
-    <div class="py-3 text-center border-top">
-      <a
-        routerLink="/crafted/pages/profile"
-        class="btn btn-color-gray-600 btn-active-color-primary"
+    <!-- Error -->
+    <div *ngIf="error && !isLoading" class="alert alert-danger m-5">
+      {{ error }}
+    </div>
+
+    <!-- Sin notificaciones -->
+    <div *ngIf="!isLoading && notifications.length === 0 && !error" class="text-center py-10">
+      <app-keenicon name="notification-status" class="fs-3x text-muted mb-5"></app-keenicon>
+      <p class="text-gray-600 fw-bold fs-5">No tienes notificaciones</p>
+    </div>
+
+    <!-- Lista de notificaciones -->
+    <div *ngIf="!isLoading && notifications.length > 0" class="scroll-y mh-325px my-5 px-8">
+      <div 
+        *ngFor="let notification of notifications" 
+        class="d-flex flex-stack py-4 cursor-pointer hover-bg-light-primary rounded px-3"
+        [ngClass]="{'bg-light-primary': !notification.is_read}"
+        (click)="goToTarea(notification)"
       >
-        View All
+        <div class="d-flex align-items-start flex-grow-1">
+          <!-- Icon -->
+          <div class="symbol symbol-40px me-4">
+            <span class="symbol-label" [ngClass]="getIconClass(notification)">
+              <app-keenicon 
+                [name]="notification.icon" 
+                class="fs-2"
+                [ngClass]="'text-' + notification.color"
+              ></app-keenicon>
+            </span>
+          </div>
+
+          <!-- Content -->
+          <div class="mb-0 me-2 flex-grow-1">
+            <div class="d-flex align-items-center mb-1">
+              <span class="fs-6 text-gray-900 fw-bold me-2">{{ notification.title }}</span>
+              <span 
+                *ngIf="!notification.is_read" 
+                class="badge badge-circle badge-danger w-5px h-5px"
+              ></span>
+            </div>
+            
+            <div class="text-gray-700 fs-7 mb-2">{{ notification.message }}</div>
+            
+            <!-- User avatar (si existe) -->
+            <div *ngIf="notification.from_user" class="d-flex align-items-center">
+              <div class="symbol symbol-25px me-2">
+                <img [src]="notification.from_user.avatar" [alt]="notification.from_user.name" />
+              </div>
+              <span class="text-gray-600 fs-8">{{ notification.from_user.name }}</span>
+            </div>
+            
+            <!-- Time -->
+            <div class="text-gray-500 fs-8 mt-1">
+              <app-keenicon name="time" class="fs-7 me-1"></app-keenicon>
+              {{ notification.created_at }}
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="d-flex flex-column align-items-end">
+            <button
+              *ngIf="!notification.is_read"
+              class="btn btn-sm btn-icon btn-active-light-primary mb-2"
+              (click)="markAsRead(notification, $event)"
+              title="Marcar como leída"
+            >
+              <app-keenicon name="check" class="fs-4"></app-keenicon>
+            </button>
+            
+            <button
+              class="btn btn-sm btn-icon btn-active-light-danger"
+              (click)="deleteNotification(notification.id, $event)"
+              title="Eliminar"
+            >
+              <app-keenicon name="trash" class="fs-4"></app-keenicon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div *ngIf="!isLoading && notifications.length > 0" class="py-3 text-center border-top">
+      <button
+        class="btn btn-color-gray-600 btn-active-color-primary"
+        (click)="refresh()"
+      >
+        Ver más
         <app-keenicon name="arrow-right" class="fs-5"></app-keenicon>
-      </a>
+      </button>
     </div>
   </div>
 
+  <!-- Tab 2: No leídas -->
   <div
     class="tab-pane fade"
     id="kt_topbar_notifications_2"
     role="tabpanel"
     [ngClass]="activeTabId === 'kt_topbar_notifications_2' ? 'show active' : ''"
   >
-    <div class="d-flex flex-column px-9">
-      <div class="pt-10 pb-0">
-        <h3 class="text-gray-900 text-center fw-bolder">Get Pro Access</h3>
+    <!-- Sin notificaciones no leídas -->
+    <div *ngIf="unreadNotifications.length === 0" class="text-center py-10">
+      <app-keenicon name="verify" class="fs-3x text-success mb-5"></app-keenicon>
+      <p class="text-gray-600 fw-bold fs-5">¡Estás al día!</p>
+      <p class="text-gray-500 fs-7">No tienes notificaciones sin leer</p>
+    </div>
 
-        <div class="text-center text-gray-600 fw-bold pt-1">
-          Outlines keep you honest. They stoping you from amazing poorly about
-          drive
-        </div>
+    <!-- Lista de notificaciones no leídas -->
+    <div *ngIf="unreadNotifications.length > 0" class="scroll-y mh-325px my-5 px-8">
+      <div 
+        *ngFor="let notification of unreadNotifications" 
+        class="d-flex flex-stack py-4 cursor-pointer hover-bg-light-primary rounded px-3 bg-light-primary"
+        (click)="goToTarea(notification)"
+      >
+        <div class="d-flex align-items-start flex-grow-1">
+          <div class="symbol symbol-40px me-4">
+            <span class="symbol-label" [ngClass]="getIconClass(notification)">
+              <app-keenicon 
+                [name]="notification.icon" 
+                class="fs-2"
+                [ngClass]="'text-' + notification.color"
+              ></app-keenicon>
+            </span>
+          </div>
 
-        <div class="text-center mt-5 mb-9">
-          <a
-            class="btn btn-sm btn-primary px-6 cursor-pointer"
-            data-bs-toggle="modal"
-            data-bs-target="#kt_modal_upgrade_plan"
-          >
-            Upgrade
-          </a>
+          <div class="mb-0 me-2 flex-grow-1">
+            <div class="d-flex align-items-center mb-1">
+              <span class="fs-6 text-gray-900 fw-bold me-2">{{ notification.title }}</span>
+              <span class="badge badge-circle badge-danger w-5px h-5px"></span>
+            </div>
+            <div class="text-gray-700 fs-7 mb-2">{{ notification.message }}</div>
+            <div class="text-gray-500 fs-8">
+              <app-keenicon name="time" class="fs-7 me-1"></app-keenicon>
+              {{ notification.created_at }}
+            </div>
+          </div>
+
+          <div class="d-flex flex-column">
+            <button
+              class="btn btn-sm btn-icon btn-active-light-primary mb-2"
+              (click)="markAsRead(notification, $event)"
+            >
+              <app-keenicon name="check" class="fs-4"></app-keenicon>
+            </button>
+            <button
+              class="btn btn-sm btn-icon btn-active-light-danger"
+              (click)="deleteNotification(notification.id, $event)"
+            >
+              <app-keenicon name="trash" class="fs-4"></app-keenicon>
+            </button>
+          </div>
         </div>
       </div>
+    </div>
 
-      <div class="text-center px-4">
-        <img
-          class="mw-100 mh-200px"
-          alt="metronic"
-          src="./assets/media/illustrations/sketchy-1/1.png"
-        />
-      </div>
+    <div *ngIf="unreadNotifications.length > 0" class="py-3 text-center border-top">
+      <button
+        class="btn btn-color-gray-600 btn-active-color-primary"
+        (click)="markAllAsRead()"
+      >
+        Marcar todas como leídas
+        <app-keenicon name="double-check" class="fs-5 ms-2"></app-keenicon>
+      </button>
     </div>
   </div>
 
+  <!-- Tab 3: Leídas -->
   <div
     class="tab-pane fade"
     id="kt_topbar_notifications_3"
     role="tabpanel"
     [ngClass]="activeTabId === 'kt_topbar_notifications_3' ? 'show active' : ''"
   >
-    <div class="scroll-y mh-325px my-5 px-8">
-      <div *ngFor="let log of logs" class="d-flex flex-stack py-4">
-        <div class="d-flex align-items-center me-2">
-          <span
-            class="w-70px badge"
-            [ngClass]="'badge-light-' + log.state + ' me-4'"
+    <!-- Sin notificaciones leídas -->
+    <div *ngIf="readNotifications.length === 0" class="text-center py-10">
+      <app-keenicon name="file-deleted" class="fs-3x text-muted mb-5"></app-keenicon>
+      <p class="text-gray-600 fw-bold fs-5">No hay notificaciones leídas</p>
+    </div>
+
+    <!-- Lista de notificaciones leídas -->
+    <div *ngIf="readNotifications.length > 0" class="scroll-y mh-325px my-5 px-8">
+      <div 
+        *ngFor="let notification of readNotifications" 
+        class="d-flex flex-stack py-4 cursor-pointer hover-bg-light rounded px-3"
+        (click)="goToTarea(notification)"
+      >
+        <div class="d-flex align-items-start flex-grow-1">
+          <div class="symbol symbol-40px me-4">
+            <span class="symbol-label bg-light-secondary">
+              <app-keenicon 
+                [name]="notification.icon" 
+                class="fs-2 text-secondary"
+              ></app-keenicon>
+            </span>
+          </div>
+
+          <div class="mb-0 me-2 flex-grow-1">
+            <span class="fs-6 text-gray-700 fw-bold d-block mb-1">{{ notification.title }}</span>
+            <div class="text-gray-600 fs-7 mb-2">{{ notification.message }}</div>
+            <div class="text-gray-500 fs-8">
+              <app-keenicon name="time" class="fs-7 me-1"></app-keenicon>
+              {{ notification.created_at }}
+            </div>
+          </div>
+
+          <button
+            class="btn btn-sm btn-icon btn-active-light-danger"
+            (click)="deleteNotification(notification.id, $event)"
           >
-            {{ log.code }}
-          </span>
-
-          <a class="text-gray-800 text-hover-primary fw-bold cursor-pointer">
-            {{ log.message }}
-          </a>
-
-          <span class="badge badge-light fs-8">{{ log.time }}</span>
+            <app-keenicon name="trash" class="fs-4"></app-keenicon>
+          </button>
         </div>
       </div>
     </div>
-    <div class="py-3 text-center border-top">
-      <a
-        routerLink="/crafted/pages/profile"
+
+    <div *ngIf="readNotifications.length > 0" class="py-3 text-center border-top">
+      <button
         class="btn btn-color-gray-600 btn-active-color-primary"
+        (click)="deleteAllRead()"
       >
-        View All
-        <app-keenicon name="arrow-right" class="fs-5"></app-keenicon>
-      </a>
+        Eliminar todas las leídas
+        <app-keenicon name="trash" class="fs-5 ms-2"></app-keenicon>
+      </button>
     </div>
   </div>
 </div>

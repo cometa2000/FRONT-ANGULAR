@@ -3,6 +3,8 @@ import { SucursalService } from '../service/sucursal.service';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-create-sucursal',
   templateUrl: './create-sucursal.component.html',
@@ -30,27 +32,69 @@ export class CreateSucursalComponent {
     
   }
 
-  store(){
-    if(!this.name){
-      this.toast.error("Validación","El nombre de la sucursal es requerido");
+  store() {
+    if (!this.name) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El nombre de la sucursal es requerido',
+        timer: 3000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
       return false;
     }
 
     let data = {
       name: this.name,
-      address:this.address,
-    }
+      address: this.address,
+    };
 
-    this.sucursalService.registerSucursal(data).subscribe((resp:any) => {
-      console.log(resp);
-      if(resp.message == 403){
-        this.toast.error("Validación",resp.message_text);
-      }else{
-        this.toast.success("Exito","La sucursal se registro correctamente");
-        this.SucursalC.emit(resp.sucursal);
-        this.modal.close();
+    this.sucursalService.registerSucursal(data).subscribe({
+      next: (resp: any) => {
+        console.log(resp);
+
+        if (resp.message == 403) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Validación',
+            text: resp.message_text,
+            timer: 3000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+        } else {
+          Swal.fire({
+            icon: 'success',
+            title: 'Sucursal registrada',
+            text: 'La sucursal se registró correctamente',
+            timer: 3000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+
+          this.SucursalC.emit(resp.sucursal);
+          this.modal.close();
+        }
+      },
+
+      error: (err) => {
+        console.error(err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Ocurrió un problema al guardar la sucursal',
+          timer: 3000,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
       }
-    })
+    });
   }
+
 
 }

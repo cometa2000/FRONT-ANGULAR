@@ -249,6 +249,7 @@ export class TableroTareasComponent implements OnInit {
       this.LISTAS.push(lista);
       this.toastr.success('Lista creada exitosamente', 'Éxito');
       this.cdr.detectChanges();
+      modalRef.close();
     });
   }
 
@@ -414,11 +415,17 @@ export class TableroTareasComponent implements OnInit {
               tarea.comentarios_count = tarea.comentarios?.length || 0;
             }
             
+            // 🆕 SOLUCIÓN: Procesar miembros asignados
+            if (!Array.isArray(tarea.assigned_members)) {
+              tarea.assigned_members = [];
+            }
+            
             console.log(`✅ Tarea procesada: ${tarea.name}`, {
               etiquetas: tarea.etiquetas.length,
               adjuntos: tarea.adjuntos.archivos.length + tarea.adjuntos.enlaces.length,
               checklists: tarea.checklists.length,
-              comentarios: tarea.comentarios_count
+              comentarios: tarea.comentarios_count,
+              miembros: tarea.assigned_members.length
             });
             
             return {
@@ -467,7 +474,7 @@ export class TableroTareasComponent implements OnInit {
       this.getTotalAdjuntos(tarea) > 0 ||
       this.getTotalChecklistItems(tarea) > 0 ||
       this.getTotalComentarios(tarea) > 0 ||
-      !!tarea.user
+      (tarea.assigned_members && tarea.assigned_members.length > 0)
     );
   }
 

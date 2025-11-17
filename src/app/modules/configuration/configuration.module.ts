@@ -10,6 +10,7 @@ import { MethodPaymentModule } from './method-payment/method-payment.module';
 import { ClientSegmentModule } from './client-segment/client-segment.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { ProvidersModule } from './providers/providers.module';
+import { GComissionsModule } from './g-comissions/g-comissions.module';
 
 
 @NgModule({
@@ -25,7 +26,8 @@ import { ProvidersModule } from './providers/providers.module';
     MethodPaymentModule,
     ClientSegmentModule,
     ProductCategoriesModule,
-    ProvidersModule
+    ProvidersModule,
+    GComissionsModule
   ]
 })
 export class ConfigurationModule { }

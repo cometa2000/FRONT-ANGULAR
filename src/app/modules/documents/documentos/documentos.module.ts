@@ -11,6 +11,8 @@ import { HttpClientModule } from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgbModule, NgbModalModule, NgbPaginationModule } from '@ng-bootstrap/ng-bootstrap';
 import { InlineSVGModule } from 'ng-inline-svg-2';
+import { CreateFolderComponent } from './create-folder/create-folder.component';
+import { DocumentViewerComponent } from './document-viewer/document-viewer.component';
 
 
 @NgModule({
@@ -20,6 +22,8 @@ import { InlineSVGModule } from 'ng-inline-svg-2';
     DeleteDocumentoComponent,
     EditDocumentoComponent,
     ListDocumentoComponent,
+    CreateFolderComponent,
+    DocumentViewerComponent,
   ],
   imports: [
     CommonModule,

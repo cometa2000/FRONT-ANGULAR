@@ -1,71 +1,217 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http'; 
-import { Injectable } from '@angular/core'; 
-import { BehaviorSubject, finalize, Observable } from 'rxjs'; 
-import { URL_SERVICIOS } from 'src/app/config/config'; 
-import { AuthService } from 'src/app/modules/auth'; 
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { BehaviorSubject, Observable, finalize } from 'rxjs';
+import { URL_SERVICIOS } from 'src/app/config/config';
 
-@Injectable({ 
-  providedIn: 'root' 
-}) 
-export class VistaDocumentoService { 
-  isLoading$: Observable<boolean>; 
-  isLoadingSubject: BehaviorSubject<boolean>; 
+@Injectable({
+  providedIn: 'root'
+})
+export class VistaDocumentoService {
   
+  isLoading$: Observable<boolean>;
+  isLoadingSubject: BehaviorSubject<boolean>;
+
   constructor(
-    private http: HttpClient, 
-    public authservice: AuthService,
-  ) { 
-    this.isLoadingSubject = new BehaviorSubject<boolean>(false); 
-    this.isLoading$ = this.isLoadingSubject.asObservable(); 
-  } 
-  
-  registerViewDocumento(data: any) { 
-    this.isLoadingSubject.next(true); 
-    let headers = new HttpHeaders({ 'Authorization': 'Bearer ' + this.authservice.token }); 
-    let URL = URL_SERVICIOS + "/documentos"; 
+    private http: HttpClient,
+  ) {
+    this.isLoadingSubject = new BehaviorSubject<boolean>(false);
+    this.isLoading$ = this.isLoadingSubject.asObservable();
+  }
 
-    return this.http.post(URL, data, { headers: headers }).pipe(
-      finalize(() => this.isLoadingSubject.next(false))
-    ); 
-  } 
-  
-  listViewDocumentos(page = 1, search: string = '') { 
-    this.isLoadingSubject.next(true); 
-    let headers = new HttpHeaders({ 'Authorization': 'Bearer ' + this.authservice.token }); 
-    let URL = URL_SERVICIOS + "/documentos?page=" + page + "&search=" + search; 
+  /**
+   * Obtener headers con token de autenticación
+   */
+  private getHeaders(): HttpHeaders {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     
-    return this.http.get(URL, { headers: headers }).pipe(
-      finalize(() => this.isLoadingSubject.next(false))
-    ); 
-  } 
-  
-  configAll() { 
-    this.isLoadingSubject.next(true); 
-    let headers = new HttpHeaders({ 'Authorization': 'Bearer ' + this.authservice.token }); 
-    let URL = URL_SERVICIOS + "/documentos/config"; 
+    if (!token) {
+      console.error('No se encontró token de autenticación');
+    }
 
-    return this.http.get(URL, { headers: headers }).pipe(
-      finalize(() => this.isLoadingSubject.next(false))
-    ); 
-  } 
-  
-  updateViewDocumento(ID_USER: string, data: any) { 
-    this.isLoadingSubject.next(true); 
-    let headers = new HttpHeaders({ 'Authorization': 'Bearer ' + this.authservice.token }); 
-    let URL = URL_SERVICIOS + "/documentos/" + ID_USER; 
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    });
+  }
+
+  /**
+   * Obtener headers para FormData (sin Content-Type)
+   */
+  private getHeadersForFormData(): HttpHeaders {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     
-    return this.http.post(URL, data, { headers: headers }).pipe(
-      finalize(() => this.isLoadingSubject.next(false))
-    ); 
-  } 
-  
-  deleteViewDocumento(ID_USER: string) { 
-    this.isLoadingSubject.next(true); 
-    let headers = new HttpHeaders({ 'Authorization': 'Bearer ' + this.authservice.token }); 
-    let URL = URL_SERVICIOS + "/documentos/" + ID_USER; 
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    });
+  }
+
+  /**
+   * Listar documentos (con filtros opcionales)
+   */
+  listViewDocumentos(page = 1, search: string = '', sucursale_id?: number, parent_id?: number | null) {
+    this.isLoadingSubject.next(true);
     
-    return this.http.delete(URL, { headers: headers }).pipe(
+    let params: any = {
+      page: page.toString(),
+      search: search
+    };
+
+    if (sucursale_id) {
+      params.sucursale_id = sucursale_id.toString();
+    }
+
+    if (parent_id !== undefined) {
+      params.parent_id = parent_id === null ? 'null' : parent_id.toString();
+    }
+
+    let URL = URL_SERVICIOS + "/documentos";
+    
+    return this.http.get(URL, { 
+      params,
+      headers: this.getHeaders() // ← AGREGAR HEADERS
+    }).pipe(
       finalize(() => this.isLoadingSubject.next(false))
-    ); 
-  } 
+    );
+  }
+
+  /**
+   * Obtener estructura de árbol completa de una sucursal
+   */
+  getTree(sucursale_id: number): Observable<any> {
+    this.isLoadingSubject.next(true);
+    let URL = URL_SERVICIOS + "/documentos/tree";
+    
+    return this.http.get(URL, { 
+      params: { sucursale_id: sucursale_id.toString() },
+      headers: this.getHeaders() // ← AGREGAR HEADERS
+    }).pipe(
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
+  /**
+   * Obtener contenido de una carpeta específica
+   */
+  getFolderContents(folderId: number): Observable<any> {
+    this.isLoadingSubject.next(true);
+    let URL = URL_SERVICIOS + `/documentos/folder/${folderId}`;
+    
+    return this.http.get(URL, {
+      headers: this.getHeaders() // ← AGREGAR HEADERS
+    }).pipe(
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
+  /**
+   * Crear carpeta
+   */
+  createFolder(data: any): Observable<any> {
+    this.isLoadingSubject.next(true);
+    let URL = URL_SERVICIOS + "/documentos/folder";
+    
+    return this.http.post(URL, data, {
+      headers: this.getHeaders() // ← AGREGAR HEADERS
+    }).pipe(
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
+  /**
+   * Subir archivo
+   */
+  uploadFile(data: FormData): Observable<any> {
+    this.isLoadingSubject.next(true);
+    let URL = URL_SERVICIOS + "/documentos";
+    
+    return this.http.post(URL, data, {
+      headers: this.getHeadersForFormData() // ← HEADERS SIN Content-Type para FormData
+    }).pipe(
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
+  /**
+   * Mover documento/carpeta (drag and drop)
+   */
+  moveDocument(documentId: number, data: any): Observable<any> {
+    this.isLoadingSubject.next(true);
+    let URL = URL_SERVICIOS + `/documentos/${documentId}/move`;
+    
+    return this.http.post(URL, data, {
+      headers: this.getHeaders() // ← AGREGAR HEADERS
+    }).pipe(
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
+  /**
+   * Actualizar documento/carpeta
+   */
+  updateDocument(documentId: number, data: any): Observable<any> {
+    this.isLoadingSubject.next(true);
+    let URL = URL_SERVICIOS + `/documentos/${documentId}`;
+    
+    return this.http.put(URL, data, {
+      headers: this.getHeaders() // ← AGREGAR HEADERS
+    }).pipe(
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
+  /**
+   * Eliminar documento/carpeta
+   */
+  deleteDocument(documentId: number): Observable<any> {
+    this.isLoadingSubject.next(true);
+    let URL = URL_SERVICIOS + `/documentos/${documentId}`;
+    
+    return this.http.delete(URL, {
+      headers: this.getHeaders() // ← AGREGAR HEADERS
+    }).pipe(
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
+  /**
+   * Obtener configuración (sucursales, roles, etc.)
+   */
+  getConfig(): Observable<any> {
+    let URL = URL_SERVICIOS + "/documentos/config";
+    
+    return this.http.get(URL, {
+      headers: this.getHeaders() // ← AGREGAR HEADERS
+    });
+  }
+
+  /**
+   * Descargar documento
+   */
+  downloadDocument(documentId: number): Observable<Blob> {
+    this.isLoadingSubject.next(true);
+    let URL = URL_SERVICIOS + `/documentos/${documentId}/download`;
+    
+    return this.http.get(URL, {
+      headers: this.getHeaders(),
+      responseType: 'blob' // ← Importante
+    }).pipe(
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
+  /**
+   * Obtener información del documento para el visor
+   */
+  getDocumentInfo(documentId: number): Observable<any> {
+    this.isLoadingSubject.next(true);
+    let URL = URL_SERVICIOS + `/documentos/${documentId}/info`;
+    
+    return this.http.get(URL, {
+      headers: this.getHeaders()
+    }).pipe(
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
 }
