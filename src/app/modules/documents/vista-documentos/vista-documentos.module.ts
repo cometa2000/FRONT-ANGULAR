@@ -11,6 +11,7 @@ import { NgbModule, NgbModalModule, NgbPaginationModule } from '@ng-bootstrap/ng
 import { InlineSVGModule } from 'ng-inline-svg-2';
 import { ViewVistaDocumentoComponent } from './view-vista-documento/view-vista-documento.component';
 import { SharedModule } from 'src/app/shared/shared.module';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 
 @NgModule({
@@ -23,6 +24,7 @@ import { SharedModule } from 'src/app/shared/shared.module';
     CommonModule,
     VistaDocumentosRoutingModule,
     SharedModule,
+    DragDropModule,
 
     HttpClientModule,
     FormsModule,

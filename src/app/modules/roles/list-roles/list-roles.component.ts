@@ -79,4 +79,33 @@ export class ListRolesComponent {
       // this.ROLES.unshift(role);
     })
   }
+
+  formatPermissions(permissions: any): string[] {
+
+    if (!permissions) return [];
+
+    // Si ya viene como arreglo:
+    if (Array.isArray(permissions)) {
+      return permissions.map(p => this.formatPermissionName(p));
+    }
+
+    // Si viene como string separado por comas:
+    if (typeof permissions === 'string') {
+      return permissions.split(',').map(p => this.formatPermissionName(p.trim()));
+    }
+
+    return [];
+  }
+
+  formatPermissionName(permission: string): string {
+    if (!permission) return "";
+
+    return permission
+      .split('_')
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+
+  
+  
 }

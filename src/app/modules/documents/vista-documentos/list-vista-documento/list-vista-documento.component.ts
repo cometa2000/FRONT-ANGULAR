@@ -1,14 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { VistaDocumentoService } from '../service/vista-documento.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DeleteDocumentoComponent } from '../../documentos/delete-documento/delete-documento.component';
 import { ViewVistaDocumentoComponent } from '../view-vista-documento/view-vista-documento.component';
 import { CreateFolderComponent } from '../../documentos/create-folder/create-folder.component';
-// NUEVO: Importar componente visor (si ya lo creaste)
-// Si aún no tienes este componente, comenta esta línea
-// import { DocumentViewerComponent } from '../../documentos/document-viewer/document-viewer.component';
-import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { CdkDragEnd, CdkDragMove } from '@angular/cdk/drag-drop';
+import { forkJoin } from 'rxjs';
 import Swal from 'sweetalert2';
 
 interface BreadcrumbItem {
@@ -33,9 +30,22 @@ export class ListVistaDocumentoComponent implements OnInit {
   // Breadcrumb para navegación
   breadcrumb: BreadcrumbItem[] = [];
 
-  // Para drag and drop
-  draggedItem: any = null;
+  // Selección múltiple
+  selectedDocuments: any[] = [];
+
+  // Drag & Drop (CDK)
   isDragging: boolean = false;
+  draggedItems: any[] = [];
+  dragPreviewVisible: boolean = false;
+  dragPreviewPosition = { x: 0, y: 0 };
+
+  hoverFolderId: number | null = null;
+  isOverRoot: boolean = false;
+
+  // Para evitar que un drop dispare el click (abrir doc/carpeta)
+  private dragEndedRecently: boolean = false;
+
+  @ViewChild('rootDropZone', { static: false }) rootDropZone?: ElementRef<HTMLDivElement>;
 
   constructor(
     public modalService: NgbModal,
@@ -51,6 +61,7 @@ export class ListVistaDocumentoComponent implements OnInit {
       this.sucursalId = Number(params.get('sucursalId'));
       this.currentFolderId = null;
       this.breadcrumb = [{ id: null, name: 'Raíz' }];
+      this.selectedDocuments = [];
       this.listDocumentos();
     });
   }
@@ -68,6 +79,7 @@ export class ListVistaDocumentoComponent implements OnInit {
       next: (resp: any) => {
         this.DOCUMENTOS = resp.documentos;
         this.currentPage = page;
+        this.selectedDocuments = [];
       },
       error: (err) => {
         console.error('Error loading documents:', err);
@@ -91,6 +103,7 @@ export class ListVistaDocumentoComponent implements OnInit {
       id: folder.id,
       name: folder.name
     });
+    this.selectedDocuments = [];
     this.listDocumentos();
   }
 
@@ -101,6 +114,7 @@ export class ListVistaDocumentoComponent implements OnInit {
     const item = this.breadcrumb[index];
     this.currentFolderId = item.id;
     this.breadcrumb = this.breadcrumb.slice(0, index + 1);
+    this.selectedDocuments = [];
     this.listDocumentos();
   }
 
@@ -112,6 +126,7 @@ export class ListVistaDocumentoComponent implements OnInit {
       this.breadcrumb.pop();
       const parent = this.breadcrumb[this.breadcrumb.length - 1];
       this.currentFolderId = parent.id;
+      this.selectedDocuments = [];
       this.listDocumentos();
     }
   }
@@ -141,44 +156,8 @@ export class ListVistaDocumentoComponent implements OnInit {
     });
   }
 
-  // ========== NUEVO: MÉTODOS PARA VISUALIZACIÓN Y DESCARGA ==========
+  // ========== VISUALIZACIÓN Y DESCARGA ==========
 
-  /**
-   * Ver o abrir documento (dependiendo si es carpeta o archivo)
-   * Este es el método que faltaba y causaba el error
-   */
-  viewOrOpenDocument(DOCUMENTO: any) {
-    if (DOCUMENTO.type === 'folder') {
-      this.openFolder(DOCUMENTO);
-    } else {
-      // Opción 1: Si ya tienes el DocumentViewerComponent
-      // this.openDocumentViewer(DOCUMENTO);
-      
-      // Opción 2: Mientras no tengas el visor, usa el viewer antiguo
-      this.viewDocumento(DOCUMENTO);
-    }
-  }
-
-  /**
-   * Abrir visor de documentos (nuevo componente)
-   * Descomenta esto cuando tengas DocumentViewerComponent
-   */
-  /*
-  openDocumentViewer(DOCUMENTO: any) {
-    const modalRef = this.modalService.open(DocumentViewerComponent, {
-      centered: true,
-      size: 'xl',
-      backdrop: 'static',
-      keyboard: false
-    });
-    
-    modalRef.componentInstance.DOCUMENTO_SELECTED = DOCUMENTO;
-  }
-  */
-
-  /**
-   * Ver documento (método original - mantener por compatibilidad)
-   */
   viewDocumento(DOCUMENTO: any) {
     if (DOCUMENTO.type === 'folder') {
       this.openFolder(DOCUMENTO);
@@ -191,10 +170,6 @@ export class ListVistaDocumentoComponent implements OnInit {
     }
   }
 
-  /**
-   * Descargar documento directamente
-   * NUEVO MÉTODO
-   */
   downloadDocument(DOCUMENTO: any) {
     if (DOCUMENTO.type === 'folder') {
       Swal.fire({
@@ -209,16 +184,11 @@ export class ListVistaDocumentoComponent implements OnInit {
 
     this.viewDocumentoService.downloadDocument(DOCUMENTO.id).subscribe({
       next: (blob: Blob) => {
-        // Crear URL temporal para el blob
         const url = window.URL.createObjectURL(blob);
-        
-        // Crear link temporal y hacer click
         const link = document.createElement('a');
         link.href = url;
         link.download = DOCUMENTO.name;
         link.click();
-        
-        // Limpiar
         window.URL.revokeObjectURL(url);
         
         Swal.fire({
@@ -241,8 +211,6 @@ export class ListVistaDocumentoComponent implements OnInit {
       }
     });
   }
-
-  // ========== FIN MÉTODOS NUEVOS ==========
 
   /**
    * Eliminar documento o carpeta
@@ -270,6 +238,7 @@ export class ListVistaDocumentoComponent implements OnInit {
               if (INDEX !== -1) {
                 this.DOCUMENTOS.splice(INDEX, 1);
               }
+              this.selectedDocuments = this.selectedDocuments.filter(d => d.id !== DOCUMENTO.id);
               Swal.fire({
                 icon: 'success',
                 title: 'Eliminado',
@@ -292,125 +261,177 @@ export class ListVistaDocumentoComponent implements OnInit {
     });
   }
 
-  // ========== DRAG AND DROP ==========
+  // ========== SELECCIÓN MÚLTIPLE ==========
 
-  /**
-   * Inicio del arrastre
-   */
-  onDragStart(event: DragEvent, item: any) {
-    this.draggedItem = item;
+  isSelected(documento: any): boolean {
+    return this.selectedDocuments.some(d => d.id === documento.id);
+  }
+
+  toggleSelection(documento: any, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const checked = input.checked;
+
+    if (checked) {
+      if (!this.isSelected(documento)) {
+        this.selectedDocuments.push(documento);
+      }
+    } else {
+      this.selectedDocuments = this.selectedDocuments.filter(d => d.id !== documento.id);
+    }
+  }
+
+  // Click en la tarjeta (separado del drag)
+  onCardClick(documento: any, event: MouseEvent): void {
+    // Si venimos de un drag, NO abrir nada
+    if (this.isDragging || this.dragEndedRecently) {
+      event.stopPropagation();
+      return;
+    }
+    this.viewDocumento(documento);
+  }
+
+  // ========== DRAG & DROP (CDK) ==========
+
+  onDragStarted(item: any) {
     this.isDragging = true;
-    event.dataTransfer!.effectAllowed = 'move';
-    event.dataTransfer!.setData('text/html', event.target as any);
+    this.hoverFolderId = null;
+    this.isOverRoot = false;
+
+    // Si hay selección múltiple y el item está seleccionado -> arrastramos grupo
+    if (this.selectedDocuments.length > 0 && this.isSelected(item)) {
+      this.draggedItems = [...this.selectedDocuments];
+    } else {
+      this.draggedItems = [item];
+    }
+
+    this.dragPreviewVisible = true;
+    this.dragEndedRecently = false;
   }
 
-  /**
-   * Fin del arrastre
-   */
-  onDragEnd(event: DragEvent) {
+  onDragMoved(event: CdkDragMove<any>) {
+    const { x, y } = event.pointerPosition;
+    // Mover el badge flotante un poco desfasado del cursor
+    this.dragPreviewPosition = { x: x + 18, y: y + 18 };
+
+    this.hoverFolderId = null;
+    this.isOverRoot = false;
+
+    // Detectar carpeta debajo del cursor
+    const element = document.elementFromPoint(x, y) as HTMLElement | null;
+    if (element) {
+      const folderCard = element.closest('.documento-card.is-folder') as HTMLElement | null;
+      if (folderCard) {
+        const idAttr = folderCard.getAttribute('data-id');
+        if (idAttr) {
+          const idNum = Number(idAttr);
+          if (!isNaN(idNum)) {
+            this.hoverFolderId = idNum;
+          }
+        }
+      }
+    }
+
+    // Detectar si está sobre la zona raíz
+    if (this.rootDropZone && this.rootDropZone.nativeElement) {
+      const rect = this.rootDropZone.nativeElement.getBoundingClientRect();
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        this.isOverRoot = true;
+        this.hoverFolderId = null;
+      }
+    }
+  }
+
+  onDragEnded(event: CdkDragEnd<any>) {
     this.isDragging = false;
-    this.draggedItem = null;
-    
-    // Remover clases de drop-zone
-    document.querySelectorAll('.drop-zone-active').forEach(el => {
-      el.classList.remove('drop-zone-active');
+    this.dragPreviewVisible = false;
+    this.dragEndedRecently = true;
+
+    const itemsToMove = [...this.draggedItems];
+
+    // El elemento visual vuelve a su sitio original (CDK)
+    event.source.reset();
+
+    // Determinar destino
+    const targetFolderId = this.hoverFolderId;
+    const moveToRootZone = this.isOverRoot;
+
+    // Limpiar estados de hover
+    this.hoverFolderId = null;
+    this.isOverRoot = false;
+    this.draggedItems = [];
+
+    // Pequeño timeout para que el drop no dispare click
+    setTimeout(() => {
+      this.dragEndedRecently = false;
+    }, 150);
+
+    // Si no hay elementos, no hacemos nada
+    if (!itemsToMove.length) {
+      return;
+    }
+
+    // Drop sobre carpeta
+    if (targetFolderId !== null) {
+      const targetFolder = this.DOCUMENTOS.find(
+        d => d.id === targetFolderId && d.type === 'folder'
+      );
+      if (targetFolder) {
+        this.moveDocumentsGroup(itemsToMove, targetFolder.id);
+      }
+      return;
+    }
+
+    // Drop en zona raíz (nivel actual / raíz)
+    if (moveToRootZone) {
+      // Siempre mover a raíz real
+      this.moveDocumentsGroup(itemsToMove, null);
+    }
+
+  }
+
+  /**
+   * Mover grupo de documentos/carpeta a nueva ubicación
+   */
+  moveDocumentsGroup(items: any[], targetParentId: number | null) {
+    if (!items || items.length === 0) return;
+
+    const requests = items.map(item => {
+      const data = { parent_id: targetParentId };
+      return this.viewDocumentoService.moveDocument(item.id, data);
     });
-  }
 
-  /**
-   * Permitir drop sobre carpeta
-   */
-  onDragOver(event: DragEvent, targetFolder: any) {
-    if (!this.draggedItem || targetFolder.type !== 'folder') return;
-    
-    // No permitir arrastrar sobre sí mismo
-    if (this.draggedItem.id === targetFolder.id) return;
-
-    event.preventDefault();
-    event.dataTransfer!.dropEffect = 'move';
-  }
-
-  /**
-   * Entrar en zona de drop
-   */
-  onDragEnter(event: DragEvent, targetFolder: any) {
-    if (!this.draggedItem || targetFolder.type !== 'folder') return;
-    if (this.draggedItem.id === targetFolder.id) return;
-
-    const target = event.currentTarget as HTMLElement;
-    target.classList.add('drop-zone-active');
-  }
-
-  /**
-   * Salir de zona de drop
-   */
-  onDragLeave(event: DragEvent, targetFolder: any) {
-    const target = event.currentTarget as HTMLElement;
-    target.classList.remove('drop-zone-active');
-  }
-
-  /**
-   * Soltar elemento en carpeta
-   */
-  onDrop(event: DragEvent, targetFolder: any) {
-    event.preventDefault();
-    
-    const target = event.currentTarget as HTMLElement;
-    target.classList.remove('drop-zone-active');
-
-    if (!this.draggedItem || targetFolder.type !== 'folder') return;
-    if (this.draggedItem.id === targetFolder.id) return;
-
-    // Mover el documento/carpeta
-    this.moveDocument(this.draggedItem, targetFolder.id);
-  }
-
-  /**
-   * Soltar en el área de la carpeta actual (raíz)
-   */
-  onDropInCurrentFolder(event: DragEvent) {
-    event.preventDefault();
-    
-    if (!this.draggedItem) return;
-
-    // Si ya está en la ubicación actual, no hacer nada
-    if (this.draggedItem.parent_id === this.currentFolderId) return;
-
-    this.moveDocument(this.draggedItem, this.currentFolderId);
-  }
-
-  /**
-   * Mover documento/carpeta a nueva ubicación
-   */
-  moveDocument(item: any, targetParentId: number | null) {
-    const data = {
-      parent_id: targetParentId
-    };
-
-    this.viewDocumentoService.moveDocument(item.id, data).subscribe({
-      next: (resp: any) => {
-        if (resp.message === 200) {
-          // Remover de la lista actual
+    forkJoin(requests).subscribe({
+      next: () => {
+        // Eliminar del listado actual
+        items.forEach(item => {
           const INDEX = this.DOCUMENTOS.findIndex((d: any) => d.id === item.id);
           if (INDEX !== -1) {
             this.DOCUMENTOS.splice(INDEX, 1);
           }
+        });
 
-          Swal.fire({
-            icon: 'success',
-            title: 'Movido',
-            text: `"${item.name}" ha sido movido exitosamente`,
-            timer: 2000,
-            showConfirmButton: false
-          });
-        }
+        // Eliminar de la selección
+        const ids = items.map(i => i.id);
+        this.selectedDocuments = this.selectedDocuments.filter(d => !ids.includes(d.id));
+
+        const msg = items.length === 1
+          ? `"${items[0].name}" El cambio fue exitoso`
+          : `${items.length} elementos han sido movidos exitosamente`;
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Movido',
+          text: msg,
+          timer: 2000,
+          showConfirmButton: false
+        });
       },
       error: (err) => {
-        console.error('Error moving document:', err);
+        console.error('Error moving documents:', err);
         Swal.fire({
           icon: 'error',
           title: 'Error',
-          text: err.error?.message_text || 'Error al mover el elemento'
+          text: err.error?.message_text || 'Error al mover los elementos'
         });
       }
     });

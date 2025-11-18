@@ -39,7 +39,7 @@ export class DeleteSucursalComponent {
               icon: 'error',
               title: 'Validación',
               text: resp.message_text,
-              timer: 3000,
+              timer: 3500,
               showConfirmButton: false,
               toast: true,
               position: 'top-end'
@@ -49,7 +49,7 @@ export class DeleteSucursalComponent {
               icon: 'success',
               title: 'Sucursal eliminada',
               text: 'La sucursal se eliminó correctamente',
-              timer: 3000,
+              timer: 3500,
               showConfirmButton: false,
               toast: true,
               position: 'top-end'
@@ -66,7 +66,7 @@ export class DeleteSucursalComponent {
             icon: 'error',
             title: 'Error',
             text: 'No se pudo eliminar la sucursal',
-            timer: 3000,
+            timer: 3500,
             showConfirmButton: false,
             toast: true,
             position: 'top-end'

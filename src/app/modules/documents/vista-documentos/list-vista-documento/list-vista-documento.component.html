@@ -87,13 +87,13 @@
 
   <!--begin::Card body-->
   <div class="card-body pt-0">
-    
-    <!-- Drop Zone para la carpeta actual -->
+
+    <!-- Drop Zone para la carpeta actual (raíz) -->
     <div 
+      #rootDropZone
       class="drop-zone-root mb-5 p-5 border border-dashed border-gray-300 rounded text-center"
-      (drop)="onDropInCurrentFolder($event)"
-      (dragover)="$event.preventDefault()"
-      *ngIf="isDragging">
+      *ngIf="isDragging"
+      [class.drop-zone-root-active]="isOverRoot">
       <i class="ki-duotone ki-folder-down fs-3x text-primary">
         <span class="path1"></span>
         <span class="path2"></span>
@@ -101,6 +101,38 @@
       <p class="text-gray-600 mt-3 mb-0">
         Suelta aquí para mover a <strong>{{ breadcrumb[breadcrumb.length - 1].name }}</strong>
       </p>
+      <div *ngIf="draggedItems && draggedItems.length > 1" class="text-muted fs-8 mt-1">
+        Moviendo {{ draggedItems.length }} elemento(s)
+      </div>
+    </div>
+
+    <!-- Vista flotante de stack al arrastrar (multi / individual) -->
+    <div 
+      *ngIf="dragPreviewVisible"
+      class="dragging-stack-preview"
+      [ngStyle]="{ top: dragPreviewPosition.y + 'px', left: dragPreviewPosition.x + 'px' }">
+      <div class="stack-icon">
+        <!-- 1 solo folder -->
+        <i class="ki-duotone ki-folder fs-2x" *ngIf="draggedItems?.length === 1 && draggedItems[0]?.type === 'folder'">
+          <span class="path1"></span>
+          <span class="path2"></span>
+          <span class="path3"></span>
+        </i>
+        <!-- 1 solo file o default -->
+        <i class="ki-duotone ki-file fs-2x" *ngIf="draggedItems?.length === 1 && draggedItems[0]?.type === 'file'">
+          <span class="path1"></span>
+          <span class="path2"></span>
+        </i>
+        <!-- Varios elementos -->
+        <i class="ki-duotone ki-folder fs-2x" *ngIf="(draggedItems?.length || 0) > 1">
+          <span class="path1"></span>
+          <span class="path2"></span>
+          <span class="path3"></span>
+        </i>
+      </div>
+      <div class="stack-text">
+        {{ draggedItems?.length || 0 }} elemento(s)
+      </div>
     </div>
 
     <!--begin::Grid View (Vista de tarjetas)-->
@@ -112,22 +144,34 @@
             class="card h-100 documento-card"
             [class.is-folder]="DOCUMENTO.type === 'folder'"
             [class.is-file]="DOCUMENTO.type === 'file'"
-            draggable="true"
-            (dragstart)="onDragStart($event, DOCUMENTO)"
-            (dragend)="onDragEnd($event)"
-            (dragover)="onDragOver($event, DOCUMENTO)"
-            (dragenter)="onDragEnter($event, DOCUMENTO)"
-            (dragleave)="onDragLeave($event, DOCUMENTO)"
-            (drop)="onDrop($event, DOCUMENTO)">
+            [class.drag-selected]="isSelected(DOCUMENTO)"
+            [class.drop-zone-active]="hoverFolderId === DOCUMENTO.id && DOCUMENTO.type === 'folder'"
+            cdkDrag
+            [cdkDragData]="DOCUMENTO"
+            [attr.data-id]="DOCUMENTO.id"
+            (cdkDragStarted)="onDragStarted(DOCUMENTO)"
+            (cdkDragMoved)="onDragMoved($event)"
+            (cdkDragEnded)="onDragEnded($event)">
+
+            <!-- Checkbox de selección -->
+            <div class="doc-select-checkbox form-check form-check-sm">
+              <input 
+                type="checkbox" 
+                class="form-check-input"
+                [checked]="isSelected(DOCUMENTO)"
+                (click)="$event.stopPropagation()"
+                (change)="toggleSelection(DOCUMENTO, $event)">
+            </div>
             
             <!--begin::Card body-->
-            <div class="card-body d-flex flex-column text-center pb-5">
+            <div 
+              class="card-body d-flex flex-column text-center pb-5"
+              (click)="onCardClick(DOCUMENTO, $event)">
               
               <!-- Icono del archivo/carpeta -->
               <a 
                 href="#" 
                 onclick="return false;"
-                (click)="viewDocumento(DOCUMENTO)"
                 class="text-gray-800 text-hover-primary d-flex flex-column">
                 
                 <div class="symbol symbol-75px mb-5">
@@ -182,20 +226,9 @@
                 <!-- Ver/Abrir -->
                 <button
                   class="btn btn-icon btn-light btn-sm"
-                  (click)="viewDocumento(DOCUMENTO)"
+                  (click)="viewDocumento(DOCUMENTO); $event.stopPropagation()"
                   [title]="DOCUMENTO.type === 'folder' ? 'Abrir carpeta' : 'Ver documento'">
                   <i class="fa-solid fa-eye"></i>
-                </button>
-
-                <button
-                    class="btn btn-icon btn-light btn-sm"
-                    (click)="viewOrOpenDocument(DOCUMENTO)"
-                    [title]="DOCUMENTO.type === 'folder' ? 'Abrir carpeta' : 'Ver documento'">
-                    <i class="ki-duotone fs-2" [ngClass]="DOCUMENTO.type === 'folder' ? 'ki-folder-open' : 'ki-eye'">
-                    <span class="path1"></span>
-                    <span class="path2"></span>
-                    <span *ngIf="DOCUMENTO.type === 'folder'" class="path3"></span>
-                    </i>
                 </button>
 
                 <!-- Descargar -->
@@ -210,7 +243,7 @@
                 <!-- Eliminar -->
                 <button
                   class="btn btn-icon btn-light-danger btn-sm"
-                  (click)="deleteDocumento(DOCUMENTO)"
+                  (click)="deleteDocumento(DOCUMENTO); $event.stopPropagation()"
                   title="Eliminar">
                   <i class="ki-duotone ki-trash fs-2">
                     <span class="path1"></span>

@@ -3,6 +3,8 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { MethodPaymentService } from '../service/method-payment.service';
 
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-edit-method-payment',
   templateUrl: './edit-method-payment.component.html',
@@ -36,28 +38,71 @@ export class EditMethodPaymentComponent {
     this.state = this.METHOD_PAYMENT_SELECTED.state;
   }
 
-  store(){
-    if(!this.name){
-      this.toast.error("Validación","El nombre del metodo de pago es requerido");
+  store() {
+    if (!this.name) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El nombre del método de pago es requerido',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
       return false;
     }
 
     let data = {
       name: this.name,
-      method_payment_id:this.method_payment_id,
+      method_payment_id: this.method_payment_id,
       state: this.state,
-    }
+    };
 
-    this.methodPaymentService.updateMethodPayment(this.METHOD_PAYMENT_SELECTED.id,data).subscribe((resp:any) => {
-      console.log(resp);
-      if(resp.message == 403){
-        this.toast.error("Validación",resp.message_text);
-      }else{
-        this.toast.success("Exito","El metodo de pago se registro correctamente");
-        this.MethodPaymentE.emit(resp.method_payment);
-        this.modal.close();
-      }
-    })
+    this.methodPaymentService.updateMethodPayment(this.METHOD_PAYMENT_SELECTED.id, data)
+      .subscribe({
+        next: (resp: any) => {
+          console.log(resp);
+
+          if (resp.message == 403) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Validación',
+              text: resp.message_text,
+              timer: 3500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+          } else {
+            Swal.fire({
+              icon: 'success',
+              title: 'Método de pago editado',
+              text: 'El método de pago se editó correctamente',
+              timer: 3500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+
+            this.MethodPaymentE.emit(resp.method_payment);
+            this.modal.close();
+          }
+        },
+
+        error: (err) => {
+          console.error(err);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo editar el método de pago',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+        }
+      });
   }
+
 
 }

@@ -3,6 +3,8 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { UsersService } from '../service/users.service';
 
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-create-user',
   templateUrl: './create-user.component.html',
@@ -55,71 +57,208 @@ export class CreateUserComponent {
     reader.readAsDataURL(this.file_name);
     reader.onloadend = () => this.imagen_previzualiza = reader.result;
   }
-  store(){
-    if(!this.name){
-      this.toast.error("Validación","El nombre es requerido");
-      return false;
-    }
-    
-    
-    if((!this.type_document || !this.n_document)){
-      this.toast.error("Validación","Es requerido el tipo de documento , junto con el numero del documento");
-      return false;
+  store() {
+
+    // --- Validación: nombre ---
+    if (!this.name) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El nombre es requerido',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return;
     }
 
-    if(!this.phone){
-      this.toast.error("Validación","El nombre es requerido");
-      return false;
-    }
-    if(!this.gender){
-      this.toast.error("Validación","El nombre es requerido");
-      return false;
-    }
-
-    if(!this.role_id){
-      this.toast.error("Validación","El rol es requerido");
-      return false;
-    }
-    if(!this.sucursale_id){
-      this.toast.error("Validación","La sucursal es requerida");
-      return false;
-    }
-    if(!this.password){
-      this.toast.error("Validación","La contraseña es requerido");
-      return false;
+    // --- Validación: tipo y número de documento ---
+    if (!this.type_document || !this.n_document) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El tipo y número de documento son obligatorios',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return;
     }
 
-    if(this.password && this.password != this.password_repit){
-      this.toast.error("Validación","La contraseña no son iguales");
-      return false;
+    // --- Validación: correo electrónico ---
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(this.email)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Correo inválido',
+        text: 'Ingresa un correo electrónico válido',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return;
     }
 
-   let formData = new FormData();
-   formData.append("name",this.name);
-   formData.append("surname",this.surname);
-   formData.append("email",this.email);
-   formData.append("phone",this.phone);
-   formData.append("role_id",this.role_id);
-   formData.append("gender",this.gender);
-   formData.append("type_document",this.type_document);
-   formData.append("n_document",this.n_document);
-   if(this.address){
-     formData.append("address",this.address);
-   }
-   formData.append("sucursale_id",this.sucursale_id);
-   formData.append("password",this.password);
-   formData.append("imagen",this.file_name);
+    // --- Validación: teléfono ---
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(this.phone)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Teléfono inválido',
+        text: 'El número debe contener 10 dígitos',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return;
+    }
 
-    this.usersService.registerUser(formData).subscribe((resp:any) => {
-      console.log(resp);
-      if(resp.message == 403){
-        this.toast.error("Validación",resp.message_text);
-      }else{
-        this.toast.success("Exito","El usuario se ha registro correctamente");
-        this.UserC.emit(resp.user);
-        this.modal.close();
+    // --- Validación: género ---
+    if (!this.gender) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El género es requerido',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return;
+    }
+
+    // --- Validación: rol ---
+    if (!this.role_id) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El rol es requerido',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return;
+    }
+
+    // --- Validación: sucursal ---
+    if (!this.sucursale_id) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'La sucursal es requerida',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return;
+    }
+
+    // --- Validación: contraseña ---
+    if (!this.password) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'La contraseña es requerida',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return;
+    }
+
+    // --- Validación: repetición de contraseña ---
+    if (this.password !== this.password_repit) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'Las contraseñas no coinciden',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return;
+    }
+
+    // ----------------------------------------------------
+    // Construcción del formulario
+    // ----------------------------------------------------
+    let formData = new FormData();
+    formData.append("name", this.name);
+    formData.append("surname", this.surname);
+    formData.append("email", this.email);
+    formData.append("phone", this.phone);
+    formData.append("role_id", this.role_id);
+    formData.append("gender", this.gender);
+    formData.append("type_document", this.type_document);
+    formData.append("n_document", this.n_document);
+
+    if (this.address) {
+      formData.append("address", this.address);
+    }
+
+    formData.append("sucursale_id", this.sucursale_id);
+    formData.append("password", this.password);
+
+    if (this.file_name) {
+      formData.append("imagen", this.file_name);
+    }
+
+    // ----------------------------------------------------
+    // Llamada al servicio
+    // ----------------------------------------------------
+    this.usersService.registerUser(formData).subscribe({
+
+      next: (resp: any) => {
+
+        if (resp.message == 403) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Validación',
+            text: resp.message_text,
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+        } else {
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Usuario registrado',
+            text: 'El usuario se registró correctamente',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+
+          this.UserC.emit(resp.user);
+          this.modal.close();
+        }
+      },
+
+      error: () => {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo registrar el usuario',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
       }
-    })
+
+    });
+
   }
 
 }

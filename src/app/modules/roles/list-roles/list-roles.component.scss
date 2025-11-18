@@ -1,0 +1,22 @@
+.permissions-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 550px;
+}
+
+.perm-chip {
+  border: 1px solid #5f5f61;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #3f4254;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: 0.2s ease;
+}
+
+.perm-chip:hover {
+  background: #d6e3ff;
+  cursor: default;
+}

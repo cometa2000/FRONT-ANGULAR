@@ -4,6 +4,8 @@ import { SIDEBAR } from 'src/app/config/config';
 import { RolesService } from '../service/roles.service';
 import { ToastrService } from 'ngx-toastr';
 
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-create-roles',
   templateUrl: './create-roles.component.html',
@@ -42,30 +44,81 @@ export class CreateRolesComponent {
     console.log(this.permisions);
   }
 
-  store(){
-    if(!this.name){
-      this.toast.error("Validación","El nombre es requerido");
+  store() {
+    if (!this.name) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El nombre es requerido',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
       return false;
     }
-    if(this.permisions.length == 0){
-      this.toast.error("Validación","Necesitas seleccionar un permiso por lo menos");
+
+    if (this.permisions.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'Necesitas seleccionar un permiso por lo menos',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
       return false;
     }
 
     let data = {
       name: this.name,
       permisions: this.permisions,
-    }
+    };
 
-    this.rolesService.registerRole(data).subscribe((resp:any) => {
-      console.log(resp);
-      if(resp.message == 403){
-        this.toast.error("Validación",resp.message_text);
-      }else{
-        this.toast.success("Exito","El rol se registro correctamente");
-        this.RoleC.emit(resp.role);
-        this.modal.close();
+    this.rolesService.registerRole(data).subscribe({
+      next: (resp: any) => {
+        console.log(resp);
+
+        if (resp.message == 403) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Validación',
+            text: resp.message_text,
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+        } else {
+          Swal.fire({
+            icon: 'success',
+            title: 'Rol creado',
+            text: 'El rol se registró correctamente',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+
+          this.RoleC.emit(resp.role);
+          this.modal.close();
+        }
+      },
+
+      error: (err) => {
+        console.error(err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo registrar el rol',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
       }
-    })
+    });
   }
+
 }

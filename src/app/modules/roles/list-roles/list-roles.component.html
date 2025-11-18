@@ -89,8 +89,14 @@
                                 </td>
                                 
                                 <td>
-                                   <span style="width: 550px !important;
-                                   display: block;">{{ ROL.permission_pluck }}</span> 
+                                   <div class="permissions-chips">
+                                        <span 
+                                        *ngFor="let perm of formatPermissions(ROL.permission_pluck)" 
+                                        class="perm-chip"
+                                        >
+                                        {{ perm }}
+                                        </span>
+                                    </div>
                                 </td>
     
                                 <td >

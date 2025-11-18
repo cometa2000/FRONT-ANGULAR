@@ -38,7 +38,7 @@ export class CreateSucursalComponent {
         icon: 'warning',
         title: 'Validación',
         text: 'El nombre de la sucursal es requerido',
-        timer: 3000,
+        timer: 3500,
         showConfirmButton: false,
         toast: true,
         position: 'top-end'
@@ -60,7 +60,7 @@ export class CreateSucursalComponent {
             icon: 'error',
             title: 'Validación',
             text: resp.message_text,
-            timer: 3000,
+            timer: 3500,
             showConfirmButton: false,
             toast: true,
             position: 'top-end'
@@ -70,7 +70,7 @@ export class CreateSucursalComponent {
             icon: 'success',
             title: 'Sucursal registrada',
             text: 'La sucursal se registró correctamente',
-            timer: 3000,
+            timer: 3500,
             showConfirmButton: false,
             toast: true,
             position: 'top-end'
@@ -87,7 +87,7 @@ export class CreateSucursalComponent {
           icon: 'error',
           title: 'Error',
           text: 'Ocurrió un problema al guardar la sucursal',
-          timer: 3000,
+          timer: 3500,
           showConfirmButton: false,
           toast: true,
           position: 'top-end'

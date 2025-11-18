@@ -3,6 +3,8 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { ClientSegmentService } from '../service/client-segment.service';
 
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-delete-client-segment',
   templateUrl: './delete-client-segment.component.html',
@@ -25,18 +27,53 @@ export class DeleteClientSegmentComponent {
   ngOnInit(): void {
   }
 
-  delete(){
-    
-    this.clientSegmentService.deleteClientSegment(this.CLIENT_SEGMENT_SELECTED.id).subscribe((resp:any) => {
-      console.log(resp);
-      if(resp.message == 403){
-        this.toast.error("Validación",resp.message_text);
-      }else{
-        this.toast.success("Exito","El segmento se elimino correctamente");
-        this.ClientSegmentD.emit(resp.message);
-        this.modal.close();
-      }
-    })
+  delete() {
+
+    this.clientSegmentService.deleteClientSegment(this.CLIENT_SEGMENT_SELECTED.id)
+      .subscribe({
+        next: (resp: any) => {
+          console.log(resp);
+
+          if (resp.message == 403) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Validación',
+              text: resp.message_text,
+              timer: 3500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+          } else {
+            Swal.fire({
+              icon: 'success',
+              title: 'Segmento eliminado',
+              text: 'El segmento se eliminó correctamente',
+              timer: 3500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+
+            this.ClientSegmentD.emit(resp.message);
+            this.modal.close();
+          }
+        },
+
+        error: (err) => {
+          console.error(err);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo eliminar el segmento',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+        }
+      });
   }
+
 
 }

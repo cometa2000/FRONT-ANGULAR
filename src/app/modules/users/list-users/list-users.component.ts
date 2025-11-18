@@ -62,7 +62,7 @@ export class ListUsersComponent {
     modalRef.componentInstance.sucursales = this.sucursales;
 
     modalRef.componentInstance.UserC.subscribe((role:any) => {
-      this.USERS.unshift(role);
+      this.listUsers(this.currentPage);
     })
   }
 

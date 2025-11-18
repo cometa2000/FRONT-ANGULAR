@@ -43,7 +43,7 @@ export class EditSucursalComponent {
         icon: 'warning',
         title: 'Validación',
         text: 'El nombre de la sucursal es requerido',
-        timer: 3000,
+        timer: 3500,
         showConfirmButton: false,
         toast: true,
         position: 'top-end'
@@ -67,7 +67,7 @@ export class EditSucursalComponent {
               icon: 'error',
               title: 'Validación',
               text: resp.message_text,
-              timer: 3000,
+              timer: 3500,
               showConfirmButton: false,
               toast: true,
               position: 'top-end'
@@ -77,7 +77,7 @@ export class EditSucursalComponent {
               icon: 'success',
               title: 'Sucursal editada',
               text: 'La sucursal se editó correctamente',
-              timer: 3000,
+              timer: 3500,
               showConfirmButton: false,
               toast: true,
               position: 'top-end'
@@ -94,7 +94,7 @@ export class EditSucursalComponent {
             icon: 'error',
             title: 'Error',
             text: 'No se pudo actualizar la sucursal',
-            timer: 3000,
+            timer: 3500,
             showConfirmButton: false,
             toast: true,
             position: 'top-end'
