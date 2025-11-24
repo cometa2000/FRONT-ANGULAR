@@ -101,14 +101,15 @@
                             placeholder="Selec. Tipo"
                             [(ngModel)]="type_document"
                         >
-                            <option value="DNI">DNI</option>
-                            <option value="CARNET DE EXTRANJERIA">CARNET DE EXTRANJERIA</option>
+                            <option value="">Seleccionar tipo</option>
+                            <option value="RFC">RFC</option>
+                            <option value="CURP">CURP</option>
                             <option value="PASAPORTE">PASAPORTE</option>
                         </select>
                     </div>
                     <div class="col-6">
                         <label class="required fw-bold fs-6 mb-2">N° de documento: </label>
-                        <input type="number" [(ngModel)]="n_document" name="n_document" class="form-control form-control-solid mb-3 mb-lg-0" placeholder="99999999" />
+                        <input type="text" [(ngModel)]="n_document" name="n_document" class="form-control form-control-solid mb-3 mb-lg-0" placeholder="Número de documento" />
                     </div>
                 </div>
 

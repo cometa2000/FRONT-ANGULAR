@@ -1,99 +1,194 @@
 <div class="d-flex flex-wrap flex-stack mb-6">
   <h3 class="fw-bolder my-2">
-    My Documents
-    <span class="fs-6 text-gray-500 fw-bold ms-1">100+ resources</span>
+    Mis Documentos
+    <span class="fs-6 text-gray-500 fw-bold ms-1">{{ documentos.length }} recursos</span>
   </h3>
 
   <div class="d-flex my-2">
+    <!-- Buscador -->
     <div class="d-flex align-items-center position-relative me-4">
       <app-keenicon name="magnifier" class="fs-3 position-absolute ms-3"></app-keenicon>
       <input
         type="text"
-        id="kt_filter_search"
-        class="form-control form-control-white form-control-sm w-150px ps-9"
-        placeholder="Search"
+        class="form-control form-control-white form-control-sm w-200px ps-9"
+        placeholder="Buscar documentos..."
+        (input)="onSearch($event)"
+        [(ngModel)]="searchTerm"
       />
     </div>
-
-    <a class="btn btn-primary btn-sm cursor-pointer"> File Manager </a>
   </div>
 </div>
 
-<div class="row g-6 g-xl-9 mb-6 mb-xl-9">
-  <div class="col-12 col-sm-12 col-xl">
-    <app-card4
-      icon="./assets/media/svg/files/folder-document.svg"
-      title="Finance"
-      description="7 files"
-    ></app-card4>
-  </div>
-  <div class="col-12 col-sm-12 col-xl">
-    <app-card4
-      icon="./assets/media/svg/files/folder-document.svg"
-      title="Customers"
-      description="3 files"
-    ></app-card4>
-  </div>
-  <div class="col-12 col-sm-12 col-xl">
-    <app-card4
-      icon="./assets/media/svg/files/folder-document.svg"
-      title="CRM Project"
-      description="25 files"
-    ></app-card4>
+<!-- Loading Indicator -->
+<div *ngIf="isLoading" class="d-flex justify-content-center my-10">
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Cargando...</span>
   </div>
 </div>
 
-<div class="row g-6 g-xl-9 mb-6 mb-xl-9">
-  <div class="col-12 col-sm-12 col-xl">
-    <app-card4
-      icon="./assets/media/svg/files/pdf.svg"
-      title="Project Reqs.."
-      description="3 days ago"
-    ></app-card4>
-  </div>
-  <div class="col-12 col-sm-12 col-xl">
-    <app-card4
-      icon="./assets/media/svg/files/doc.svg"
-      title="CRM App Docs.."
-      description="3 days ago"
-    ></app-card4>
-  </div>
-  <div class="col-12 col-sm-12 col-xl">
-    <app-card4
-      icon="./assets/media/svg/files/css.svg"
-      title="User CRUD Styles"
-      description="4 days ago"
-    ></app-card4>
-  </div>
-  <div class="col-12 col-sm-12 col-xl">
-    <app-card4
-      icon="./assets/media/svg/files/ai.svg"
-      title="Metronic Logo"
-      description="5 days ago"
-    ></app-card4>
-  </div>
-  <div class="col-12 col-sm-12 col-xl">
-    <app-card4
-      icon="./assets/media/svg/files/sql.svg"
-      title="Orders backup"
-      description="1 week ago"
-    ></app-card4>
+<!-- Mensaje cuando no hay documentos -->
+<div *ngIf="!isLoading && documentos.length === 0" class="card">
+  <div class="card-body text-center py-10">
+    <app-keenicon name="folder" class="fs-3x text-gray-400 mb-3"></app-keenicon>
+    <h3 class="text-gray-600">
+      {{ searchTerm ? 'No se encontraron documentos' : 'No tienes documentos' }}
+    </h3>
+    <p class="text-gray-500">
+      {{ searchTerm ? 'Intenta con otro término de búsqueda' : 'Los documentos que subas aparecerán aquí.' }}
+    </p>
   </div>
 </div>
 
-<div class="row g-6 g-xl-9 mb-6 mb-xl-9">
-  <div class="col-12 col-sm-12 col-xl">
-    <app-card4
-      icon="./assets/media/svg/files/xml.svg"
-      title="UTAIR CRM API Co.."
-      description="2 week ago"
-    ></app-card4>
+<!-- Sección de carpetas -->
+<div *ngIf="!isLoading && carpetas.length > 0" class="mb-10">
+  <h4 class="fw-bold text-gray-800 mb-5">
+    <app-keenicon name="folder" class="fs-3 me-2"></app-keenicon>
+    Carpetas ({{ carpetas.length }})
+  </h4>
+  
+  <div class="row g-6 g-xl-9 mb-6 mb-xl-9">
+    <div class="col-12 col-sm-6 col-md-4 col-xl-3" *ngFor="let carpeta of carpetas">
+      <div class="card shadow-sm hover-elevate-up cursor-pointer h-100">
+        <div class="card-body d-flex flex-column align-items-center text-center p-5">
+          <!-- Icono de carpeta -->
+          <div class="mb-4">
+            <img [src]="getDocumentIcon(carpeta)" alt="folder" class="w-75px h-75px" />
+          </div>
+          
+          <!-- Nombre de la carpeta -->
+          <h4 class="fs-5 fw-bold text-gray-800 mb-2">
+            {{ carpeta.name }}
+          </h4>
+          
+          <!-- Descripción -->
+          <p class="text-gray-600 fs-7 mb-3" *ngIf="carpeta.description">
+            {{ carpeta.description }}
+          </p>
+          
+          <!-- Info de archivos -->
+          <div class="d-flex align-items-center text-gray-600 fs-7 mb-3">
+            <app-keenicon name="file" class="fs-6 me-1"></app-keenicon>
+            <span>{{ carpeta.total_files }} archivos</span>
+          </div>
+          
+          <!-- Fecha de creación -->
+          <div class="text-gray-500 fs-8 mt-auto">
+            {{ carpeta.created_at_human }}
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="col-12 col-sm-12 col-xl">
-    <app-card4
-      icon="./assets/media/svg/files/tif.svg"
-      title="Tower Hill App.."
-      description="3 week ago"
-    ></app-card4>
+</div>
+
+<!-- Sección de archivos -->
+<div *ngIf="!isLoading && archivos.length > 0">
+  <h4 class="fw-bold text-gray-800 mb-5">
+    <app-keenicon name="file" class="fs-3 me-2"></app-keenicon>
+    Archivos ({{ archivos.length }})
+  </h4>
+  
+  <div class="row g-6 g-xl-9">
+    <div class="col-12 col-sm-6 col-md-4 col-xl-3" *ngFor="let archivo of archivos">
+      <div class="card shadow-sm hover-elevate-up h-100">
+        <div class="card-body d-flex flex-column p-5">
+          
+          <!-- Header con icono y acciones -->
+          <div class="d-flex align-items-start justify-content-between mb-3">
+            <!-- Icono del archivo -->
+            <div class="flex-shrink-0">
+              <img [src]="getDocumentIcon(archivo)" alt="file" class="w-50px h-50px" />
+            </div>
+            
+            <!-- Menú de acciones -->
+            <div class="dropdown">
+              <button 
+                class="btn btn-sm btn-icon btn-light btn-active-light-primary" 
+                type="button" 
+                data-bs-toggle="dropdown"
+              >
+                <app-keenicon name="dots-vertical" class="fs-3"></app-keenicon>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item" (click)="viewFile(archivo)">
+                    <app-keenicon name="eye" class="fs-5 me-2"></app-keenicon>
+                    Ver
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" (click)="downloadFile(archivo)">
+                    <app-keenicon name="cloud-download" class="fs-5 me-2"></app-keenicon>
+                    Descargar
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+          <!-- Nombre del archivo -->
+          <h5 class="fs-6 fw-bold text-gray-800 mb-2" 
+              [title]="archivo.name"
+              style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            {{ archivo.name }}
+          </h5>
+          
+          <!-- Descripción -->
+          <p class="text-gray-600 fs-7 mb-3" 
+             *ngIf="archivo.description"
+             [title]="archivo.description"
+             style="overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+            {{ archivo.description }}
+          </p>
+          
+          <!-- Carpeta padre -->
+          <div class="d-flex align-items-center text-gray-600 fs-7 mb-2" *ngIf="archivo.parent">
+            <app-keenicon name="folder" class="fs-6 me-1"></app-keenicon>
+            <span>{{ archivo.parent.name }}</span>
+          </div>
+          
+          <!-- Información adicional -->
+          <div class="mt-auto pt-3 border-top">
+            <!-- Tamaño del archivo -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="text-gray-500 fs-8">Tamaño:</span>
+              <span class="fw-bold fs-8">{{ archivo.size_formatted }}</span>
+            </div>
+            
+            <!-- Fecha de creación -->
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-gray-500 fs-8">Creado:</span>
+              <span class="fw-bold fs-8">{{ archivo.created_at_human }}</span>
+            </div>
+          </div>
+          
+          <!-- Botones de acción -->
+          <div class="d-flex gap-2 mt-3">
+            <button 
+              class="btn btn-sm btn-light-primary flex-fill"
+              (click)="viewFile(archivo)"
+            >
+              <app-keenicon name="eye" class="fs-5"></app-keenicon>
+            </button>
+            <button 
+              class="btn btn-sm btn-light-success flex-fill"
+              (click)="downloadFile(archivo)"
+            >
+              <app-keenicon name="cloud-download" class="fs-5"></app-keenicon>
+            </button>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mostrar mensaje si solo hay carpetas pero no archivos -->
+<div *ngIf="!isLoading && carpetas.length > 0 && archivos.length === 0" class="card mt-6">
+  <div class="card-body text-center py-10">
+    <app-keenicon name="file" class="fs-3x text-gray-400 mb-3"></app-keenicon>
+    <h3 class="text-gray-600">No hay archivos</h3>
+    <p class="text-gray-500">Solo tienes carpetas sin archivos.</p>
   </div>
 </div>

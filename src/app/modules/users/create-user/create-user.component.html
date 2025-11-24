@@ -87,8 +87,7 @@
                         </div>
                     </div>
                     <div class="col-6">
-                        <!-- <label class="required fw-bold fs-6 mb-2">Phone: </label>
-                        <input type="number" name="phone" class="form-control form-control-solid mb-3 mb-lg-0" placeholder="99999999" [(ngModel)]="phone" /> -->
+                        <!-- Espacio vacío para mantener el diseño -->
                     </div>
                 </div>
 
@@ -101,24 +100,25 @@
                             placeholder="Selec. Tipo"
                             [(ngModel)]="type_document"
                         >
-                            <option value="DNI">DNI</option>
-                            <option value="CARNET DE EXTRANJERIA">CARNET DE EXTRANJERIA</option>
+                            <option value="">Seleccionar tipo</option>
+                            <option value="RFC">RFC</option>
+                            <option value="CURP">CURP</option>
                             <option value="PASAPORTE">PASAPORTE</option>
                         </select>
                     </div>
                     <div class="col-6">
                         <label class="required fw-bold fs-6 mb-2">N° de documento: </label>
-                        <input type="number" [(ngModel)]="n_document" name="n_document" class="form-control form-control-solid mb-3 mb-lg-0" placeholder="99999999" />
+                        <input type="text" [(ngModel)]="n_document" name="n_document" class="form-control form-control-solid mb-3 mb-lg-0" placeholder="Número de documento" />
                     </div>
                 </div>
 
                 <div class="fv-row row my-1">
                     <div class="col-6">
-                        <label class="required fw-bold fs-6 mb-2">Dirección: </label>
-                        <textarea name="address" id="" cols="20" rows="5" [(ngModel)]="address"></textarea>
+                        <label class="fw-bold fs-6 mb-2">Dirección: </label>
+                        <textarea name="address" class="form-control form-control-solid" cols="20" rows="5" [(ngModel)]="address"></textarea>
                     </div>
                     <div class="col-6">
-                        <label class="required fw-bold fs-6 mb-2">Avatar: </label>
+                        <label class="fw-bold fs-6 mb-2">Avatar: </label>
                         <div class="custom-file">
                             <input type="file" class="custom-file-input" id="customFile"  accept=".jpeg, .bmp, .jpg, .png, .gif, .webp"  (change)="processFile($event)">
                             <label class="custom-file-label" for="customFile">Choose file</label>
@@ -135,8 +135,8 @@
                         <div class="d-flex">
                             <ng-container *ngFor="let sucursal of sucursales">
                                 <div class="form-check mx-1">
-                                    <input class="form-check-input" type="radio" name="sucursale" (click)="sucursale_id = sucursal.id" id="sucursale1">
-                                    <label class="form-check-label" for="sucursale1">
+                                    <input class="form-check-input" type="radio" name="sucursale" (click)="sucursale_id = sucursal.id" [id]="'sucursale_' + sucursal.id">
+                                    <label class="form-check-label" [for]="'sucursale_' + sucursal.id">
                                       {{ sucursal.name }}
                                     </label>
                                   </div>
@@ -145,14 +145,18 @@
                     </div>
                 </div>
 
-                <div class="fv-row row my-1">
-                    <div class="col-6">
-                        <label class="required fw-bold fs-6 mb-2">Contraseña: </label>
-                        <input type="password" name="password" class="form-control form-control-solid mb-3 mb-lg-0" placeholder="*******" [(ngModel)]="password" />
-                    </div>
-                    <div class="col-6">
-                        <label class="required fw-bold fs-6 mb-2">Repetir Contraseña: </label>
-                        <input type="password" name="password" class="form-control form-control-solid mb-3 mb-lg-0" placeholder="********" [(ngModel)]="password_repit" />
+                <!-- ⚠️ NOTA: Los campos de contraseña fueron removidos - La contraseña se genera automáticamente -->
+                <div class="alert alert-info d-flex align-items-center p-3 mb-3">
+                    <span class="svg-icon svg-icon-2hx svg-icon-info me-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path opacity="0.3" d="M20.5543 4.37824L12.1798 2.02473C12.0626 1.99176 11.9376 1.99176 11.8203 2.02473L3.44572 4.37824C3.18118 4.45258 3 4.6807 3 4.93945V13.569C3 14.6914 3.48509 15.8404 4.4417 16.984C5.17231 17.8575 6.18314 18.7345 7.446 19.5909C9.56752 21.0295 11.6566 21.912 11.7445 21.9488C11.8258 21.9829 11.9129 22 12.0001 22C12.0872 22 12.1744 21.983 12.2557 21.9488C12.3435 21.912 14.4326 21.0295 16.5541 19.5909C17.8169 18.7345 18.8277 17.8575 19.5584 16.984C20.515 15.8404 21 14.6914 21 13.569V4.93945C21 4.6807 20.8189 4.45258 20.5543 4.37824Z" fill="currentColor"/>
+                            <rect x="9" y="13.0283" width="7.3536" height="1.2256" rx="0.6128" transform="rotate(-45 9 13.0283)" fill="currentColor"/>
+                            <rect x="9.86664" y="7.93359" width="7.3536" height="1.2256" rx="0.6128" fill="currentColor"/>
+                        </svg>
+                    </span>
+                    <div class="d-flex flex-column">
+                        <span class="fw-bold">Contraseña temporal</span>
+                        <span class="fs-7">Se generará automáticamente y se mostrará después del registro</span>
                     </div>
                 </div>
 
@@ -166,8 +170,6 @@
                     <span class="indicator-label">Registrar</span>
 
                     <span class="spinner-border spinner-border-sm align-middle ms-2" *ngIf="isLoading | async"></span>
-                    <!-- <span class="indicator-progress">Please wait...
-                    <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span> -->
                 </button>
             </div>
             <!--end::Actions-->

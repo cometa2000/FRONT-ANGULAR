@@ -1,62 +1,178 @@
-import { Component, OnInit } from '@angular/core';
-import { IconUserModel } from '../../../_metronic/partials';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Router } from '@angular/router';
+import { ProfileService } from '../service/profile.service';
 
 @Component({
   selector: 'app-projects',
   templateUrl: './projects.component.html',
 })
 export class ProjectsComponent implements OnInit {
-  users1: Array<IconUserModel> = [
-    { name: 'Emma Smith', avatar: './assets/media/avatars/300-6.jpg' },
-    { name: 'Rudy Stone', avatar: './assets/media/avatars/300-1.jpg' },
-    { name: 'Susan Redwood', initials: 'S', color: 'primary' },
-  ];
+  
+  tareas: any[] = [];
+  isLoading: boolean = false;
+  filterStatus: string = 'all';
 
-  users2 = [
-    { name: 'Alan Warden', initials: 'A', color: 'warning' },
-    { name: 'Brian Cox', avatar: './assets/media/avatars/300-5.jpg' },
-  ];
+  constructor(
+    private profileService: ProfileService,
+    private router: Router,
+    private cdr: ChangeDetectorRef
+  ) {}
 
-  users3 = [
-    { name: 'Mad Masy', avatar: './assets/media/avatars/300-6.jpg' },
-    { name: 'Cris Willson', avatar: './assets/media/avatars/300-1.jpg' },
-    { name: 'Mike Garcie', initials: 'M', color: 'info' },
-  ];
+  ngOnInit(): void {
+    console.log('🔵 ProjectsComponent - Inicializando');
+    this.loadTareas();
+  }
 
-  users4 = [
-    { name: 'Nich Warden', initials: 'N', color: 'warning' },
-    { name: 'Rob Otto', initials: 'R', color: 'success' },
-  ];
+  /**
+   * Cargar las tareas del usuario
+   */
+  loadTareas(): void {
+    console.log('📋 Iniciando carga de tareas...');
+    this.isLoading = true;
+    this.cdr.detectChanges(); // Forzar detección de cambios
+    
+    this.profileService.getUserTareas().subscribe({
+      next: (response) => {
+        console.log('✅ Respuesta recibida:', response);
+        if (response.message === 200 && response.tareas) {
+          this.tareas = response.tareas;
+          console.log('📋 Tareas asignadas:', this.tareas.length);
+        } else {
+          console.warn('⚠️ Respuesta sin tareas válidas');
+          this.tareas = [];
+        }
+        this.isLoading = false;
+        this.cdr.detectChanges(); // Forzar detección de cambios después de actualizar
+        console.log('✅ Estado de carga actualizado a false');
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar tareas:', error);
+        this.tareas = [];
+        this.isLoading = false;
+        this.cdr.detectChanges(); // Forzar detección de cambios en caso de error
+      }
+    });
+  }
 
-  users5 = [
-    { name: 'Francis Mitcham', avatar: './assets/media/avatars/300-20.jpg' },
-    { name: 'Michelle Swanston', avatar: './assets/media/avatars/300-7.jpg' },
-    { name: 'Susan Redwood', initials: 'S', color: 'primary' },
-  ];
+  /**
+   * Filtrar tareas por estado
+   */
+  get filteredTareas(): any[] {
+    if (this.filterStatus === 'all') {
+      return this.tareas;
+    }
+    return this.tareas.filter(tarea => tarea.status === this.filterStatus);
+  }
 
-  users6 = [
-    { name: 'Emma Smith', avatar: './assets/media/avatars/300-6.jpg' },
-    { name: 'Rudy Stone', avatar: './assets/media/avatars/300-1.jpg' },
-    { name: 'Susan Redwood', initials: 'S', color: 'primary' },
-  ];
+  /**
+   * Cambiar filtro de estado
+   */
+  onFilterChange(event: any): void {
+    this.filterStatus = event.target.value;
+    console.log('🔍 Filtro cambiado a:', this.filterStatus);
+  }
 
-  users7 = [
-    { name: 'Meloday Macy', avatar: './assets/media/avatars/300-2.jpg' },
-    { name: 'Rabbin Watterman', initials: 'S', color: 'success' },
-  ];
+  /**
+   * Ver detalle de la tarea (modo solo lectura)
+   */
+  viewTarea(tarea: any): void {
+    console.log('👁️ Ver tarea:', tarea);
+    // Navegar a la vista de edición de tarea con modo lectura
+    this.router.navigate(['/tasks/tareas/edit', tarea.id], {
+      queryParams: { readonly: true }
+    });
+  }
 
-  users8 = [
-    { name: 'Emma Smith', avatar: './assets/media/avatars/300-6.jpg' },
-    { name: 'Rudy Stone', avatar: './assets/media/avatars/300-1.jpg' },
-    { name: 'Susan Redwood', initials: 'S', color: 'primary' },
-  ];
+  /**
+   * Obtener color del badge según el estado
+   */
+  getStatusBadgeColor(status: string): string {
+    switch (status) {
+      case 'completada':
+        return 'success';
+      case 'en_progreso':
+        return 'primary';
+      case 'pendiente':
+        return 'warning';
+      default:
+        return 'secondary';
+    }
+  }
 
-  users9 = [
-    { name: 'Meloday Macy', avatar: './assets/media/avatars/300-2.jpg' },
-    { name: 'Rabbin Watterman', initials: 'S', color: 'danger' },
-  ];
+  /**
+   * Obtener texto del estado en español
+   */
+  getStatusText(status: string): string {
+    switch (status) {
+      case 'completada':
+        return 'Completada';
+      case 'en_progreso':
+        return 'En Progreso';
+      case 'pendiente':
+        return 'Pendiente';
+      default:
+        return status;
+    }
+  }
 
-  constructor() {}
+  /**
+   * Obtener color del badge según la prioridad
+   */
+  getPriorityBadgeColor(priority: string): string {
+    switch (priority) {
+      case 'high':
+        return 'danger';
+      case 'medium':
+        return 'warning';
+      case 'low':
+        return 'info';
+      default:
+        return 'secondary';
+    }
+  }
 
-  ngOnInit(): void {}
+  /**
+   * Obtener texto de la prioridad en español
+   */
+  getPriorityText(priority: string): string {
+    switch (priority) {
+      case 'high':
+        return 'Alta';
+      case 'medium':
+        return 'Media';
+      case 'low':
+        return 'Baja';
+      default:
+        return priority;
+    }
+  }
+
+  /**
+   * Formatear fecha
+   */
+  formatDate(date: string): string {
+    if (!date) return 'Sin fecha';
+    
+    const d = new Date(date);
+    const options: Intl.DateTimeFormatOptions = { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    };
+    return d.toLocaleDateString('es-MX', options);
+  }
+
+  /**
+   * Verificar si la tarea está vencida
+   */
+  isOverdue(tarea: any): boolean {
+    return tarea.is_overdue === true;
+  }
+
+  /**
+   * Verificar si la fecha de vencimiento está cerca
+   */
+  isDueSoon(tarea: any): boolean {
+    return tarea.is_due_soon === true;
+  }
 }

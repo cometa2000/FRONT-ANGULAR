@@ -1,235 +1,112 @@
 <div class="card mb-5 mb-xl-10">
   <div class="card-body pt-9 pb-0">
     <div class="d-flex flex-wrap flex-sm-nowrap mb-3">
+      <!-- Avatar del usuario -->
       <div class="me-7 mb-4">
-        <div
-          class="
-            symbol symbol-100px symbol-lg-160px symbol-fixed
-            position-relative
-          "
-        >
-          <img src="./assets/media/avatars/300-1.jpg" alt="Metronic" />
-          <div
-            class="
-              position-absolute
-              translate-middle
-              bottom-0
-              start-100
-              mb-6
-              bg-success
-              rounded-circle
-              border border-4 border-white
-              h-20px
-              w-20px
-            "
-          ></div>
+        <div class="symbol symbol-100px symbol-lg-160px symbol-fixed position-relative">
+          <img [src]="getUserAvatar()" [alt]="getUserFullName()" />
+          <div class="position-absolute translate-middle bottom-0 start-100 mb-6 bg-success rounded-circle border border-4 border-white h-20px w-20px"></div>
         </div>
       </div>
 
+      <!-- Información del usuario -->
       <div class="flex-grow-1">
-        <div
-          class="
-            d-flex
-            justify-content-between
-            align-items-start
-            flex-wrap
-            mb-2
-          "
-        >
+        <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
           <div class="d-flex flex-column">
+            <!-- Nombre del usuario -->
             <div class="d-flex align-items-center mb-2">
-              <a
-                class="
-                  text-gray-800 text-hover-primary
-                  fs-2
-                  fw-bolder
-                  me-1
-                  cursor-pointer
-                "
-              >
-                Max Smith
+              <a class="text-gray-800 text-hover-primary fs-2 fw-bolder me-1 cursor-pointer">
+                {{ getUserFullName() }}
               </a>
               <a class="cursor-pointer">
                 <app-keenicon name="verify" class="fs-1 text-primary"></app-keenicon>
               </a>
-              <a
-                class="
-                  btn btn-sm btn-light-success
-                  fw-bolder
-                  ms-2
-                  fs-8
-                  py-1
-                  px-3
-                  cursor-pointer
-                "
-                data-bs-toggle="modal"
-                data-bs-target="#kt_modal_upgrade_plan"
-              >
-                Upgrade to Pro
-              </a>
             </div>
 
+            <!-- Detalles del usuario -->
             <div class="d-flex flex-wrap fw-bold fs-6 mb-4 pe-2">
-              <a
-                class="
-                  d-flex
-                  align-items-center
-                  text-gray-500 text-hover-primary
-                  me-5
-                  mb-2
-                  cursor-pointer
-                "
-              >
+              <!-- Rol -->
+              <a class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2 cursor-pointer">
                 <app-keenicon name="profile-circle" class="fs-4 me-1"></app-keenicon>
-                Developer
+                {{ getUserRole() }}
               </a>
-              <a
-                class="
-                  d-flex
-                  align-items-center
-                  text-gray-500 text-hover-primary
-                  me-5
-                  mb-2
-                  cursor-pointer
-                "
-              >
+              
+              <!-- Sucursal -->
+              <a class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2 cursor-pointer">
                 <app-keenicon name="geolocation" class="fs-4 me-1"></app-keenicon>
-                SF, Bay Area
+                {{ getUserSucursal() }}
               </a>
-              <a
-                class="
-                  d-flex
-                  align-items-center
-                  text-gray-500 text-hover-primary
-                  mb-2
-                  cursor-pointer
-                "
-              >
+              
+              <!-- Email -->
+              <a class="d-flex align-items-center text-gray-500 text-hover-primary mb-2 cursor-pointer">
                 <app-keenicon name="sms" class="fs-4 me-1"></app-keenicon>
-                max@kt.com
+                {{ getUserEmail() }}
               </a>
-            </div>
-          </div>
-
-          <div class="d-flex my-4">
-            <a
-              class="btn btn-sm btn-light me-2 cursor-pointer"
-              id="kt_user_follow_button"
-            >
-              <app-keenicon name="phone" class="fs-3 d-none"></app-keenicon>
-              <span class="indicator-label">Follow</span>
-              <span class="indicator-progress">
-                Please wait...
-                <span
-                  class="spinner-border spinner-border-sm align-middle ms-2"
-                ></span>
-              </span>
-            </a>
-            <a
-              class="btn btn-sm btn-primary me-3 cursor-pointer"
-              data-bs-toggle="modal"
-              data-bs-target="#kt_modal_offer_a_deal"
-            >
-              Hire Me
-            </a>
-            <div class="me-0">
-              <button
-                class="
-                  btn btn-sm btn-icon btn-bg-light btn-active-color-primary
-                "
-                data-kt-menu-trigger="click"
-                data-kt-menu-placement="bottom-end"
-                data-kt-menu-flip="top-end"
-              >
-                <i class="bi bi-three-dots fs-3"></i>
-              </button>
-              <app-dropdown-menu1></app-dropdown-menu1>
             </div>
           </div>
         </div>
 
+        <!-- Estadísticas -->
         <div class="d-flex flex-wrap flex-stack">
           <div class="d-flex flex-column flex-grow-1 pe-8">
             <div class="d-flex flex-wrap">
-              <div
-                class="
-                  border border-gray-300 border-dashed
-                  rounded
-                  min-w-125px
-                  py-3
-                  px-4
-                  me-6
-                  mb-3
-                "
-              >
+              <!-- Total de Tareas -->
+              <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-6 mb-3">
                 <div class="d-flex align-items-center">
-                  <app-keenicon name="arrow-up" class="fs-3 text-success me-2"></app-keenicon>
-                  <div class="fs-2 fw-bolder">4500$</div>
+                  <app-keenicon 
+                    [name]="stats.tareas.completadas > stats.tareas.pendientes ? 'arrow-up' : 'arrow-down'" 
+                    [class]="'fs-3 me-2 ' + (stats.tareas.completadas > stats.tareas.pendientes ? 'text-success' : 'text-warning')">
+                  </app-keenicon>
+                  <div class="fs-2 fw-bolder">{{ stats.tareas.total }}</div>
                 </div>
-
-                <div class="fw-bold fs-6 text-gray-500">Earnings</div>
+                <div class="fw-bold fs-6 text-gray-500">Tareas Totales</div>
               </div>
 
-              <div
-                class="
-                  border border-gray-300 border-dashed
-                  rounded
-                  min-w-125px
-                  py-3
-                  px-4
-                  me-6
-                  mb-3
-                "
-              >
+              <!-- Tareas Pendientes -->
+              <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-6 mb-3">
                 <div class="d-flex align-items-center">
-                  <app-keenicon name="arrow-down" class="fs-3 text-danger me-2"></app-keenicon>
-                  <div class="fs-2 fw-bolder">75</div>
+                  <app-keenicon name="time" class="fs-3 text-warning me-2"></app-keenicon>
+                  <div class="fs-2 fw-bolder">{{ stats.tareas.pendientes }}</div>
                 </div>
-
-                <div class="fw-bold fs-6 text-gray-500">Projects</div>
+                <div class="fw-bold fs-6 text-gray-500">Pendientes</div>
               </div>
 
-              <div
-                class="
-                  border border-gray-300 border-dashed
-                  rounded
-                  min-w-125px
-                  py-3
-                  px-4
-                  me-6
-                  mb-3
-                "
-              >
+              <!-- Tareas Completadas -->
+              <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-6 mb-3">
                 <div class="d-flex align-items-center">
-                  <app-keenicon name="arrow-up" class="fs-3 text-success me-2"></app-keenicon>
-                  <div class="fs-2 fw-bolder">60%</div>
+                  <app-keenicon name="check-circle" class="fs-3 text-success me-2"></app-keenicon>
+                  <div class="fs-2 fw-bolder">{{ stats.tareas.completadas }}</div>
                 </div>
+                <div class="fw-bold fs-6 text-gray-500">Completadas</div>
+              </div>
 
-                <div class="fw-bold fs-6 text-gray-500">Success Rate</div>
+              <!-- Documentos -->
+              <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-6 mb-3">
+                <div class="d-flex align-items-center">
+                  <app-keenicon name="document" class="fs-3 text-info me-2"></app-keenicon>
+                  <div class="fs-2 fw-bolder">{{ stats.documentos.total }}</div>
+                </div>
+                <div class="fw-bold fs-6 text-gray-500">Documentos</div>
               </div>
             </div>
           </div>
 
-          <div
-            class="
-              d-flex
-              align-items-center
-              w-200px w-sm-300px
-              flex-column
-              mt-3
-            "
-          >
+          <!-- Tasa de Éxito -->
+          <div class="d-flex align-items-center w-200px w-sm-300px flex-column mt-3">
             <div class="d-flex justify-content-between w-100 mt-auto mb-2">
-              <span class="fw-bold fs-6 text-gray-500"
-                >Profile Compleation</span
-              >
-              <span class="fw-bolder fs-6">50%</span>
+              <span class="fw-bold fs-6 text-gray-500">Tasa de Éxito</span>
+              <span class="fw-bolder fs-6">{{ stats.success_rate }}%</span>
             </div>
             <div class="h-5px mx-3 w-100 bg-light mb-3">
               <div
-                class="bg-success rounded h-5px"
+                class="rounded h-5px"
+                [ngClass]="{
+                  'bg-success': stats.success_rate >= 70,
+                  'bg-warning': stats.success_rate >= 40 && stats.success_rate < 70,
+                  'bg-danger': stats.success_rate < 40
+                }"
                 role="progressbar"
-                [style.width]="'50%'"
+                [style.width.%]="stats.success_rate"
               ></div>
             </div>
           </div>
@@ -237,59 +114,25 @@
       </div>
     </div>
 
+    <!-- Tabs de navegación -->
     <div class="d-flex overflow-auto h-55px">
-      <ul
-        class="
-          nav nav-stretch nav-line-tabs nav-line-tabs-2x
-          border-transparent
-          fs-5
-          fw-bolder
-          flex-nowrap
-        "
-      >
+      <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bolder flex-nowrap">
         <li class="nav-item">
           <a
             class="nav-link text-active-primary me-6"
-            routerLink="/crafted/pages/profile/overview"
+            routerLink="./projects"
             routerLinkActive="active"
           >
-            Overview
+            Proyectos ({{ stats.tareas.total }})
           </a>
         </li>
         <li class="nav-item">
           <a
             class="nav-link text-active-primary me-6"
-            routerLink="/crafted/pages/profile/projects"
+            routerLink="./documents"
             routerLinkActive="active"
           >
-            Projects
-          </a>
-        </li>
-        <li class="nav-item">
-          <a
-            class="nav-link text-active-primary me-6"
-            routerLink="/crafted/pages/profile/campaigns"
-            routerLinkActive="active"
-          >
-            Campaigns
-          </a>
-        </li>
-        <li class="nav-item">
-          <a
-            class="nav-link text-active-primary me-6"
-            routerLink="/crafted/pages/profile/documents"
-            routerLinkActive="active"
-          >
-            Documents
-          </a>
-        </li>
-        <li class="nav-item">
-          <a
-            class="nav-link text-active-primary me-6"
-            routerLink="/crafted/pages/profile/connections"
-            routerLinkActive="active"
-          >
-            Connections
+            Documentos ({{ stats.documentos.total }})
           </a>
         </li>
       </ul>
@@ -297,4 +140,12 @@
   </div>
 </div>
 
+<!-- Loading Indicator (solo para stats del perfil) -->
+<div *ngIf="isLoading" class="d-flex justify-content-center my-10">
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Cargando estadísticas...</span>
+  </div>
+</div>
+
+<!-- Outlet para mostrar componentes hijos (proyectos/documentos) -->
 <router-outlet></router-outlet>

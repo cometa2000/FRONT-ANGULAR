@@ -31,7 +31,6 @@ import { ThemeModeModule } from '../partials/layout/theme-mode-switcher/theme-mo
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { SidebarLogoComponent } from './components/sidebar/sidebar-logo/sidebar-logo.component';
 import { SidebarMenuComponent } from './components/sidebar/sidebar-menu/sidebar-menu.component';
-import { SidebarFooterComponent } from './components/sidebar/sidebar-footer/sidebar-footer.component';
 import { NavbarComponent } from './components/header/navbar/navbar.component';
 import { AccountingComponent } from './components/toolbar/accounting/accounting.component';
 import { ClassicComponent } from './components/toolbar/classic/classic.component';
@@ -63,7 +62,6 @@ const routes: Routes = [
     SidebarComponent,
     SidebarLogoComponent,
     SidebarMenuComponent,
-    SidebarFooterComponent,
     NavbarComponent,
     AccountingComponent,
     ClassicComponent,

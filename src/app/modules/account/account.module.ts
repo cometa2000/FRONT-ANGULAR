@@ -8,6 +8,8 @@ import { SettingsComponent } from './settings/settings.component';
 import { ProfileDetailsComponent } from './settings/forms/profile-details/profile-details.component';
 import { DropdownMenusModule, WidgetsModule } from '../../_metronic/partials';
 import {SharedModule} from "../../_metronic/shared/shared.module";
+import { ProfileService } from './service/profile.service';
+import { FormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [
@@ -18,10 +20,14 @@ import {SharedModule} from "../../_metronic/shared/shared.module";
   ],
   imports: [
     CommonModule,
+    FormsModule,
     AccountRoutingModule,
     DropdownMenusModule,
     WidgetsModule,
     SharedModule,
   ],
+  providers: [
+    ProfileService 
+  ]
 })
 export class AccountModule {}

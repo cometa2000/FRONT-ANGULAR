@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { UsersService } from '../service/users.service';
 
@@ -24,7 +24,7 @@ export class CreateUserComponent {
   phone:string = '';
   role_id:string = '';
   gender:string = '';
-  type_document:string = 'DNI';
+  type_document:string = '';
   n_document:string = '';
   address:string = '';
   sucursale_id:string = '';
@@ -32,12 +32,13 @@ export class CreateUserComponent {
   file_name:any;
   imagen_previzualiza:any;
 
-  password:string = '';
-  password_repit:string = '';
+  // ⚠️ ELIMINADOS: password y password_repit ya no son necesarios
+  
   constructor(
     public modal: NgbActiveModal,
     public usersService: UsersService,
     public toast: ToastrService,
+    private modalService: NgbModal
   ) {
     
   }
@@ -47,6 +48,7 @@ export class CreateUserComponent {
     //Add 'implements OnInit' to the class.
     
   }
+  
   processFile($event:any){
     if($event.target.files[0].type.indexOf("image") < 0){
       this.toast.warning("WARN","El archivo no es una imagen");
@@ -57,6 +59,7 @@ export class CreateUserComponent {
     reader.readAsDataURL(this.file_name);
     reader.onloadend = () => this.imagen_previzualiza = reader.result;
   }
+  
   store() {
 
     // --- Validación: nombre ---
@@ -65,6 +68,20 @@ export class CreateUserComponent {
         icon: 'warning',
         title: 'Validación',
         text: 'El nombre es requerido',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return;
+    }
+
+    // --- Validación: apellido ---
+    if (!this.surname) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El apellido es requerido',
         timer: 3500,
         showConfirmButton: false,
         toast: true,
@@ -159,33 +176,55 @@ export class CreateUserComponent {
       return;
     }
 
-    // --- Validación: contraseña ---
-    if (!this.password) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Validación',
-        text: 'La contraseña es requerida',
-        timer: 3500,
-        showConfirmButton: false,
-        toast: true,
-        position: 'top-end'
-      });
-      return;
+    // --- Validación específica según el tipo de documento ---
+    if (this.type_document === 'RFC') {
+      const rfcRegex = /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/;
+      if (!rfcRegex.test(this.n_document.toUpperCase())) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'RFC inválido',
+          text: 'Ingresa un RFC válido',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+        return;
+      }
     }
 
-    // --- Validación: repetición de contraseña ---
-    if (this.password !== this.password_repit) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Validación',
-        text: 'Las contraseñas no coinciden',
-        timer: 3500,
-        showConfirmButton: false,
-        toast: true,
-        position: 'top-end'
-      });
-      return;
+    if (this.type_document === 'CURP') {  // Tú pusiste INE = CURP
+      const curpRegex = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]{2}$/;
+      if (!curpRegex.test(this.n_document.toUpperCase())) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'CURP inválida',
+          text: 'Ingresa una CURP válida',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+        return;
+      }
     }
+
+    if (this.type_document === 'PASAPORTE') {
+      const passportRegex = /^[A-Z]{1}[0-9]{8}$/;
+      if (!passportRegex.test(this.n_document.toUpperCase())) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Pasaporte inválido',
+          text: 'Ingresa un número de pasaporte válido',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+        return;
+      }
+    }
+
 
     // ----------------------------------------------------
     // Construcción del formulario
@@ -205,7 +244,8 @@ export class CreateUserComponent {
     }
 
     formData.append("sucursale_id", this.sucursale_id);
-    formData.append("password", this.password);
+    
+    // ⚠️ NO ENVIAMOS password - El backend la genera automáticamente
 
     if (this.file_name) {
       formData.append("imagen", this.file_name);
@@ -230,15 +270,8 @@ export class CreateUserComponent {
           });
         } else {
 
-          Swal.fire({
-            icon: 'success',
-            title: 'Usuario registrado',
-            text: 'El usuario se registró correctamente',
-            timer: 3500,
-            showConfirmButton: false,
-            toast: true,
-            position: 'top-end'
-          });
+          // ✅ MOSTRAR MODAL CON EMAIL Y CONTRASEÑA GENERADA
+          this.showPasswordModal(this.email, resp.generated_password);
 
           this.UserC.emit(resp.user);
           this.modal.close();
@@ -259,6 +292,150 @@ export class CreateUserComponent {
 
     });
 
+  }
+
+  /**
+   * Muestra un modal con el email y la contraseña generada
+   * Incluye botones para copiar ambos valores
+   */
+  showPasswordModal(email: string, password: string) {
+    Swal.fire({
+      title: ' Usuario Registrado Exitosamente',
+      html: `
+        <div style="text-align: left; padding: 20px; overflow: hidden;">
+          <div style="margin-bottom: 20px;">
+            <p style="margin: 0; font-weight: bold; color: #3699FF;">
+              <i class="fa-solid fa-envelope" style="color: #3699FF;"></i> Correo Electrónico:
+            </p>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+              <input 
+                type="text" 
+                id="email-input" 
+                value="${email}" 
+                readonly 
+                style="
+                  flex: 1; 
+                  padding: 10px; 
+                  border: 1px solid #E4E6EF; 
+                  border-radius: 6px; 
+                  font-size: 14px;
+                  background: #F3F6F9;
+                "
+              />
+              <button 
+                id="copy-email-btn" 
+                style="
+                  padding: 10px 20px; 
+                  background: #3699FF; 
+                  color: white; 
+                  border: none; 
+                  border-radius: 6px; 
+                  cursor: pointer;
+                  font-weight: 600;
+                  transition: all 0.3s;
+                "
+                onmouseover="this.style.background='#187DE4'"
+                onmouseout="this.style.background='#3699FF'"
+              >
+                📋 Copiar
+              </button>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <p style="margin: 0; font-weight: bold; color: #F64E60;">
+              <i class="fa-solid fa-lock" style="color: #F64E60;"></i> Contraseña Temporal:
+            </p>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+              <input 
+                type="text" 
+                id="password-input" 
+                value="${password}" 
+                readonly 
+                style="
+                  flex: 1; 
+                  padding: 10px; 
+                  border: 1px solid #E4E6EF; 
+                  border-radius: 6px; 
+                  font-size: 14px;
+                  background: #FFF5F8;
+                  font-family: 'Courier New', monospace;
+                  letter-spacing: 2px;
+                  font-weight: bold;
+                "
+              />
+              <button 
+                id="copy-password-btn" 
+                style="
+                  padding: 10px 20px; 
+                  background: #F64E60; 
+                  color: white; 
+                  border: none; 
+                  border-radius: 6px; 
+                  cursor: pointer;
+                  font-weight: 600;
+                  transition: all 0.3s;
+                "
+                onmouseover="this.style.background='#EE2D41'"
+                onmouseout="this.style.background='#F64E60'"
+              >
+                📋 Copiar
+              </button>
+            </div>
+          </div>
+
+          <div style="
+            background: #FFF4DE; 
+            border-left: 4px solid #FFA800; 
+            padding: 15px; 
+            border-radius: 6px;
+            margin-top: 20px;
+          ">
+            <p style="margin: 0; color: #7E8299; font-size: 13px;">
+              ⚠️ <strong>Importante:</strong> Comparte estas credenciales con el usuario de forma segura. 
+              La contraseña es temporal y se recomienda cambiarla en el primer inicio de sesión.
+            </p>
+          </div>
+        </div>
+
+      `,
+      width: 600,
+      showCloseButton: true,
+      showConfirmButton: true,
+      confirmButtonText: 'Entendido',
+      confirmButtonColor: '#50CD89',
+      didOpen: () => {
+        // Funcionalidad de copiar email
+        const copyEmailBtn = document.getElementById('copy-email-btn');
+        const emailInput = document.getElementById('email-input') as HTMLInputElement;
+        
+        copyEmailBtn?.addEventListener('click', () => {
+          emailInput.select();
+          document.execCommand('copy');
+          
+          // Cambiar texto del botón temporalmente
+          copyEmailBtn.innerHTML = ' Copiado';
+          setTimeout(() => {
+            copyEmailBtn.innerHTML = ' Copiar';
+          }, 2000);
+        });
+
+        // Funcionalidad de copiar contraseña
+        const copyPasswordBtn = document.getElementById('copy-password-btn');
+        const passwordInput = document.getElementById('password-input') as HTMLInputElement;
+        
+        copyPasswordBtn?.addEventListener('click', () => {
+          passwordInput.select();
+          document.execCommand('copy');
+          
+          // Cambiar texto del botón temporalmente
+          copyPasswordBtn.innerHTML = '✅ Copiado';
+          setTimeout(() => {
+            copyPasswordBtn.innerHTML = '📋 Copiar';
+          }, 2000);
+        });
+      }
+    });
   }
 
 }

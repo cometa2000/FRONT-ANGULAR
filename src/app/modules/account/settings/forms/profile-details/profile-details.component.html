@@ -8,153 +8,269 @@
     aria-controls="kt_account_profile_details"
   >
     <div class="card-title m-0">
-      <h3 class="fw-bolder m-0">Profile Details</h3>
+      <h3 class="fw-bolder m-0">Editar Perfil</h3>
     </div>
   </div>
+  
   <div id="kt_account_profile_details" class="collapse show">
-    <form novalidate="" class="form">
+    <form novalidate class="form">
       <div class="card-body border-top p-9">
+        
+        <!-- Avatar -->
         <div class="row mb-6">
           <label class="col-lg-4 col-form-label fw-bold fs-6">Avatar</label>
           <div class="col-lg-8">
-            <div
-              class="image-input image-input-outline"
-              data-kt-image-input="true"
-              [style.background-image]="'url(./assets/media/avatars/blank.png'"
-            >
+            <div class="image-input image-input-outline" data-kt-image-input="true">
               <div
                 class="image-input-wrapper w-125px h-125px"
-                [style.background-image]="
-                  'url(./assets/media/avatars/300-1.jpg'
-                "
+                [style.background-image]="'url(' + (imagen_previzualiza || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png') + ')'"
+                style="background-size: cover; background-position: center;"
               ></div>
+              
+              <label
+                class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
+                data-kt-image-input-action="change"
+                data-bs-toggle="tooltip"
+                title="Cambiar avatar"
+              >
+                <i class="bi bi-pencil-fill fs-7"></i>
+                <input
+                  type="file"
+                  name="avatar"
+                  accept=".png, .jpg, .jpeg"
+                  (change)="processFile($event)"
+                />
+              </label>
+
+              <span
+                class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
+                data-kt-image-input-action="cancel"
+                data-bs-toggle="tooltip"
+                title="Cancelar avatar"
+                *ngIf="imagen_previzualiza && imagen_previzualiza !== 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'"
+                (click)="imagen_previzualiza = null; file_name = null"
+              >
+                <i class="bi bi-x fs-2"></i>
+              </span>
             </div>
+            <div class="form-text">Formatos permitidos: png, jpg, jpeg.</div>
           </div>
         </div>
+
+        <!-- Nombre y Apellido -->
         <div class="row mb-6">
-          <label class="col-lg-4 col-form-label required fw-bold fs-6"
-            >Full Name ar</label
-          >
+          <label class="col-lg-4 col-form-label required fw-bold fs-6">Nombre Completo</label>
           <div class="col-lg-8">
             <div class="row">
-              <div class="col-lg-6 fv-row">
+              <div class="col-lg-6 fv-row mb-3 mb-lg-0">
                 <input
                   type="text"
-                  class="
-                    form-control form-control-lg form-control-solid
-                    mb-3 mb-lg-0
-                  "
-                  placeholder="First name"
-                  name="fName"
-                  value="Max"
+                  class="form-control form-control-lg form-control-solid"
+                  placeholder="Nombre"
+                  name="name"
+                  [(ngModel)]="name"
                 />
               </div>
               <div class="col-lg-6 fv-row">
                 <input
                   type="text"
                   class="form-control form-control-lg form-control-solid"
-                  placeholder="Last name"
-                  name="lName"
-                  value="Smith"
+                  placeholder="Apellido"
+                  name="surname"
+                  [(ngModel)]="surname"
                 />
               </div>
             </div>
           </div>
         </div>
+
+        <!-- Email -->
         <div class="row mb-6">
-          <label class="col-lg-4 col-form-label required fw-bold fs-6"
-            >Company</label
-          >
+          <label class="col-lg-4 col-form-label required fw-bold fs-6">Email</label>
           <div class="col-lg-8 fv-row">
             <input
-              type="text"
+              type="email"
               class="form-control form-control-lg form-control-solid"
-              placeholder="Company name"
-              name="company"
-              value="Keenthemes"
+              placeholder="Correo electrónico"
+              name="email"
+              [(ngModel)]="email"
             />
           </div>
         </div>
+
+        <!-- Teléfono -->
         <div class="row mb-6">
-          <label class="col-lg-4 col-form-label fw-bold fs-6"
-            ><span class="required">Contact Phone</span></label
-          >
+          <label class="col-lg-4 col-form-label fw-bold fs-6">
+            <span>Teléfono</span>
+          </label>
           <div class="col-lg-8 fv-row">
             <input
               type="tel"
               class="form-control form-control-lg form-control-solid"
-              placeholder="Phone number"
-              name="contactPhone"
-              value="044 3276 454 935"
+              placeholder="Número de teléfono"
+              name="phone"
+              [(ngModel)]="phone"
+              maxlength="10"
             />
+            <div class="form-text">Debe contener 10 dígitos</div>
           </div>
         </div>
+
+        <!-- Tipo y Número de Documento -->
         <div class="row mb-6">
-          <label class="col-lg-4 col-form-label fw-bold fs-6"
-            ><span class="required">Company Site</span></label
-          >
-          <div class="col-lg-8 fv-row">
-            <input
-              type="text"
-              class="form-control form-control-lg form-control-solid"
-              placeholder="Company website"
-              name="companySite"
-              value="keenthemes.com"
-            />
-          </div>
-        </div>
-        
-        <div class="row mb-6">
-          <label class="col-lg-4 col-form-label fw-bold fs-6"
-            >Communication</label
-          >
-          <div class="col-lg-8 fv-row">
-            <div class="d-flex align-items-center mt-3">
-              <label class="form-check form-check-inline form-check-solid me-5"
-                ><input
-                  class="form-check-input"
-                  name="communication[]"
-                  type="checkbox"
-                /><span class="fw-bold ps-2 fs-6">Email</span></label
-              ><label class="form-check form-check-inline form-check-solid"
-                ><input
-                  class="form-check-input"
-                  name="communication[]"
-                  type="checkbox"
-                /><span class="fw-bold ps-2 fs-6">Phone</span></label
+          <label class="col-lg-4 col-form-label fw-bold fs-6">Documento de Identidad</label>
+          <div class="col-lg-8">
+            <div class="row">
+              <div class="col-lg-4 fv-row mb-3 mb-lg-0">
+                <select
+                  class="form-select form-select-lg form-select-solid"
+                  name="type_document"
+                  [(ngModel)]="type_document"
               >
+                  <option value="">Seleccionar tipo</option>
+                  <option value="RFC">RFC</option>
+                  <option value="CURP">CURP</option>
+                  <option value="PASAPORTE">PASAPORTE</option>
+                </select>
+              </div>
+              <div class="col-lg-8 fv-row">
+                <input
+                  type="text"
+                  class="form-control form-control-lg form-control-solid"
+                  placeholder="Número de documento"
+                  name="n_document"
+                  [(ngModel)]="n_document"
+                />
+              </div>
             </div>
           </div>
         </div>
-        <div class="row mb-0">
-          <label class="col-lg-4 col-form-label fw-bold fs-6"
-            >Allow Marketing</label
-          >
-          <div class="col-lg-8 d-flex align-items-center">
-            <div class="form-check form-check-solid form-switch fv-row">
-              <input
-                class="form-check-input w-45px h-30px"
-                type="checkbox"
-                id="allowmarketing"
-              /><label class="form-check-label"></label>
+
+        <!-- Género -->
+        <!-- <div class="row mb-6">
+          <label class="col-lg-4 col-form-label fw-bold fs-6">Género</label>
+          <div class="col-lg-8 fv-row">
+            <select
+              class="form-select form-select-lg form-select-solid"
+              name="gender"
+              [(ngModel)]="gender"
+            >
+              <option value="">Seleccionar...</option>
+              <option value="M">Masculino</option>
+              <option value="F">Femenino</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+        </div> -->
+
+        <!-- Rol -->
+        <div class="row mb-6">
+          <label class="col-lg-4 col-form-label fw-bold fs-6">Rol</label>
+          <div class="col-lg-8 fv-row">
+            <select
+              class="form-select form-select-lg form-select-solid"
+              name="role_id"
+              [(ngModel)]="role_id"
+              disabled
+            >
+              <option value="">Seleccionar...</option>
+              <option *ngFor="let role of roles" [value]="role.id">
+                {{ role.name }}
+              </option>
+            </select>
+            <div class="form-text"> <i class="fa-solid fa-triangle-exclamation" style="color: #ffc800;"></i> El rol solo puede ser cambiado por un administrador</div>
+            
+            <!-- ⭐ DEPURACIÓN: Mostrar info de debug (eliminar en producción) -->
+            <div class="form-text text-muted mt-2" *ngIf="roles.length === 0">
+              ⚠️ No hay roles cargados. Verifica la consola del navegador.
             </div>
           </div>
         </div>
+
+        <!-- Sucursal -->
+        <div class="row mb-6">
+          <label class="col-lg-4 col-form-label fw-bold fs-6">Sucursal</label>
+          <div class="col-lg-8 fv-row">
+            <select
+              class="form-select form-select-lg form-select-solid"
+              name="sucursale_id"
+              [(ngModel)]="sucursale_id"
+              disabled
+            >
+              <option value="">Seleccionar...</option>
+              <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                {{ sucursal.name }}
+              </option>
+            </select>
+            <div class="form-text"> <i class="fa-solid fa-triangle-exclamation" style="color: #ffc800;"></i> La sucursal solo puede ser cambiada por un administrador</div>
+            
+            <!-- ⭐ DEPURACIÓN: Mostrar info de debug (eliminar en producción) -->
+            <div class="form-text text-muted mt-2" *ngIf="sucursales.length === 0">
+              ⚠️ No hay sucursales cargadas. Verifica la consola del navegador.
+            </div>
+          </div>
+        </div>
+
+        <!-- Cambiar Contraseña (Opcional) -->
+        <div class="row mb-6">
+          <label class="col-lg-4 col-form-label fw-bold fs-6">
+            Cambiar Contraseña
+            <i
+              class="fas fa-exclamation-circle ms-1 fs-7"
+              data-bs-toggle="tooltip"
+              title="Déjalo en blanco si no deseas cambiar tu contraseña"
+            ></i>
+          </label>
+          <div class="col-lg-8">
+            <div class="row">
+              <div class="col-lg-6 fv-row mb-3 mb-lg-0">
+                <input
+                  type="password"
+                  class="form-control form-control-lg form-control-solid"
+                  placeholder="Nueva contraseña"
+                  name="password"
+                  [(ngModel)]="password"
+                  autocomplete="new-password"
+                />
+              </div>
+              <div class="col-lg-6 fv-row">
+                <input
+                  type="password"
+                  class="form-control form-control-lg form-control-solid"
+                  placeholder="Confirmar contraseña"
+                  name="password_repit"
+                  [(ngModel)]="password_repit"
+                  autocomplete="new-password"
+                />
+              </div>
+            </div>
+            <div class="form-text">Deja estos campos vacíos si no deseas cambiar tu contraseña</div>
+          </div>
+        </div>
+
       </div>
+
+      <!-- Footer con botón de guardar -->
       <div class="card-footer d-flex justify-content-end py-6 px-9">
+        <button
+          type="reset"
+          class="btn btn-light btn-active-light-primary me-2"
+          (click)="initializeFormFields()"
+          [disabled]="isLoading"
+        >
+          Cancelar
+        </button>
         <button
           type="button"
           class="btn btn-primary"
           [disabled]="isLoading"
           (click)="saveSettings()"
         >
-          <ng-container *ngIf="!isLoading">Save Changes</ng-container>
+          <ng-container *ngIf="!isLoading">Guardar Cambios</ng-container>
           <ng-container *ngIf="isLoading">
-            <span clas="indicator-progress" [style.display]="'block'">
-              Please wait...{{ " " }}
-              <span
-                class="spinner-border spinner-border-sm align-middle ms-2"
-              ></span>
+            <span class="indicator-progress" [style.display]="'block'">
+              Guardando...{{ " " }}
+              <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
             </span>
           </ng-container>
         </button>

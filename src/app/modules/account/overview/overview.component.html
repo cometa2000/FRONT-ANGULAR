@@ -1,117 +1,125 @@
 <div class="card mb-5 mb-xl-10" id="kt_profile_details_view">
   <div class="card-header cursor-pointer">
     <div class="card-title m-0">
-      <h3 class="fw-bolder m-0">Profile Details</h3>
+      <h3 class="fw-bolder m-0">Detalles del Perfil</h3>
     </div>
 
     <a
       routerLink="/crafted/account/settings"
       class="btn btn-primary align-self-center"
     >
-      Edit Profile
+      Editar Perfil
     </a>
   </div>
 
   <div class="card-body p-9">
-    <div class="row mb-7">
-      <label class="col-lg-4 fw-bold text-muted">Full Name ss</label>
-
-      <div class="col-lg-8">
-        <span class="fw-bolder fs-6 text-gray-900">Max Smith</span>
+    <!-- Mostrar loading -->
+    <div *ngIf="!currentUser" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
       </div>
     </div>
 
-    <div class="row mb-7">
-      <label class="col-lg-4 fw-bold text-muted">Company</label>
-
-      <div class="col-lg-8 fv-row">
-        <span class="fw-bold fs-6">Keenthemes</span>
+    <!-- Mostrar datos del usuario -->
+    <div *ngIf="currentUser">
+      <!-- Nombre Completo -->
+      <div class="row mb-7">
+        <label class="col-lg-4 fw-bold text-muted">Nombre Completo</label>
+        <div class="col-lg-8">
+          <span class="fw-bolder fs-6 text-gray-900">
+            {{ currentUser.full_name || (currentUser.name + ' ' + currentUser.surname) }}
+          </span>
+        </div>
       </div>
-    </div>
 
-    <div class="row mb-7">
-      <label class="col-lg-4 fw-bold text-muted">
-        Contact Phone
-        <i
-          class="fas fa-exclamation-circle ms-1 fs-7"
-          data-bs-toggle="tooltip"
-          title="Phone number must be active"
-        ></i>
-      </label>
-
-      <div class="col-lg-8 d-flex align-items-center">
-        <span class="fw-bolder fs-6 me-2">044 3276 454 935</span>
-
-        <span class="badge badge-success">Verified</span>
+      <!-- Email -->
+      <div class="row mb-7">
+        <label class="col-lg-4 fw-bold text-muted">Email</label>
+        <div class="col-lg-8 fv-row">
+          <span class="fw-bold fs-6">{{ currentUser.email }}</span>
+        </div>
       </div>
-    </div>
 
-    <div class="row mb-7">
-      <label class="col-lg-4 fw-bold text-muted">Company Site</label>
-
-      <div class="col-lg-8">
-        <a href="#" class="fw-bold fs-6 text-gray-900 text-hover-primary">
-          keenthemes.com
-        </a>
+      <!-- Teléfono -->
+      <div class="row mb-7">
+        <label class="col-lg-4 fw-bold text-muted">
+          Teléfono
+          <i
+            class="fas fa-exclamation-circle ms-1 fs-7"
+            data-bs-toggle="tooltip"
+            title="Número de contacto del usuario"
+          ></i>
+        </label>
+        <div class="col-lg-8 d-flex align-items-center">
+          <span class="fw-bolder fs-6 me-2">
+            {{ currentUser.phone || 'No especificado' }}
+          </span>
+          <span class="badge badge-success" *ngIf="currentUser.phone">Registrado</span>
+        </div>
       </div>
-    </div>
 
-    <div class="row mb-7">
-      <label class="col-lg-4 fw-bold text-muted">
-        Country
-        <i
-          class="fas fa-exclamation-circle ms-1 fs-7"
-          data-bs-toggle="tooltip"
-          title="Country of origination"
-        ></i>
-      </label>
-
-      <div class="col-lg-8">
-        <span class="fw-bolder fs-6 text-gray-900">Germany</span>
+      <!-- Documento -->
+      <div class="row mb-7">
+        <label class="col-lg-4 fw-bold text-muted">Documento de Identidad</label>
+        <div class="col-lg-8">
+          <span class="fw-bold fs-6 text-gray-900">
+            {{ getDocumentLabel() }}
+          </span>
+        </div>
       </div>
-    </div>
 
-    <div class="row mb-7">
-      <label class="col-lg-4 fw-bold text-muted">Communication</label>
-
-      <div class="col-lg-8">
-        <span class="fw-bolder fs-6 text-gray-900">Email, Phone</span>
+      <!-- Género -->
+      <div class="row mb-7">
+        <label class="col-lg-4 fw-bold text-muted">
+          Género
+        </label>
+        <div class="col-lg-8">
+          <span class="fw-bolder fs-6 text-gray-900">
+            {{ getGenderLabel(currentUser.gender) }}
+          </span>
+        </div>
       </div>
-    </div>
 
-    <div class="row mb-10">
-      <label class="col-lg-4 fw-bold text-muted">Allow Changes</label>
-
-      <div class="col-lg-8">
-        <span class="fw-bold fs-6">Yes</span>
+      <!-- Rol -->
+      <div class="row mb-7">
+        <label class="col-lg-4 fw-bold text-muted">Rol</label>
+        <div class="col-lg-8">
+          <span class="badge badge-light-primary fs-6">{{ getRoleName() }}</span>
+        </div>
       </div>
-    </div>
 
-    <div
-      class="
-        notice
-        d-flex
-        bg-light-warning
-        rounded
-        border-warning border border-dashed
-        p-6
-      "
-    >
-      <app-keenicon name="information-5" class="fs-2 text-warning me-4"></app-keenicon>
-      <div class="d-flex flex-stack flex-grow-1">
-        <div class="fw-bold">
-          <h4 class="text-gray-800 fw-bolder">We need your attention!</h4>
-          <div class="fs-6 text-gray-600">
-            Your payment was declined. To start using tools, please
-            <a class="fw-bolder" routerLink="/crafted/account/settings">
-              {{ " " }}
-              Add Payment Method
-            </a>
-            .
+      <!-- Sucursal -->
+      <div class="row mb-7">
+        <label class="col-lg-4 fw-bold text-muted">Sucursal</label>
+        <div class="col-lg-8">
+          <span class="fw-bold fs-6">{{ getSucursalName() }}</span>
+        </div>
+      </div>
+
+      <!-- Fecha de registro -->
+      <div class="row mb-10">
+        <label class="col-lg-4 fw-bold text-muted">Miembro desde</label>
+        <div class="col-lg-8">
+          <span class="fw-bold fs-6">{{ getCreatedDate() }}</span>
+        </div>
+      </div>
+
+      <!-- Nota informativa -->
+      <div class="notice d-flex bg-light-info rounded border-info border border-dashed p-6">
+        <app-keenicon name="information-5" class="fs-2 text-info me-4"></app-keenicon>
+        <div class="d-flex flex-stack flex-grow-1">
+          <div class="fw-bold">
+            <h4 class="text-gray-800 fw-bolder">Información importante</h4>
+            <div class="fs-6 text-gray-600">
+              Si necesitas actualizar tu información personal, haz clic en
+              <a class="fw-bolder" routerLink="/crafted/account/settings">
+                Editar Perfil
+              </a>
+              en la parte superior de esta página.
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 </div>
-
