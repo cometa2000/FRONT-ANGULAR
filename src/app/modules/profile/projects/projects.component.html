@@ -5,6 +5,16 @@
   </h3>
 
   <div class="d-flex flex-wrap my-2">
+    <!-- Botón de refresh -->
+    <button 
+      class="btn btn-sm btn-icon btn-light-primary me-4"
+      (click)="refreshTareas()"
+      [disabled]="isLoading"
+      title="Refrescar tareas"
+    >
+      <app-keenicon name="arrows-circle" class="fs-3"></app-keenicon>
+    </button>
+    
     <!-- Filtro por estado -->
     <div class="me-4">
       <select
@@ -18,6 +28,18 @@
         <option value="completada">Completadas</option>
       </select>
     </div>
+  </div>
+</div>
+
+<!-- Mensaje de error -->
+<div *ngIf="hasError && !isLoading" class="alert alert-warning d-flex align-items-center mb-5">
+  <app-keenicon name="information-2" class="fs-2 me-3"></app-keenicon>
+  <div class="d-flex flex-column flex-grow-1">
+    <span class="fw-bold">{{ errorMessage }}</span>
+    <button class="btn btn-sm btn-light-primary mt-2 align-self-start" (click)="refreshTareas()">
+      <app-keenicon name="arrows-circle" class="fs-4 me-1"></app-keenicon>
+      Reintentar
+    </button>
   </div>
 </div>
 

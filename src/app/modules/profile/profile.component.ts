@@ -1,13 +1,15 @@
-import { Component, OnInit } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
 import { ProfileService } from './service/profile.service';
 import { AuthService } from '../auth';
+import { filter } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-profile',
   templateUrl: './profile.component.html',
 })
-export class ProfileComponent implements OnInit {
+export class ProfileComponent implements OnInit, OnDestroy {
   
   user: any = null;
   stats: any = {
@@ -24,27 +26,54 @@ export class ProfileComponent implements OnInit {
     },
     success_rate: 0
   };
-  isLoading: boolean = false;
+  isLoading: boolean = true;
+  hasError: boolean = false;
+  errorMessage: string = '';
+  private routerSubscription?: Subscription;
 
   constructor(
     public authService: AuthService,
     private profileService: ProfileService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     console.log('🔵 ProfileComponent - Inicializando');
+    console.log('👤 Usuario actual:', this.authService.user);
+    
+    // ✅ IMPORTANTE: Invalidar caché al entrar al perfil
+    // Esto asegura que siempre se carguen datos frescos
+    this.profileService.invalidateCache();
+    
     this.loadUserData();
     this.loadUserStats();
     this.redirectToDefaultTab();
+    
+    // ✅ Escuchar cambios de ruta para actualizar stats
+    this.routerSubscription = this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event: any) => {
+      console.log('🔄 Ruta cambiada:', event.url);
+      // Recargar stats solo si volvemos a /profile desde otra ruta
+      if (event.url.includes('/profile') && !event.url.includes('/profile/')) {
+        this.loadUserStats();
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    // Limpiar suscripción
+    if (this.routerSubscription) {
+      this.routerSubscription.unsubscribe();
+    }
   }
 
   /**
    * Redirigir automáticamente a la tab de proyectos si no hay ruta hija
    */
   redirectToDefaultTab(): void {
-    // Verificar si estamos exactamente en la ruta /profile sin subrutas
     const currentUrl = this.router.url;
     console.log('🔍 URL actual:', currentUrl);
     
@@ -59,30 +88,96 @@ export class ProfileComponent implements OnInit {
    */
   loadUserData(): void {
     this.user = this.authService.user;
-    console.log('👤 Usuario cargado:', this.user);
+    console.log('👤 Usuario cargado:', {
+      id: this.user?.id,
+      name: this.user?.name,
+      email: this.user?.email
+    });
+    
+    if (!this.user) {
+      console.warn('⚠️ No hay usuario autenticado');
+      this.hasError = true;
+      this.errorMessage = 'No se pudo cargar la información del usuario';
+    }
+    
+    this.cdr.detectChanges();
   }
 
   /**
-   * Cargar estadísticas del usuario
+   * ✅ OPTIMIZADO: Cargar estadísticas con manejo de errores y detección de cambios
    */
   loadUserStats(): void {
     console.log('📊 Cargando estadísticas...');
     this.isLoading = true;
+    this.hasError = false;
     
-    this.profileService.getUserStats().subscribe({
+    this.cdr.detectChanges();
+    
+    // ✅ Forzar refresh sin usar caché
+    this.profileService.getUserStats(true).subscribe({
       next: (response) => {
         console.log('✅ Estadísticas recibidas:', response);
+        
         if (response.message === 200 && response.stats) {
-          this.stats = response.stats;
+          // ✅ Actualizar stats de forma explícita
+          this.stats = {
+            tareas: {
+              total: response.stats.tareas?.total || 0,
+              pendientes: response.stats.tareas?.pendientes || 0,
+              en_progreso: response.stats.tareas?.en_progreso || 0,
+              completadas: response.stats.tareas?.completadas || 0
+            },
+            documentos: {
+              total: response.stats.documentos?.total || 0,
+              carpetas: response.stats.documentos?.carpetas || 0,
+              archivos: response.stats.documentos?.archivos || 0
+            },
+            success_rate: response.stats.success_rate || 0
+          };
+          
           console.log('📊 Stats actualizados:', this.stats);
+        } else {
+          console.warn('⚠️ Respuesta sin stats válidos:', response);
         }
+        
         this.isLoading = false;
+        this.cdr.detectChanges();
+        console.log('✅ Detección de cambios forzada');
       },
       error: (error) => {
         console.error('❌ Error al cargar estadísticas:', error);
+        console.error('📋 Detalles del error:', {
+          status: error.status,
+          message: error.message,
+          statusText: error.statusText
+        });
+        
+        this.hasError = true;
+        
+        // Mensajes de error específicos
+        if (error.status === 401) {
+          this.errorMessage = 'Sesión expirada. Por favor, vuelve a iniciar sesión.';
+        } else if (error.status === 500) {
+          this.errorMessage = 'Error del servidor. Intenta más tarde.';
+        } else if (error.status === 0) {
+          this.errorMessage = 'No se pudo conectar al servidor. Verifica tu conexión.';
+        } else {
+          this.errorMessage = 'No se pudieron cargar las estadísticas.';
+        }
+        
         this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
+  }
+
+  /**
+   * ✅ NUEVO: Método para recargar stats manualmente
+   */
+  reloadStats(): void {
+    console.log('🔄 Recargando estadísticas manualmente...');
+    this.profileService.invalidateCache();
+    this.loadUserStats();
   }
 
   /**

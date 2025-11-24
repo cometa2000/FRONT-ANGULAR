@@ -5,6 +5,16 @@
   </h3>
 
   <div class="d-flex my-2">
+    <!-- Botón de refresh -->
+    <button 
+      class="btn btn-sm btn-icon btn-light-primary me-4"
+      (click)="refreshDocumentos()"
+      [disabled]="isLoading"
+      title="Refrescar documentos"
+    >
+      <app-keenicon name="arrows-circle" class="fs-3"></app-keenicon>
+    </button>
+    
     <!-- Buscador -->
     <div class="d-flex align-items-center position-relative me-4">
       <app-keenicon name="magnifier" class="fs-3 position-absolute ms-3"></app-keenicon>
@@ -16,6 +26,18 @@
         [(ngModel)]="searchTerm"
       />
     </div>
+  </div>
+</div>
+
+<!-- Mensaje de error -->
+<div *ngIf="hasError && !isLoading" class="alert alert-warning d-flex align-items-center mb-5">
+  <app-keenicon name="information-2" class="fs-2 me-3"></app-keenicon>
+  <div class="d-flex flex-column flex-grow-1">
+    <span class="fw-bold">{{ errorMessage }}</span>
+    <button class="btn btn-sm btn-light-primary mt-2 align-self-start" (click)="refreshDocumentos()">
+      <app-keenicon name="arrows-circle" class="fs-4 me-1"></app-keenicon>
+      Reintentar
+    </button>
   </div>
 </div>
 

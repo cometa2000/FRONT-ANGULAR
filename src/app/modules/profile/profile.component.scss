@@ -1,0 +1,343 @@
+/* ================================================
+   SKELETON LOADING STYLES
+   Animaciones suaves para estados de carga
+   ================================================ */
+
+/* Skeleton base */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(240, 240, 240, 1) 0%,
+    rgba(224, 224, 224, 1) 20%,
+    rgba(240, 240, 240, 1) 40%,
+    rgba(240, 240, 240, 1) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+/* Animación de skeleton */
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Skeleton para textos */
+.skeleton-text {
+  height: 20px;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.skeleton-text-sm {
+  height: 16px;
+  width: 80%;
+  margin-bottom: 8px;
+}
+
+.skeleton-text-lg {
+  height: 24px;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+/* Skeleton para botones */
+.skeleton-button {
+  height: 38px;
+  width: 120px;
+  border-radius: 6px;
+}
+
+/* Skeleton para imágenes/avatares */
+.skeleton-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}
+
+.skeleton-avatar-lg {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+}
+
+/* Skeleton para cards */
+.skeleton-card {
+  width: 100%;
+  height: 200px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+/* ================================================
+   FADE IN ANIMATIONS
+   Animaciones de aparición suaves
+   ================================================ */
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade in con delay para efectos escalonados */
+.fade-in-delay-1 {
+  animation: fadeIn 0.3s ease-in 0.1s both;
+}
+
+.fade-in-delay-2 {
+  animation: fadeIn 0.3s ease-in 0.2s both;
+}
+
+.fade-in-delay-3 {
+  animation: fadeIn 0.3s ease-in 0.3s both;
+}
+
+/* ================================================
+   LOADING STATES
+   Estados visuales durante carga
+   ================================================ */
+
+.loading-overlay {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.loading-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ================================================
+   HOVER EFFECTS
+   Efectos de hover mejorados
+   ================================================ */
+
+.hover-elevate-up {
+  transition: all 0.3s ease;
+}
+
+.hover-elevate-up:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.hover-scale {
+  transition: transform 0.2s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+/* ================================================
+   PROGRESS BARS
+   Barras de progreso animadas
+   ================================================ */
+
+.progress-bar-animated {
+  animation: progressBarStripes 1s linear infinite;
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.15) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.15) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 1rem 1rem;
+}
+
+@keyframes progressBarStripes {
+  0% {
+    background-position: 1rem 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+/* ================================================
+   SMOOTH TRANSITIONS
+   Transiciones suaves para cambios de estado
+   ================================================ */
+
+.smooth-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ================================================
+   ERROR SHAKE ANIMATION
+   Animación de "sacudida" para errores
+   ================================================ */
+
+.shake-animation {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-5px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+/* ================================================
+   UTILITY CLASSES
+   Clases auxiliares útiles
+   ================================================ */
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.cursor-not-allowed {
+  cursor: not-allowed;
+}
+
+.no-select {
+  user-select: none;
+}
+
+/* ================================================
+   RESPONSIVE SKELETON ADJUSTMENTS
+   Ajustes para diferentes tamaños de pantalla
+   ================================================ */
+
+@media (max-width: 768px) {
+  .skeleton-text {
+    height: 18px;
+  }
+  
+  .skeleton-card {
+    height: 150px;
+  }
+  
+  .skeleton-avatar-lg {
+    width: 80px;
+    height: 80px;
+  }
+}
+
+/* ================================================
+   DARK MODE SUPPORT (Opcional)
+   Soporte para modo oscuro
+   ================================================ */
+
+@media (prefers-color-scheme: dark) {
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(50, 50, 50, 1) 0%,
+      rgba(70, 70, 70, 1) 20%,
+      rgba(50, 50, 50, 1) 40%,
+      rgba(50, 50, 50, 1) 100%
+    );
+  }
+}
+
+/* ================================================
+   PROFILE SPECIFIC STYLES
+   Estilos específicos para el perfil
+   ================================================ */
+
+.profile-stats-container {
+  transition: all 0.3s ease;
+}
+
+.profile-stats-container.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.profile-tab-link {
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.profile-tab-link:hover {
+  color: var(--bs-primary);
+}
+
+.profile-badge {
+  transition: transform 0.2s ease;
+}
+
+.profile-badge:hover {
+  transform: scale(1.1);
+}
+
+/* ================================================
+   EMPTY STATE STYLES
+   Estilos para estados vacíos
+   ================================================ */
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--bs-gray-600);
+}
+
+.empty-state-icon {
+  font-size: 4rem;
+  opacity: 0.3;
+  margin-bottom: 1rem;
+}
+
+.empty-state-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state-description {
+  font-size: 1rem;
+  opacity: 0.8;
+}
+
+/* ================================================
+   PERFORMANCE OPTIMIZATIONS
+   Optimizaciones para mejor rendimiento
+   ================================================ */
+
+/* Usar will-change para animaciones que se repetirán */
+.will-animate {
+  will-change: transform, opacity;
+}
+
+/* Usar GPU acceleration para mejor performance */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}

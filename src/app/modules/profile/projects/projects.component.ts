@@ -1,16 +1,21 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { ProfileService } from '../service/profile.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-projects',
   templateUrl: './projects.component.html',
 })
-export class ProjectsComponent implements OnInit {
+export class ProjectsComponent implements OnInit, OnDestroy {
   
   tareas: any[] = [];
   isLoading: boolean = false;
   filterStatus: string = 'all';
+  hasError: boolean = false;
+  errorMessage: string = '';
+  
+  private subscription: Subscription = new Subscription();
 
   constructor(
     private profileService: ProfileService,
@@ -20,48 +25,100 @@ export class ProjectsComponent implements OnInit {
 
   ngOnInit(): void {
     console.log('🔵 ProjectsComponent - Inicializando');
+    console.log('📊 Estado inicial - tareas:', this.tareas.length);
     this.loadTareas();
+  }
+
+  ngOnDestroy(): void {
+    // Limpiar suscripciones
+    this.subscription.unsubscribe();
   }
 
   /**
    * Cargar las tareas del usuario
    */
-  loadTareas(): void {
-    console.log('📋 Iniciando carga de tareas...');
+  loadTareas(forceRefresh: boolean = false): void {
+    console.log('📋 Iniciando carga de tareas... (forceRefresh:', forceRefresh, ')');
     this.isLoading = true;
-    this.cdr.detectChanges(); // Forzar detección de cambios
+    this.hasError = false;
+    this.tareas = []; // ✅ Limpiar array antes de cargar
+    this.cdr.detectChanges();
     
-    this.profileService.getUserTareas().subscribe({
+    const sub = this.profileService.getUserTareas(forceRefresh).subscribe({
       next: (response) => {
-        console.log('✅ Respuesta recibida:', response);
-        if (response.message === 200 && response.tareas) {
-          this.tareas = response.tareas;
-          console.log('📋 Tareas asignadas:', this.tareas.length);
+        console.log('✅ Respuesta completa recibida:', response);
+        console.log('📋 Tipo de respuesta:', typeof response);
+        console.log('📋 Keys de respuesta:', Object.keys(response));
+        
+        // ✅ Validación más robusta
+        if (response && response.message === 200) {
+          if (response.tareas && Array.isArray(response.tareas)) {
+            this.tareas = response.tareas;
+            console.log('✅ Tareas asignadas exitosamente:', this.tareas.length);
+            console.log('📋 Primera tarea (si existe):', this.tareas[0]);
+          } else {
+            console.warn('⚠️ response.tareas no es un array válido:', response.tareas);
+            this.tareas = [];
+          }
         } else {
-          console.warn('⚠️ Respuesta sin tareas válidas');
+          console.warn('⚠️ Respuesta con message !== 200:', response.message);
           this.tareas = [];
         }
+        
         this.isLoading = false;
-        this.cdr.detectChanges(); // Forzar detección de cambios después de actualizar
-        console.log('✅ Estado de carga actualizado a false');
+        this.cdr.detectChanges();
+        console.log('✅ Estado final - tareas:', this.tareas.length, 'isLoading:', this.isLoading);
       },
       error: (error) => {
         console.error('❌ Error al cargar tareas:', error);
+        console.error('❌ Error status:', error.status);
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Error completo:', JSON.stringify(error));
+        
         this.tareas = [];
         this.isLoading = false;
-        this.cdr.detectChanges(); // Forzar detección de cambios en caso de error
+        this.hasError = true;
+        
+        // Mensaje de error específico
+        if (error.status === 401) {
+          this.errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente.';
+        } else if (error.status === 404) {
+          this.errorMessage = 'No se encontró el endpoint. Verifica el backend.';
+        } else if (error.status === 500) {
+          this.errorMessage = 'Error del servidor. Revisa los logs de Laravel.';
+        } else {
+          this.errorMessage = 'No se pudieron cargar las tareas.';
+        }
+        
+        this.cdr.detectChanges();
       }
     });
+    
+    this.subscription.add(sub);
+  }
+
+  /**
+   * Refrescar tareas manualmente
+   */
+  refreshTareas(): void {
+    console.log('🔄 Refrescando tareas (invalidando caché)...');
+    this.profileService.invalidateCache();
+    this.loadTareas(true);
   }
 
   /**
    * Filtrar tareas por estado
    */
   get filteredTareas(): any[] {
+    console.log('🔍 Filtrando tareas. Total:', this.tareas.length, 'Filtro:', this.filterStatus);
+    
     if (this.filterStatus === 'all') {
       return this.tareas;
     }
-    return this.tareas.filter(tarea => tarea.status === this.filterStatus);
+    
+    const filtered = this.tareas.filter(tarea => tarea.status === this.filterStatus);
+    console.log('🔍 Tareas filtradas:', filtered.length);
+    return filtered;
   }
 
   /**
@@ -70,6 +127,8 @@ export class ProjectsComponent implements OnInit {
   onFilterChange(event: any): void {
     this.filterStatus = event.target.value;
     console.log('🔍 Filtro cambiado a:', this.filterStatus);
+    console.log('🔍 Tareas después de filtro:', this.filteredTareas.length);
+    this.cdr.detectChanges();
   }
 
   /**
@@ -77,7 +136,6 @@ export class ProjectsComponent implements OnInit {
    */
   viewTarea(tarea: any): void {
     console.log('👁️ Ver tarea:', tarea);
-    // Navegar a la vista de edición de tarea con modo lectura
     this.router.navigate(['/tasks/tareas/edit', tarea.id], {
       queryParams: { readonly: true }
     });
