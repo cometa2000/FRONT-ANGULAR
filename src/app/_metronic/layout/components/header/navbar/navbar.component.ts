@@ -40,6 +40,31 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.notificationService.getUnreadCount().subscribe();
   }
 
+  /**
+   * ✅ NUEVO: Obtener la URL del avatar del usuario
+   */
+  getUserAvatar(): string {
+    if (this.user?.avatar) {
+      const avatarValue = this.user.avatar;
+      
+      // Si ya es solo el nombre del archivo (ejemplo: "3.png")
+      if (avatarValue.match(/^\d+\.png$/)) {
+        return `assets/media/avatars/${avatarValue}`;
+      }
+      
+      // Si contiene la ruta completa, usarla tal cual (retrocompatibilidad)
+      if (avatarValue.includes('http') || avatarValue.includes('storage')) {
+        return avatarValue;
+      }
+      
+      // Si no coincide, intentar construir la ruta
+      return `assets/media/avatars/${avatarValue}`;
+    }
+    
+    // Avatar por defecto
+    return 'assets/media/avatars/1.png';
+  }
+
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
   }

@@ -29,10 +29,12 @@ export class CreateUserComponent {
   address:string = '';
   sucursale_id:string = '';
 
-  file_name:any;
-  imagen_previzualiza:any;
-
-  // ⚠️ ELIMINADOS: password y password_repit ya no son necesarios
+  // ✅ NUEVAS PROPIEDADES PARA AVATARES PREDEFINIDOS
+  selectedAvatar: string = '1.png'; // Avatar por defecto
+  availableAvatars: string[] = [
+    '1.png', '2.png', '3.png', '4.png', '5.png',
+    '6.png', '7.png', '8.png', '9.png', '10.png'
+  ];
   
   constructor(
     public modal: NgbActiveModal,
@@ -44,20 +46,45 @@ export class CreateUserComponent {
   }
 
   ngOnInit(): void {
-    //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
-    //Add 'implements OnInit' to the class.
-    
+    // Inicialización del componente
   }
   
-  processFile($event:any){
-    if($event.target.files[0].type.indexOf("image") < 0){
-      this.toast.warning("WARN","El archivo no es una imagen");
-      return;
+  /**
+   * ✅ NUEVO: Método para obtener la ruta completa del avatar
+   */
+  getAvatarPath(avatarName: string): string {
+    return `assets/media/avatars/${avatarName}`;
+  }
+
+  /**
+   * ✅ NUEVO: Método para seleccionar un avatar
+   */
+  selectAvatar(avatarName: string): void {
+    this.selectedAvatar = avatarName;
+  }
+
+  /**
+   * ✅ NUEVO: Método para permitir solo números en el input de teléfono
+   */
+  onlyNumbers(event: KeyboardEvent): boolean {
+    const charCode = event.which ? event.which : event.keyCode;
+    // Solo permite números (0-9)
+    if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+      event.preventDefault();
+      return false;
     }
-    this.file_name = $event.target.files[0];
-    let reader = new FileReader();
-    reader.readAsDataURL(this.file_name);
-    reader.onloadend = () => this.imagen_previzualiza = reader.result;
+    return true;
+  }
+
+  /**
+   * ✅ NUEVO: Método para validar pegado de texto en el campo de teléfono
+   */
+  onPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    const pastedText = event.clipboardData?.getData('text') || '';
+    // Solo permitir números
+    const numericValue = pastedText.replace(/[^0-9]/g, '').substring(0, 10);
+    this.phone = numericValue;
   }
   
   store() {
@@ -119,13 +146,13 @@ export class CreateUserComponent {
       return;
     }
 
-    // --- Validación: teléfono ---
+    // --- ✅ Validación: teléfono (exactamente 10 dígitos) ---
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(this.phone)) {
       Swal.fire({
         icon: 'warning',
         title: 'Teléfono inválido',
-        text: 'El número debe contener 10 dígitos',
+        text: 'El número de teléfono debe contener exactamente 10 dígitos',
         timer: 3500,
         showConfirmButton: false,
         toast: true,
@@ -176,6 +203,20 @@ export class CreateUserComponent {
       return;
     }
 
+    // --- ✅ Validación: avatar debe estar seleccionado ---
+    if (!this.selectedAvatar) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'Debes seleccionar un avatar',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return;
+    }
+
     // --- Validación específica según el tipo de documento ---
     if (this.type_document === 'RFC') {
       const rfcRegex = /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/;
@@ -193,7 +234,7 @@ export class CreateUserComponent {
       }
     }
 
-    if (this.type_document === 'CURP') {  // Tú pusiste INE = CURP
+    if (this.type_document === 'CURP') {
       const curpRegex = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]{2}$/;
       if (!curpRegex.test(this.n_document.toUpperCase())) {
         Swal.fire({
@@ -245,11 +286,8 @@ export class CreateUserComponent {
 
     formData.append("sucursale_id", this.sucursale_id);
     
-    // ⚠️ NO ENVIAMOS password - El backend la genera automáticamente
-
-    if (this.file_name) {
-      formData.append("imagen", this.file_name);
-    }
+    // ✅ NUEVO: Enviar el avatar seleccionado en lugar de un archivo
+    formData.append("avatar", this.selectedAvatar);
 
     // ----------------------------------------------------
     // Llamada al servicio
@@ -300,7 +338,7 @@ export class CreateUserComponent {
    */
   showPasswordModal(email: string, password: string) {
     Swal.fire({
-      title: ' Usuario Registrado Exitosamente',
+      title: '✅ Usuario Registrado Exitosamente',
       html: `
         <div style="text-align: left; padding: 20px; overflow: hidden;">
           <div style="margin-bottom: 20px;">
@@ -414,9 +452,9 @@ export class CreateUserComponent {
           document.execCommand('copy');
           
           // Cambiar texto del botón temporalmente
-          copyEmailBtn.innerHTML = ' Copiado';
+          copyEmailBtn.innerHTML = '✅ Copiado';
           setTimeout(() => {
-            copyEmailBtn.innerHTML = ' Copiar';
+            copyEmailBtn.innerHTML = '📋 Copiar';
           }, 2000);
         });
 

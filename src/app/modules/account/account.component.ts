@@ -71,8 +71,23 @@ export class AccountComponent implements OnInit, OnDestroy {
    */
   getAvatarUrl(): string {
     if (this.currentUser?.avatar) {
-      return this.currentUser.avatar;
+      const avatarValue = this.currentUser.avatar;
+      
+      // Si ya es solo el nombre del archivo (ejemplo: "3.png")
+      if (avatarValue.match(/^\d+\.png$/)) {
+        return `assets/media/avatars/${avatarValue}`;
+      }
+      
+      // Si contiene la ruta completa, usarla tal cual (retrocompatibilidad)
+      if (avatarValue.includes('http') || avatarValue.includes('storage')) {
+        return avatarValue;
+      }
+      
+      // Si no coincide, intentar construir la ruta
+      return `assets/media/avatars/${avatarValue}`;
     }
+    
+    // Avatar por defecto
     return 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
   }
 

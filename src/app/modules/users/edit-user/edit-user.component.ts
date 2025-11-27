@@ -29,12 +29,17 @@ export class EditUserComponent {
   n_document:string = '';
   address:string = '';
 
-  file_name:any;
-  imagen_previzualiza:any;
-
   password:string = '';
   password_repit:string = '';
   sucursale_id:string = '';
+
+  // ✅ NUEVAS PROPIEDADES PARA AVATARES PREDEFINIDOS
+  selectedAvatar: string = '1.png'; // Avatar por defecto
+  availableAvatars: string[] = [
+    '1.png', '2.png', '3.png', '4.png', '5.png',
+    '6.png', '7.png', '8.png', '9.png', '10.png'
+  ];
+  
   constructor(
     public modal: NgbActiveModal,
     public usersService: UsersService,
@@ -44,30 +49,79 @@ export class EditUserComponent {
   }
 
   ngOnInit(): void {
-    //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
-    //Add 'implements OnInit' to the class.
-    this.name = this.USER_SELECTED.name
-    this.surname = this.USER_SELECTED.surname
-    this.email = this.USER_SELECTED.email
-    this.phone = this.USER_SELECTED.phone
-    this.role_id = this.USER_SELECTED.role_id
-    this.gender = this.USER_SELECTED.gender
-    this.type_document = this.USER_SELECTED.type_document
-    this.n_document = this.USER_SELECTED.n_document
-    this.address = this.USER_SELECTED.address
-    this.imagen_previzualiza = this.USER_SELECTED.avatar
+    // Cargar datos del usuario seleccionado
+    this.name = this.USER_SELECTED.name;
+    this.surname = this.USER_SELECTED.surname;
+    this.email = this.USER_SELECTED.email;
+    this.phone = this.USER_SELECTED.phone;
+    this.role_id = this.USER_SELECTED.role_id;
+    this.gender = this.USER_SELECTED.gender;
+    this.type_document = this.USER_SELECTED.type_document;
+    this.n_document = this.USER_SELECTED.n_document;
+    this.address = this.USER_SELECTED.address;
     this.sucursale_id = this.USER_SELECTED.sucursale_id;
-  }
-  processFile($event:any){
-    if($event.target.files[0].type.indexOf("image") < 0){
-      this.toast.warning("WARN","El archivo no es una imagen");
-      return;
+
+    // ✅ NUEVO: Cargar el avatar actual del usuario
+    // Si el avatar contiene "storage" o "http", extraer solo el nombre del archivo
+    if (this.USER_SELECTED.avatar) {
+      const avatarUrl = this.USER_SELECTED.avatar;
+      
+      // Si es una URL completa, intentar extraer el nombre del archivo
+      if (avatarUrl.includes('avatars/')) {
+        const match = avatarUrl.match(/avatars\/(\d+\.png)/);
+        if (match && match[1]) {
+          this.selectedAvatar = match[1];
+        }
+      } 
+      // Si ya es solo el nombre del archivo (ejemplo: "3.png")
+      else if (avatarUrl.match(/^\d+\.png$/)) {
+        this.selectedAvatar = avatarUrl;
+      }
+      // Si no coincide con ningún patrón, usar avatar por defecto
+      else {
+        this.selectedAvatar = '1.png';
+      }
     }
-    this.file_name = $event.target.files[0];
-    let reader = new FileReader();
-    reader.readAsDataURL(this.file_name);
-    reader.onloadend = () => this.imagen_previzualiza = reader.result;
   }
+
+  /**
+   * ✅ NUEVO: Método para obtener la ruta completa del avatar
+   */
+  getAvatarPath(avatarName: string): string {
+    return `assets/media/avatars/${avatarName}`;
+  }
+
+  /**
+   * ✅ NUEVO: Método para seleccionar un avatar
+   */
+  selectAvatar(avatarName: string): void {
+    this.selectedAvatar = avatarName;
+  }
+
+  /**
+   * ✅ NUEVO: Método para permitir solo números en el input de teléfono
+   */
+  onlyNumbers(event: KeyboardEvent): boolean {
+    const charCode = event.which ? event.which : event.keyCode;
+    // Solo permite números (0-9)
+    if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+      event.preventDefault();
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * ✅ NUEVO: Método para validar pegado de texto en el campo de teléfono
+   */
+  onPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    const pastedText = event.clipboardData?.getData('text') || '';
+    // Solo permitir números
+    const numericValue = pastedText.replace(/[^0-9]/g, '').substring(0, 10);
+    this.phone = numericValue;
+  }
+
   store() {
 
     // --- Validación de nombre ---
@@ -98,13 +152,13 @@ export class EditUserComponent {
       return;
     }
 
-    // --- Validación de teléfono ---
+    // --- ✅ Validación de teléfono (exactamente 10 dígitos) ---
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(this.phone)) {
       Swal.fire({
         icon: 'warning',
         title: 'Teléfono inválido',
-        text: 'El número de teléfono debe contener 10 dígitos',
+        text: 'El número de teléfono debe contener exactamente 10 dígitos',
         timer: 3500,
         showConfirmButton: false,
         toast: true,
@@ -183,9 +237,11 @@ export class EditUserComponent {
 
     if (this.address) formData.append("address", this.address);
     if (this.password) formData.append("password", this.password);
-    if (this.file_name) formData.append("imagen", this.file_name);
 
     formData.append("sucursale_id", this.sucursale_id);
+
+    // ✅ NUEVO: Enviar el avatar seleccionado en lugar de un archivo
+    formData.append("avatar", this.selectedAvatar);
 
     // --- Llamada al servicio ---
     this.usersService.updateUser(this.USER_SELECTED.id, formData).subscribe({
@@ -235,7 +291,5 @@ export class EditUserComponent {
     });
 
   }
-
-
 
 }

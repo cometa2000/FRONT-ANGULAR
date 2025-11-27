@@ -27,9 +27,12 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
   n_document: string = '';
   sucursale_id: any = ''; // ⭐ CAMBIADO: Usar any para aceptar números y strings
   
-  // Para la imagen
-  file_name: any;
-  imagen_previzualiza: any;
+  // ✅ NUEVAS PROPIEDADES PARA AVATARES PREDEFINIDOS
+  selectedAvatar: string = '1.png'; // Avatar por defecto
+  availableAvatars: string[] = [
+    '1.png', '2.png', '3.png', '4.png', '5.png',
+    '6.png', '7.png', '8.png', '9.png', '10.png'
+  ];
   
   // Para cambio de contraseña (opcional)
   password: string = '';
@@ -130,12 +133,32 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
       this.gender = this.currentUser.gender || '';
       this.type_document = this.currentUser.type_document || 'DNI';
       this.n_document = this.currentUser.n_document || '';
-      this.imagen_previzualiza = this.currentUser.avatar || '';
+      
+      // ✅ NUEVO: Cargar el avatar actual del usuario
+      if (this.currentUser.avatar) {
+        const avatarValue = this.currentUser.avatar;
+        
+        // Si ya es solo el nombre del archivo (ejemplo: "3.png")
+        if (avatarValue.match(/^\d+\.png$/)) {
+          this.selectedAvatar = avatarValue;
+        }
+        // Si contiene la ruta completa, extraer el nombre
+        else if (avatarValue.includes('avatars/')) {
+          const match = avatarValue.match(/avatars\/(\d+\.png)/);
+          if (match && match[1]) {
+            this.selectedAvatar = match[1];
+          }
+        }
+        // Si no coincide, usar avatar por defecto
+        else {
+          this.selectedAvatar = '1.png';
+        }
+      }
       
       console.log('✅ Campos inicializados:');
       console.log('   - role_id:', this.role_id);
       console.log('   - sucursale_id:', this.sucursale_id);
-      console.log('   - avatar:', this.imagen_previzualiza);
+      console.log('   - selectedAvatar:', this.selectedAvatar);
       console.log('   - gender:', this.gender);
       
       // ⭐ IMPORTANTE: Detectar cambios
@@ -144,33 +167,42 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Procesar el archivo de imagen seleccionado
+   * ✅ NUEVO: Método para obtener la ruta completa del avatar
    */
-  processFile($event: any): void {
-    if (!$event.target.files || $event.target.files.length === 0) {
-      return;
+  getAvatarPath(avatarName: string): string {
+    return `assets/media/avatars/${avatarName}`;
+  }
+
+  /**
+   * ✅ NUEVO: Método para seleccionar un avatar
+   */
+  selectAvatar(avatarName: string): void {
+    this.selectedAvatar = avatarName;
+    console.log('🎨 Avatar seleccionado:', avatarName);
+  }
+
+  /**
+   * ✅ NUEVO: Método para permitir solo números en el input de teléfono
+   */
+  onlyNumbers(event: KeyboardEvent): boolean {
+    const charCode = event.which ? event.which : event.keyCode;
+    // Solo permite números (0-9)
+    if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+      event.preventDefault();
+      return false;
     }
-    
-    if ($event.target.files[0].type.indexOf("image") < 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Advertencia',
-        text: 'El archivo seleccionado no es una imagen',
-        timer: 3500,
-        showConfirmButton: false,
-        toast: true,
-        position: 'top-end'
-      });
-      return;
-    }
-    
-    this.file_name = $event.target.files[0];
-    let reader = new FileReader();
-    reader.readAsDataURL(this.file_name);
-    reader.onloadend = () => {
-      this.imagen_previzualiza = reader.result;
-      console.log('📷 Vista previa de imagen actualizada');
-    };
+    return true;
+  }
+
+  /**
+   * ✅ NUEVO: Método para validar pegado de texto en el campo de teléfono
+   */
+  onPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    const pastedText = event.clipboardData?.getData('text') || '';
+    // Solo permitir números
+    const numericValue = pastedText.replace(/[^0-9]/g, '').substring(0, 10);
+    this.phone = numericValue;
   }
 
   /**
@@ -229,7 +261,7 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
         Swal.fire({
           icon: 'warning',
           title: 'Teléfono inválido',
-          text: 'El número de teléfono debe contener 10 dígitos',
+          text: 'El número de teléfono debe contener exactamente 10 dígitos',
           timer: 3500,
           showConfirmButton: false,
           toast: true,
@@ -266,7 +298,9 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
     if (this.n_document) formData.append("n_document", this.n_document);
     if (this.sucursale_id) formData.append("sucursale_id", this.sucursale_id);
     if (this.password) formData.append("password", this.password);
-    if (this.file_name) formData.append("imagen", this.file_name);
+    
+    // ✅ NUEVO: Enviar el avatar seleccionado en lugar de un archivo
+    formData.append("avatar", this.selectedAvatar);
 
     console.log('📦 FormData preparado para enviar');
 

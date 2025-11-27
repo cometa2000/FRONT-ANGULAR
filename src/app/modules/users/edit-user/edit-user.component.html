@@ -1,4 +1,4 @@
-<!--begin::Modal content CREATE-->
+<!--begin::Modal content EDIT-->
 <div class="modal-content">
     <!--begin::Modal header-->
     <div class="modal-header" id="kt_modal_add_user_header">
@@ -45,7 +45,17 @@
                     </div>
                     <div class="col-6">
                         <label class="required fw-bold fs-6 mb-2">Phone: </label>
-                        <input type="number" name="phone" class="form-control form-control-solid mb-3 mb-lg-0" placeholder="99999999" [(ngModel)]="phone" />
+                        <input 
+                            type="text" 
+                            name="phone" 
+                            class="form-control form-control-solid mb-3 mb-lg-0" 
+                            placeholder="9999999999" 
+                            [(ngModel)]="phone"
+                            maxlength="10"
+                            (keypress)="onlyNumbers($event)"
+                            (paste)="onPaste($event)"
+                        />
+                        <small class="form-text text-muted">Debe contener exactamente 10 dígitos</small>
                     </div>
                 </div>
 
@@ -87,8 +97,7 @@
                         </div>
                     </div>
                     <div class="col-6">
-                        <!-- <label class="required fw-bold fs-6 mb-2">Phone: </label>
-                        <input type="number" name="phone" class="form-control form-control-solid mb-3 mb-lg-0" placeholder="99999999" [(ngModel)]="phone" /> -->
+                        <!-- Espacio vacío para mantener el diseño -->
                     </div>
                 </div>
 
@@ -116,16 +125,28 @@
                 <div class="fv-row row my-1">
                     <div class="col-6">
                         <label class="required fw-bold fs-6 mb-2">Dirección: </label>
-                        <textarea name="address" id="" cols="20" rows="5" [(ngModel)]="address"></textarea>
+                        <textarea name="address" id="" cols="20" rows="5" class="form-control form-control-solid" [(ngModel)]="address"></textarea>
                     </div>
                     <div class="col-6">
-                        <label class="required fw-bold fs-6 mb-2">Avatar: </label>
-                        <div class="custom-file">
-                            <input type="file" class="custom-file-input" id="customFile"  accept=".jpeg, .bmp, .jpg, .png, .gif, .webp"  (change)="processFile($event)">
-                            <label class="custom-file-label" for="customFile">Choose file</label>
+                        <label class="required fw-bold fs-6 mb-2">Seleccionar Avatar: </label>
+                        
+                        <!-- Avatar Preview -->
+                        <div class="text-center mb-3" *ngIf="selectedAvatar">
+                            <img [src]="getAvatarPath(selectedAvatar)" class="rounded" style="width: 100px; height: 100px; object-fit: cover;" alt="Avatar Preview">
+                            <p class="text-muted small mt-2">Avatar seleccionado: {{ selectedAvatar }}</p>
                         </div>
-                        <div *ngIf="imagen_previzualiza">
-                            <img [src]="imagen_previzualiza" style="height: 100px;" alt="" srcset="">
+
+                        <!-- Avatar Grid Selection -->
+                        <div class="avatar-grid">
+                            <div 
+                                *ngFor="let avatar of availableAvatars" 
+                                class="avatar-option"
+                                [class.selected]="selectedAvatar === avatar"
+                                (click)="selectAvatar(avatar)"
+                            >
+                                <img [src]="getAvatarPath(avatar)" [alt]="'Avatar ' + avatar">
+                                <span class="avatar-number">{{ avatar.replace('.png', '') }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -136,8 +157,8 @@
                         <div class="d-flex">
                             <ng-container *ngFor="let sucursal of sucursales">
                                 <div class="form-check mx-1">
-                                    <input class="form-check-input" type="radio" [checked]="sucursale_id == sucursal.id" name="sucursale" (click)="sucursale_id = sucursal.id" id="sucursale1">
-                                    <label class="form-check-label" for="sucursale1">
+                                    <input class="form-check-input" type="radio" [checked]="sucursale_id == sucursal.id" name="sucursale" (click)="sucursale_id = sucursal.id" [id]="'sucursale_' + sucursal.id">
+                                    <label class="form-check-label" [for]="'sucursale_' + sucursal.id">
                                       {{ sucursal.name }}
                                     </label>
                                   </div>
@@ -148,11 +169,12 @@
 
                 <div class="fv-row row my-1">
                     <div class="col-6">
-                        <label class="required fw-bold fs-6 mb-2">Contraseña: </label>
+                        <label class="fw-bold fs-6 mb-2">Contraseña: </label>
                         <input type="password" name="password" class="form-control form-control-solid mb-3 mb-lg-0" placeholder="*******" [(ngModel)]="password" />
+                        <small class="form-text text-muted">Dejar en blanco para mantener la contraseña actual</small>
                     </div>
                     <div class="col-6">
-                        <label class="required fw-bold fs-6 mb-2">Repetir Contraseña: </label>
+                        <label class="fw-bold fs-6 mb-2">Repetir Contraseña: </label>
                         <input type="password" name="password" class="form-control form-control-solid mb-3 mb-lg-0" placeholder="********" [(ngModel)]="password_repit" />
                     </div>
                 </div>
@@ -167,8 +189,6 @@
                     <span class="indicator-label">Editar</span>
 
                     <span class="spinner-border spinner-border-sm align-middle ms-2" *ngIf="isLoading | async"></span>
-                    <!-- <span class="indicator-progress">Please wait...
-                    <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span> -->
                 </button>
             </div>
             <!--end::Actions-->
@@ -177,4 +197,4 @@
     </div>
     <!--end::Modal body-->
 </div>
-<!--end::Modal content CREATE-->
+<!--end::Modal content EDIT-->

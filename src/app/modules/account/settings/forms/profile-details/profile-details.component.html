@@ -20,40 +20,26 @@
         <div class="row mb-6">
           <label class="col-lg-4 col-form-label fw-bold fs-6">Avatar</label>
           <div class="col-lg-8">
-            <div class="image-input image-input-outline" data-kt-image-input="true">
-              <div
-                class="image-input-wrapper w-125px h-125px"
-                [style.background-image]="'url(' + (imagen_previzualiza || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png') + ')'"
-                style="background-size: cover; background-position: center;"
-              ></div>
-              
-              <label
-                class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
-                data-kt-image-input-action="change"
-                data-bs-toggle="tooltip"
-                title="Cambiar avatar"
-              >
-                <i class="bi bi-pencil-fill fs-7"></i>
-                <input
-                  type="file"
-                  name="avatar"
-                  accept=".png, .jpg, .jpeg"
-                  (change)="processFile($event)"
-                />
-              </label>
-
-              <span
-                class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
-                data-kt-image-input-action="cancel"
-                data-bs-toggle="tooltip"
-                title="Cancelar avatar"
-                *ngIf="imagen_previzualiza && imagen_previzualiza !== 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'"
-                (click)="imagen_previzualiza = null; file_name = null"
-              >
-                <i class="bi bi-x fs-2"></i>
-              </span>
+            
+            <!-- Avatar Preview -->
+            <div class="text-center mb-3" *ngIf="selectedAvatar">
+              <img [src]="getAvatarPath(selectedAvatar)" class="rounded" style="width: 125px; height: 125px; object-fit: cover;" alt="Avatar Preview">
+              <p class="text-muted small mt-2">Avatar seleccionado: {{ selectedAvatar }}</p>
             </div>
-            <div class="form-text">Formatos permitidos: png, jpg, jpeg.</div>
+
+            <!-- Avatar Grid Selection -->
+            <div class="avatar-grid">
+              <div 
+                *ngFor="let avatar of availableAvatars" 
+                class="avatar-option"
+                [class.selected]="selectedAvatar === avatar"
+                (click)="selectAvatar(avatar)"
+              >
+                <img [src]="getAvatarPath(avatar)" [alt]="'Avatar ' + avatar">
+                <span class="avatar-number">{{ avatar.replace('.png', '') }}</span>
+              </div>
+            </div>
+            <div class="form-text">Selecciona uno de los avatares disponibles</div>
           </div>
         </div>
 
@@ -111,8 +97,10 @@
               name="phone"
               [(ngModel)]="phone"
               maxlength="10"
+              (keypress)="onlyNumbers($event)"
+              (paste)="onPaste($event)"
             />
-            <div class="form-text">Debe contener 10 dígitos</div>
+            <div class="form-text">Debe contener exactamente 10 dígitos</div>
           </div>
         </div>
 
@@ -278,3 +266,70 @@
     </form>
   </div>
 </div>
+<style>
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.avatar-option {
+  position: relative;
+  cursor: pointer;
+  border: 3px solid transparent;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  padding: 5px;
+  
+  &:hover {
+    transform: scale(1.05);
+    border-color: #3699FF;
+    box-shadow: 0 4px 8px rgba(54, 153, 255, 0.2);
+  }
+  
+  &.selected {
+    border-color: #50CD89;
+    background-color: rgba(80, 205, 137, 0.1);
+    box-shadow: 0 4px 12px rgba(80, 205, 137, 0.3);
+    
+    .avatar-number {
+      background-color: #50CD89;
+      color: white;
+    }
+  }
+  
+  img {
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+    display: block;
+  }
+  
+  .avatar-number {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+  }
+}
+
+// Estilos responsivos para el grid de avatares
+@media (max-width: 768px) {
+  .avatar-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .avatar-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+</style>

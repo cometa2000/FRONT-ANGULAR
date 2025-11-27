@@ -10,7 +10,7 @@ import { Subscription } from 'rxjs';
   templateUrl: './profile.component.html',
 })
 export class ProfileComponent implements OnInit, OnDestroy {
-  
+  currentUser: any = null;
   user: any = null;
   stats: any = {
     tareas: {
@@ -88,10 +88,13 @@ export class ProfileComponent implements OnInit, OnDestroy {
    */
   loadUserData(): void {
     this.user = this.authService.user;
+    this.currentUser = this.authService.user; // ✅ Asignar también a currentUser
+    
     console.log('👤 Usuario cargado:', {
       id: this.user?.id,
       name: this.user?.name,
-      email: this.user?.email
+      email: this.user?.email,
+      avatar: this.user?.avatar
     });
     
     if (!this.user) {
@@ -184,10 +187,28 @@ export class ProfileComponent implements OnInit, OnDestroy {
    * Obtener el avatar del usuario
    */
   getUserAvatar(): string {
-    if (this.user && this.user.avatar) {
-      return this.user.avatar;
+    // Primero intentar con currentUser, luego con user (authService)
+    const userToCheck = this.currentUser || this.user;
+    
+    if (userToCheck?.avatar) {
+      const avatarValue = userToCheck.avatar;
+      
+      // Si ya es solo el nombre del archivo (ejemplo: "3.png")
+      if (avatarValue.match(/^\d+\.png$/)) {
+        return `assets/media/avatars/${avatarValue}`;
+      }
+      
+      // Si contiene la ruta completa, usarla tal cual (retrocompatibilidad)
+      if (avatarValue.includes('http') || avatarValue.includes('storage')) {
+        return avatarValue;
+      }
+      
+      // Si no coincide, intentar construir la ruta
+      return `assets/media/avatars/${avatarValue}`;
     }
-    return 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+    
+    // Avatar por defecto
+    return 'assets/media/avatars/1.png';
   }
 
   /**

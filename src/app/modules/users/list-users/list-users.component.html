@@ -93,7 +93,7 @@
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="symbol symbol-50px me-5">
-                                            <img [src]="USER.avatar" class="" alt="">
+                                            <img [src]="USER.avatar ? 'assets/media/avatars/' + USER.avatar : 'none'" class="" alt="">
                                         </div>
                                         
                                         <div class="d-flex justify-content-start flex-column">

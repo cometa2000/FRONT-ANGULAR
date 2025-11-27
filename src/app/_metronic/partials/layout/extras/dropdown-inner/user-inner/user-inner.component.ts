@@ -15,6 +15,8 @@ export class UserInnerComponent implements OnInit, OnDestroy {
   language: LanguageFlag;
   user$: Observable<any>;
   langs = languages;
+  user: any;
+  userAvatarClass: string = 'symbol-35px symbol-md-40px';
   private unsubscribe: Subscription[] = [];
 
   constructor(
@@ -51,6 +53,28 @@ export class UserInnerComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.unsubscribe.forEach((sb) => sb.unsubscribe());
+  }
+
+  getUserAvatar(): string {
+    if (this.user?.avatar) {
+      const avatarValue = this.user.avatar;
+      
+      // Si ya es solo el nombre del archivo (ejemplo: "3.png")
+      if (avatarValue.match(/^\d+\.png$/)) {
+        return `assets/media/avatars/${avatarValue}`;
+      }
+      
+      // Si contiene la ruta completa, usarla tal cual (retrocompatibilidad)
+      if (avatarValue.includes('http') || avatarValue.includes('storage')) {
+        return avatarValue;
+      }
+      
+      // Si no coincide, intentar construir la ruta
+      return `assets/media/avatars/${avatarValue}`;
+    }
+    
+    // Avatar por defecto
+    return 'assets/media/avatars/1.png';
   }
 }
 
