@@ -1183,7 +1183,10 @@ export class EditTareaComponent implements OnInit {
   }
 
   getUserAvatar(user: any): string {
-    return user?.avatar || this.defaultAvatar;
+    if (user?.avatar) {
+      return this.getAvatarUrl(user.avatar);
+    }
+    return this.defaultAvatar;
   }
 
   getUserName(user: any): string {
@@ -1212,6 +1215,37 @@ export class EditTareaComponent implements OnInit {
   // =============================
   // 🖼️ MANEJO DE AVATARES
   // =============================
+  
+  /**
+   * 🔧 Helper genérico para construir la URL del avatar
+   * Maneja los formatos: "1.png", "2.png", URLs completas, y rutas storage
+   */
+  private getAvatarUrl(avatarValue: string): string {
+    if (!avatarValue) {
+      return this.defaultAvatar;
+    }
+    
+    console.log('🔍 getAvatarUrl - Procesando avatar:', avatarValue);
+    
+    // Si ya es solo el nombre del archivo (ejemplo: "3.png")
+    if (avatarValue.match(/^\d+\.png$/)) {
+      const url = `assets/media/avatars/${avatarValue}`;
+      console.log('✅ Formato nuevo detectado:', url);
+      return url;
+    }
+    
+    // Si contiene la ruta completa, usarla tal cual (retrocompatibilidad)
+    if (avatarValue.includes('http') || avatarValue.includes('storage')) {
+      console.log('✅ URL completa detectada:', avatarValue);
+      return avatarValue;
+    }
+    
+    // Si no coincide con ningún patrón, intentar construir la ruta
+    const url = `assets/media/avatars/${avatarValue}`;
+    console.log('✅ Construyendo ruta genérica:', url);
+    return url;
+  }
+
   onAvatarError(event: any): void {
     event.target.src = this.defaultAvatar;
   }

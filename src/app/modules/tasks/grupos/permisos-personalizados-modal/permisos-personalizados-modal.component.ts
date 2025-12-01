@@ -93,4 +93,40 @@ export class PermisosPersonalizadosModalComponent implements OnInit {
     const lastInitial = surname ? surname.charAt(0).toUpperCase() : '';
     return firstInitial + lastInitial;
   }
+
+  /**
+   * 🎨 Obtener la ruta correcta del avatar de un miembro
+   */
+  getMemberAvatar(member: any): string | null {
+    if (member?.avatar) {
+      return this.getAvatarUrl(member.avatar);
+    }
+    
+    // Si no tiene avatar, devolvemos null para que se muestren las iniciales
+    return null;
+  }
+
+
+  /**
+   * 🔧 Helper genérico para construir la URL del avatar
+   * Maneja los formatos: "1.png", "2.png", URLs completas, y rutas storage
+   */
+  private getAvatarUrl(avatarValue: string): string {
+    if (!avatarValue) {
+      return 'assets/media/avatars/blank.png';
+    }
+    
+    // Si ya es solo el nombre del archivo (ejemplo: "3.png")
+    if (avatarValue.match(/^\d+\.png$/)) {
+      return `assets/media/avatars/${avatarValue}`;
+    }
+    
+    // Si contiene la ruta completa, usarla tal cual (retrocompatibilidad)
+    if (avatarValue.includes('http') || avatarValue.includes('storage')) {
+      return avatarValue;
+    }
+    
+    // Si no coincide con ningún patrón, intentar construir la ruta
+    return `assets/media/avatars/${avatarValue}`;
+  }
 }

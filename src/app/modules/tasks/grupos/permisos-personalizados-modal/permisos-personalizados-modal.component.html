@@ -29,11 +29,20 @@
         <div class="d-flex align-items-center">
           <!-- Avatar -->
           <div class="user-avatar me-3">
-            <img *ngIf="user.avatar" [src]="user.avatar" [alt]="user.name" class="rounded-circle">
-            <div *ngIf="!user.avatar" class="avatar-placeholder rounded-circle">
-              {{ getInitials(user.name, user.surname) }}
-            </div>
+            <ng-container *ngIf="getMemberAvatar(user) as avatar; else initials">
+              <img 
+                [src]="avatar" 
+                [alt]="user.name" 
+                class="rounded-circle">
+            </ng-container>
+
+            <ng-template #initials>
+              <div class="avatar-placeholder rounded-circle">
+                {{ getInitials(user.name, user.surname) }}
+              </div>
+            </ng-template>
           </div>
+
 
           <!-- Información del usuario -->
           <div class="flex-grow-1">

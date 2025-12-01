@@ -50,7 +50,7 @@
           (click)="!isUserAlreadyShared(user.id) && toggleUserSelection(user)">
           <div class="d-flex align-items-center">
             <img 
-              [src]="user.avatar || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'" 
+              [src]="getSharedAvatar(user)"
               class="rounded-circle me-3" 
               style="width: 40px; height: 40px; object-fit: cover;"
               alt="Avatar">
@@ -86,7 +86,7 @@
           *ngFor="let user of selectedUsers" 
           class="badge badge-lg bg-primary d-flex align-items-center gap-2 py-2 px-3">
           <img 
-            [src]="user.avatar || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'" 
+            [src]="getSharedAvatar(user)"
             class="rounded-circle" 
             style="width: 24px; height: 24px; object-fit: cover;"
             alt="Avatar">
@@ -100,27 +100,42 @@
     </div>
 
     <!-- Ya compartido con (chips) -->
-    <div *ngIf="sharedUsers.length > 0" class="mb-5">
-      <label class="fw-bold fs-6 mb-3 text-muted">
+    <div *ngIf="sharedUsers.length > 0" class="shared-members mb-5">
+      <h6 class="fw-bold mb-3 text-muted">
         Ya compartido con ({{ sharedUsers.length }}):
-      </label>
-      <div class="d-flex flex-wrap gap-2">
-        <span 
-          *ngFor="let user of sharedUsers" 
-          class="badge badge-lg bg-secondary d-flex align-items-center gap-2 py-2 px-3">
-          <img 
-            [src]="user.avatar || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'" 
-            class="rounded-circle" 
-            style="width: 24px; height: 24px; object-fit: cover;"
-            alt="Avatar">
-          <span>{{ user.name }}</span>
-          <i 
-            class="fa-solid fa-times cursor-pointer text-danger hover-scale" 
+      </h6>
+
+      <div class="list-group">
+        <div 
+          *ngFor="let user of sharedUsers"
+          class="list-group-item d-flex justify-content-between align-items-center shared-item">
+
+          <div class="d-flex align-items-center">
+            <img 
+              [src]="getSharedAvatar(user)"
+              class="rounded-circle me-3" 
+              width="40" 
+              height="40"
+              alt="avatar">
+
+            <div>
+              <div class="fw-bold">{{ user.name }}</div>
+              <small class="text-muted">{{ user.email }}</small>
+            </div>
+          </div>
+
+          <button 
+            class="btn btn-sm btn-outline-danger" 
             (click)="unshareUser(user.id)"
-            title="Dejar de compartir"></i>
-        </span>
+            title="Dejar de compartir">
+            <i class="fa-solid fa-user-minus"></i>
+          </button>
+
+        </div>
       </div>
     </div>
+
+
 
     <!-- Botones -->
     <div class="text-center pt-4 border-top">

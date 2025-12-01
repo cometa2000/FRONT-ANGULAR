@@ -14,9 +14,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 export class LoginComponent implements OnInit, OnDestroy {
   // KeenThemes mock, change it to:
   defaultAuth: any = {
-    email: 'super_admin_crm@gmail.com',
-    password: '12345678',
+    email: '',
+    password: '',
   };
+
   loginForm: FormGroup;
   hasError: boolean;
   returnUrl: string;
@@ -53,16 +54,16 @@ export class LoginComponent implements OnInit, OnDestroy {
   initForm() {
     this.loginForm = this.fb.group({
       email: [
-        this.defaultAuth.email,
+        '',
         Validators.compose([
           Validators.required,
           Validators.email,
           Validators.minLength(3),
-          Validators.maxLength(320), // https://stackoverflow.com/questions/386294/what-is-the-maximum-length-of-a-valid-email-address
+          Validators.maxLength(320),
         ]),
       ],
       password: [
-        this.defaultAuth.password,
+        '',
         Validators.compose([
           Validators.required,
           Validators.minLength(3),
@@ -71,6 +72,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       ],
     });
   }
+
 
   submit() {
     this.hasError = false;

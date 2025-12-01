@@ -87,4 +87,6 @@ export class PermisosGrupoModalComponent implements OnInit {
       this.PermisosChanged.emit(grupo);
     });
   }
+
+  
 }

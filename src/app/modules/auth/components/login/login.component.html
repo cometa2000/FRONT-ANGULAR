@@ -62,9 +62,18 @@
 
 
   <!-- begin::Alert error-->
+   
+
   <ng-container *ngIf="hasError">
-    <div class="mb-10 rounded">
-        <hr style="height: 12px; width: 500px; border: none; border-radius: 10px; background: linear-gradient(to right, #1258da, #de24aa);"> 
+    <div  class="mb-10 rounded">
+      
+      <div class="error-box animate-fade">
+        <div class="error-line"></div>
+        <div class="error-message">
+          Correo o contraseña incorrectos.
+        </div>
+        <div class="decor-line mt-4"></div>
+      </div>
     </div>
   </ng-container>
   <!-- end::Alert error-->
@@ -77,14 +86,20 @@
       class="form-control bg-transparent"
       type="email"
       name="email"
+      placeholder="Ingresa tu correo"
       formControlName="email"
       autocomplete="off"
       [ngClass]="{
-        'is-invalid': loginForm.controls['email'].invalid && hasError,
+        'is-invalid': (loginForm.controls['email'].touched || loginForm.controls['email'].dirty) 
+                      && loginForm.controls['email'].invalid 
+                      || hasError,
         'is-valid': loginForm.controls['email'].valid && !hasError
       }"
+
       style="padding-right: 2.5rem;"
     />
+
+
 
     <!-- Ícono tachita cuando hay error -->
     <div *ngIf="loginForm.controls['email'].invalid && hasError"
@@ -102,14 +117,20 @@
       class="form-control bg-transparent"
       type="password"
       name="password"
+      placeholder="Ingresa tu contraseña"
       autocomplete="off"
       formControlName="password"
       [ngClass]="{
-        'is-invalid': loginForm.controls['password'].invalid && hasError,
+        'is-invalid': (loginForm.controls['password'].touched || loginForm.controls['password'].dirty) 
+                      && loginForm.controls['password'].invalid 
+                      || hasError,
         'is-valid': loginForm.controls['password'].valid && !hasError
       }"
+
       style="padding-right: 2.5rem;"
     />
+
+
 
     <!-- Ícono tachita cuando hay error -->
     <div *ngIf="loginForm.controls['password'].invalid && hasError"

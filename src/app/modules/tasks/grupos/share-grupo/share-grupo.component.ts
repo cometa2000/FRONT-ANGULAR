@@ -232,4 +232,40 @@ export class ShareGrupoComponent implements OnInit {
       }
     });
   }
+
+  /**
+   * Obtener avatar correcto del usuario compartido
+   */
+  getSharedAvatar(user: any): string {
+    if (user?.avatar) {
+      return this.resolveAvatarPath(user.avatar);
+    }
+    return 'assets/media/avatars/1.png';
+  }
+
+  /**
+   * Resolver ruta del avatar según formato:
+   * - 1.png → assets/media/avatars/1.png
+   * - url completa → se usa tal cual
+   * - storage/... → se usa tal cual
+   */
+  resolveAvatarPath(avatar: string): string {
+    if (!avatar) {
+      return 'assets/media/avatars/blank.png';
+    }
+
+    // Si es "1.png", "23.jpg", etc.
+    if (avatar.match(/^\w+\.(png|jpg|jpeg|gif)$/i)) {
+      return `assets/media/avatars/${avatar}`;
+    }
+
+    // Si ya contiene una URL completa
+    if (avatar.includes('http') || avatar.includes('storage')) {
+      return avatar;
+    }
+
+    // Ruta fallback
+    return `assets/media/avatars/${avatar}`;
+  }
+
 }

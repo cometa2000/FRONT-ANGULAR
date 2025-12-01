@@ -534,6 +534,7 @@ export class TableroTareasComponent implements OnInit {
   }
 
   onAvatarError(event: any): void {
+    console.error('❌ Error al cargar avatar, usando fallback');
     event.target.src = 'assets/media/avatars/blank.png';
   }
 
@@ -541,9 +542,13 @@ export class TableroTareasComponent implements OnInit {
    * 🎨 Obtener la ruta correcta del avatar de un miembro
    */
   getMemberAvatar(member: any): string {
+    console.log('🖼️ getMemberAvatar - Member:', member);
+    
     if (member?.avatar) {
       return this.getAvatarUrl(member.avatar);
     }
+    
+    console.log('⚠️ Sin avatar, usando blank.png');
     return 'assets/media/avatars/blank.png';
   }
 
@@ -556,17 +561,24 @@ export class TableroTareasComponent implements OnInit {
       return 'assets/media/avatars/blank.png';
     }
     
+    console.log('🔍 getAvatarUrl - Procesando avatar:', avatarValue);
+    
     // Si ya es solo el nombre del archivo (ejemplo: "3.png")
     if (avatarValue.match(/^\d+\.png$/)) {
-      return `assets/media/avatars/${avatarValue}`;
+      const url = `assets/media/avatars/${avatarValue}`;
+      console.log('✅ Formato nuevo detectado:', url);
+      return url;
     }
     
     // Si contiene la ruta completa, usarla tal cual (retrocompatibilidad)
     if (avatarValue.includes('http') || avatarValue.includes('storage')) {
+      console.log('✅ URL completa detectada:', avatarValue);
       return avatarValue;
     }
     
     // Si no coincide con ningún patrón, intentar construir la ruta
-    return `assets/media/avatars/${avatarValue}`;
+    const url = `assets/media/avatars/${avatarValue}`;
+    console.log('✅ Construyendo ruta genérica:', url);
+    return url;
   }
 }

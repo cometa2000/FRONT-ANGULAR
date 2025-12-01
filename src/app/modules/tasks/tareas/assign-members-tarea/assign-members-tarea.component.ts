@@ -246,4 +246,52 @@ export class AssignMembersTareaComponent implements OnInit {
       });
     }
   }
+
+  /**
+   * 🎨 Obtener la ruta correcta del avatar de un usuario
+   */
+  getUserAvatar(user: any): string {
+    if (user?.avatar) {
+      return this.getAvatarUrl(user.avatar);
+    }
+    return this.defaultAvatar;
+  }
+
+  /**
+   * 🔧 Helper genérico para construir la URL del avatar
+   * Maneja los formatos: "1.png", "2.png", URLs completas, y rutas storage
+   */
+  private getAvatarUrl(avatarValue: string): string {
+    if (!avatarValue) {
+      return this.defaultAvatar;
+    }
+    
+    console.log('🔍 getAvatarUrl - Procesando avatar:', avatarValue);
+    
+    // Si ya es solo el nombre del archivo (ejemplo: "3.png")
+    if (avatarValue.match(/^\d+\.png$/)) {
+      const url = `assets/media/avatars/${avatarValue}`;
+      console.log('✅ Formato nuevo detectado:', url);
+      return url;
+    }
+    
+    // Si contiene la ruta completa, usarla tal cual (retrocompatibilidad)
+    if (avatarValue.includes('http') || avatarValue.includes('storage')) {
+      console.log('✅ URL completa detectada:', avatarValue);
+      return avatarValue;
+    }
+    
+    // Si no coincide con ningún patrón, intentar construir la ruta
+    const url = `assets/media/avatars/${avatarValue}`;
+    console.log('✅ Construyendo ruta genérica:', url);
+    return url;
+  }
+
+  /**
+   * 🖼️ Manejo de error al cargar avatar
+   */
+  onAvatarError(event: any): void {
+    console.error('❌ Error al cargar avatar, usando fallback');
+    event.target.src = this.defaultAvatar;
+  }
 }
