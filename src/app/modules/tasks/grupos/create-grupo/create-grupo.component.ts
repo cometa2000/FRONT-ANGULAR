@@ -24,7 +24,6 @@ export class CreateGrupoComponent {
     { url: 'assets/media/fondos/fondo5.png', name: 'fondo5.png' },
     { url: 'assets/media/fondos/fondo6.png', name: 'fondo6.png' },
     { url: 'assets/media/fondos/fondo7.png', name: 'fondo7.png' },
-    { url: 'assets/media/fondos/fondo8.png', name: 'fondo8.png' },
   ];
   
   // ✅ CORRECCIÓN: Usar el Observable del servicio

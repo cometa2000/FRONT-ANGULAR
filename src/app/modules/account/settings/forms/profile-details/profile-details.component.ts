@@ -2,6 +2,7 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ProfileService } from '../../../service/profile.service';
+import { AuthService } from 'src/app/modules/auth';
 
 @Component({
   selector: 'app-profile-details',
@@ -21,11 +22,11 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
   surname: string = '';
   email: string = '';
   phone: string = '';
-  role_id: any = ''; // ⭐ CAMBIADO: Usar any para aceptar números y strings
+  role_id: any = '';
   gender: string = '';
   type_document: string = 'DNI';
   n_document: string = '';
-  sucursale_id: any = ''; // ⭐ CAMBIADO: Usar any para aceptar números y strings
+  sucursale_id: any = '';
   
   // ✅ NUEVAS PROPIEDADES PARA AVATARES PREDEFINIDOS
   selectedAvatar: string = '1.png'; // Avatar por defecto
@@ -34,7 +35,8 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
     '6.png', '7.png', '8.png', '9.png', '10.png'
   ];
   
-  // Para cambio de contraseña (opcional)
+  // 🔒 NUEVO: Para cambio de contraseña
+  current_password: string = '';
   password: string = '';
   password_repit: string = '';
   
@@ -42,7 +44,8 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
 
   constructor(
     private cdr: ChangeDetectorRef,
-    private profileService: ProfileService
+    private profileService: ProfileService,
+    private authService: AuthService
   ) {
     const loadingSubscr = this.isLoading$
       .asObservable()
@@ -51,9 +54,9 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    console.log('🔄 ProfileDetailsComponent inicializado');
-    this.loadConfig(); // ⭐ PRIMERO: Cargar roles y sucursales
-    this.loadUserData(); // SEGUNDO: Cargar datos del usuario
+    console.log('📄 ProfileDetailsComponent inicializado');
+    this.loadConfig();
+    this.loadUserData();
   }
 
   /**
@@ -71,7 +74,6 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
         console.log('📋 Roles disponibles:', this.roles);
         console.log('🏢 Sucursales disponibles:', this.sucursales);
         
-        // ⭐ IMPORTANTE: Detectar cambios después de cargar
         this.cdr.detectChanges();
       },
       error: (error) => {
@@ -95,7 +97,6 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
           this.initializeFormFields();
         } else {
           console.log('⚠️ Usuario no disponible, cargando desde servidor...');
-          // Si no hay usuario, cargar desde servidor
           this.profileService.getProfile().subscribe({
             next: (resp: any) => {
               console.log('✅ Usuario cargado desde servidor:', resp);
@@ -126,7 +127,6 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
       this.email = this.currentUser.email || '';
       this.phone = this.currentUser.phone || '';
       
-      // ⭐ IMPORTANTE: Convertir a string para el binding con select
       this.role_id = this.currentUser.role_id ? String(this.currentUser.role_id) : '';
       this.sucursale_id = this.currentUser.sucursale_id ? String(this.currentUser.sucursale_id) : '';
       
@@ -134,47 +134,41 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
       this.type_document = this.currentUser.type_document || 'DNI';
       this.n_document = this.currentUser.n_document || '';
       
-      // ✅ NUEVO: Cargar el avatar actual del usuario
+      // ✅ Cargar el avatar actual del usuario
       if (this.currentUser.avatar) {
         const avatarValue = this.currentUser.avatar;
         
-        // Si ya es solo el nombre del archivo (ejemplo: "3.png")
         if (avatarValue.match(/^\d+\.png$/)) {
           this.selectedAvatar = avatarValue;
-        }
-        // Si contiene la ruta completa, extraer el nombre
-        else if (avatarValue.includes('avatars/')) {
+        } else if (avatarValue.includes('avatars/')) {
           const match = avatarValue.match(/avatars\/(\d+\.png)/);
           if (match && match[1]) {
             this.selectedAvatar = match[1];
           }
-        }
-        // Si no coincide, usar avatar por defecto
-        else {
+        } else {
           this.selectedAvatar = '1.png';
         }
       }
       
-      console.log('✅ Campos inicializados:');
-      console.log('   - role_id:', this.role_id);
-      console.log('   - sucursale_id:', this.sucursale_id);
-      console.log('   - selectedAvatar:', this.selectedAvatar);
-      console.log('   - gender:', this.gender);
+      // 🔒 Limpiar campos de contraseña al inicializar
+      this.current_password = '';
+      this.password = '';
+      this.password_repit = '';
       
-      // ⭐ IMPORTANTE: Detectar cambios
+      console.log('✅ Campos inicializados');
       this.cdr.detectChanges();
     }
   }
 
   /**
-   * ✅ NUEVO: Método para obtener la ruta completa del avatar
+   * ✅ Método para obtener la ruta completa del avatar
    */
   getAvatarPath(avatarName: string): string {
     return `assets/media/avatars/${avatarName}`;
   }
 
   /**
-   * ✅ NUEVO: Método para seleccionar un avatar
+   * ✅ Método para seleccionar un avatar
    */
   selectAvatar(avatarName: string): void {
     this.selectedAvatar = avatarName;
@@ -182,11 +176,10 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * ✅ NUEVO: Método para permitir solo números en el input de teléfono
+   * ✅ Método para permitir solo números en el input de teléfono
    */
   onlyNumbers(event: KeyboardEvent): boolean {
     const charCode = event.which ? event.which : event.keyCode;
-    // Solo permite números (0-9)
     if (charCode > 31 && (charCode < 48 || charCode > 57)) {
       event.preventDefault();
       return false;
@@ -195,12 +188,11 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * ✅ NUEVO: Método para validar pegado de texto en el campo de teléfono
+   * ✅ Método para validar pegado de texto en el campo de teléfono
    */
   onPaste(event: ClipboardEvent): void {
     event.preventDefault();
     const pastedText = event.clipboardData?.getData('text') || '';
-    // Solo permitir números
     const numericValue = pastedText.replace(/[^0-9]/g, '').substring(0, 10);
     this.phone = numericValue;
   }
@@ -254,7 +246,7 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // --- Validación de teléfono (opcional pero si se ingresa debe ser válido) ---
+    // --- Validación de teléfono ---
     if (this.phone) {
       const phoneRegex = /^[0-9]{10}$/;
       if (!phoneRegex.test(this.phone)) {
@@ -271,18 +263,61 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
       }
     }
 
-    // --- Validación de contraseñas (solo si se ingresó una nueva contraseña) ---
-    if (this.password && this.password !== this.password_repit) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Validación',
-        text: 'Las contraseñas no coinciden',
-        timer: 3500,
-        showConfirmButton: false,
-        toast: true,
-        position: 'top-end'
-      });
-      return;
+    // 🔒 NUEVA: Validación de contraseñas
+    if (this.password || this.password_repit || this.current_password) {
+      // Si se intenta cambiar la contraseña, todos los campos son obligatorios
+      if (!this.current_password) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Validación',
+          text: 'Debes ingresar tu contraseña actual para cambiarla',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+        return;
+      }
+
+      if (!this.password) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Validación',
+          text: 'Debes ingresar la nueva contraseña',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+        return;
+      }
+
+      if (this.password !== this.password_repit) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Validación',
+          text: 'Las contraseñas no coinciden',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+        return;
+      }
+
+      // Validar longitud mínima de la nueva contraseña
+      if (this.password.length < 8) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Validación',
+          text: 'La nueva contraseña debe tener al menos 8 caracteres',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+        return;
+      }
     }
 
     // --- Construcción de FormData ---
@@ -297,9 +332,14 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
     if (this.type_document) formData.append("type_document", this.type_document);
     if (this.n_document) formData.append("n_document", this.n_document);
     if (this.sucursale_id) formData.append("sucursale_id", this.sucursale_id);
-    if (this.password) formData.append("password", this.password);
     
-    // ✅ NUEVO: Enviar el avatar seleccionado en lugar de un archivo
+    // 🔒 NUEVO: Agregar contraseñas solo si se están cambiando
+    if (this.password) {
+      formData.append("current_password", this.current_password);
+      formData.append("password", this.password);
+    }
+    
+    // ✅ Enviar el avatar seleccionado
     formData.append("avatar", this.selectedAvatar);
 
     console.log('📦 FormData preparado para enviar');
@@ -333,14 +373,16 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
             position: 'top-end'
           });
 
-          // ⭐ IMPORTANTE: Actualizar el usuario en el servicio
+          // ⭐ CRÍTICO: Actualizar el usuario en el servicio Y en AuthService
           this.profileService.setCurrentUser(resp.user);
+          this.authService.user = resp.user; // ✅ También actualizar en AuthService
           
           // Reinicializar campos con los nuevos datos
           this.currentUser = resp.user;
           this.initializeFormFields();
           
           // Limpiar las contraseñas por seguridad
+          this.current_password = '';
           this.password = '';
           this.password_repit = '';
           
@@ -365,7 +407,7 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    console.log('🔚 ProfileDetailsComponent destruido');
+    console.log('📚 ProfileDetailsComponent destruido');
     this.unsubscribe.forEach((sb) => sb.unsubscribe());
   }
 }

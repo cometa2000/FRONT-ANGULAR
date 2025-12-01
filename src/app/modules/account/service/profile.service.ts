@@ -16,7 +16,7 @@ export class ProfileService {
   private currentUserSubject: BehaviorSubject<any>;
   public currentUser$: Observable<any>;
   
-  private profileLoaded: boolean = false; // ⭐ NUEVO: Flag para saber si ya se cargó el perfil
+  private profileLoaded: boolean = false;
   
   constructor(
     private http: HttpClient,
@@ -25,16 +25,14 @@ export class ProfileService {
     this.isLoadingSubject = new BehaviorSubject<boolean>(false);
     this.isLoading$ = this.isLoadingSubject.asObservable();
     
-    // ⭐ CORREGIDO: Inicializar con null para forzar carga desde servidor
     this.currentUserSubject = new BehaviorSubject<any>(null);
     this.currentUser$ = this.currentUserSubject.asObservable();
     
-    // ⭐ NUEVO: Cargar perfil automáticamente al inicializar el servicio
     this.initializeProfile();
   }
 
   /**
-   * ⭐ NUEVO: Inicializar el perfil automáticamente
+   * ⭐ Inicializar el perfil automáticamente
    */
   private initializeProfile(): void {
     if (this.authservice.token && !this.profileLoaded) {
@@ -46,7 +44,6 @@ export class ProfileService {
         },
         error: (error) => {
           console.error('❌ Error al inicializar perfil:', error);
-          // Si falla, usar el usuario del authservice como fallback
           const fallbackUser = this.authservice.user;
           if (fallbackUser) {
             this.currentUserSubject.next(fallbackUser);
@@ -81,7 +78,6 @@ export class ProfileService {
     this.isLoadingSubject.next(true);
     let headers = new HttpHeaders({'Authorization': 'Bearer '+ this.authservice.token});
     
-    // Obtener el ID del usuario autenticado
     const userId = this.getCurrentUserValue()?.id || this.authservice.user?.id;
     
     if (!userId) {
@@ -101,13 +97,23 @@ export class ProfileService {
   }
 
   /**
-   * Actualizar el usuario en el BehaviorSubject
+   * ⭐ ACTUALIZADO: Actualizar el usuario en el BehaviorSubject Y en AuthService
    */
   setCurrentUser(user: any): void {
     console.log('💾 Actualizando usuario en BehaviorSubject:', user);
+    
+    // Actualizar en el BehaviorSubject
     this.currentUserSubject.next(user);
-    // También actualizar en el AuthService
+    
+    // ✅ CRÍTICO: También actualizar en el AuthService para que se refleje en toda la app
     this.authservice.user = user;
+    
+    // ✅ NUEVO: También actualizar el currentUserSubject del AuthService si existe
+    if (this.authservice.currentUserSubject) {
+      this.authservice.currentUserSubject.next(user);
+    }
+    
+    console.log('✅ Usuario actualizado en ambos servicios');
   }
 
   /**
@@ -136,7 +142,7 @@ export class ProfileService {
   }
 
   /**
-   * ⭐ NUEVO: Recargar el perfil desde el servidor
+   * ⭐ Recargar el perfil desde el servidor
    */
   reloadProfile(): Observable<any> {
     return this.getProfile().pipe(

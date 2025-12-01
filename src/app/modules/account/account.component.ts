@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { ProfileService } from './service/profile.service';
 
@@ -9,16 +9,17 @@ import { ProfileService } from './service/profile.service';
 export class AccountComponent implements OnInit, OnDestroy {
   
   currentUser: any = null;
-  isLoading: boolean = true; // ⭐ CAMBIADO: Empezar en true para mostrar loading
+  isLoading: boolean = true;
   
   private unsubscribe: Subscription[] = [];
 
   constructor(
-    private profileService: ProfileService
+    private profileService: ProfileService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    console.log('🔄 AccountComponent inicializado');
+    console.log('📄 AccountComponent inicializado');
     this.loadUserProfile();
   }
 
@@ -26,20 +27,21 @@ export class AccountComponent implements OnInit, OnDestroy {
    * Cargar el perfil del usuario autenticado
    */
   loadUserProfile(): void {
-    // ⭐ PRIMERO: Suscribirse a los cambios del usuario (tiempo real)
+    // ⭐ Suscribirse a los cambios del usuario (tiempo real)
     const userSub = this.profileService.currentUser$.subscribe({
       next: (user) => {
         console.log('👤 Usuario actualizado en AccountComponent:', user);
         if (user) {
           this.currentUser = user;
           this.isLoading = false;
+          this.cdr.detectChanges(); // ✅ Forzar detección de cambios
         }
       }
     });
     
     this.unsubscribe.push(userSub);
 
-    // ⭐ SEGUNDO: Verificar si ya hay datos, si no, cargar desde servidor
+    // Verificar si ya hay datos, si no, cargar desde servidor
     const currentValue = this.profileService.getCurrentUserValue();
     
     if (!currentValue || !currentValue.role || !currentValue.sucursal) {
@@ -51,10 +53,12 @@ export class AccountComponent implements OnInit, OnDestroy {
           this.currentUser = resp;
           this.profileService.setCurrentUser(resp);
           this.isLoading = false;
+          this.cdr.detectChanges();
         },
         error: (error) => {
           console.error('❌ Error al cargar el perfil:', error);
           this.isLoading = false;
+          this.cdr.detectChanges();
         }
       });
       
@@ -63,6 +67,7 @@ export class AccountComponent implements OnInit, OnDestroy {
       console.log('✅ Usando datos existentes del servicio');
       this.currentUser = currentValue;
       this.isLoading = false;
+      this.cdr.detectChanges();
     }
   }
 
@@ -105,13 +110,13 @@ export class AccountComponent implements OnInit, OnDestroy {
    * Obtener el rol del usuario
    */
   getUserRole(): string {
-    console.log('🔍 Obteniendo rol del usuario:', this.currentUser?.role);
+    console.log('📝 Obteniendo rol del usuario:', this.currentUser?.role);
     
     if (this.currentUser?.role) {
       return this.currentUser.role.name || 'Sin rol';
     }
     
-    // ⭐ NUEVO: Fallback a roles (Spatie)
+    // Fallback a roles (Spatie)
     if (this.currentUser?.roles && this.currentUser.roles.length > 0) {
       return this.currentUser.roles[0].name || 'Sin rol';
     }
@@ -130,7 +135,7 @@ export class AccountComponent implements OnInit, OnDestroy {
    * Obtener la sucursal del usuario
    */
   getUserSucursal(): string {
-    console.log('🔍 Obteniendo sucursal del usuario:', this.currentUser?.sucursal);
+    console.log('📝 Obteniendo sucursal del usuario:', this.currentUser?.sucursal);
     
     if (this.currentUser?.sucursal) {
       return this.currentUser.sucursal.name || 'Sin sucursal';
@@ -145,14 +150,11 @@ export class AccountComponent implements OnInit, OnDestroy {
     if (!this.currentUser) return 0;
     
     let completedFields = 0;
-    const totalFields = 9; // Total de campos importantes
+    const totalFields = 9;
     
-    // Campos obligatorios
     if (this.currentUser.name) completedFields++;
     if (this.currentUser.surname) completedFields++;
     if (this.currentUser.email) completedFields++;
-    
-    // Campos opcionales pero importantes
     if (this.currentUser.phone) completedFields++;
     if (this.currentUser.avatar) completedFields++;
     if (this.currentUser.role_id) completedFields++;
@@ -164,7 +166,7 @@ export class AccountComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    console.log('🔚 AccountComponent destruido');
+    console.log('📚 AccountComponent destruido');
     this.unsubscribe.forEach((sb) => sb.unsubscribe());
   }
 }

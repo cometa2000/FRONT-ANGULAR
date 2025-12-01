@@ -155,15 +155,12 @@
 
   // Avatar del miembro
   .miembro-avatar {
-    width: 56px;
-    height: 56px;
-    min-width: 56px;
-    min-height: 56px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid #e2e8f0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    border: 2px solid #e5e5e5;
+    background-color: #f5f5f5;
   }
 
   &:hover .miembro-avatar {
@@ -404,4 +401,15 @@
     font-size: 1.1rem;
     font-weight: 500;
   }
+}
+
+
+/* ⭐ Ajuste del icono de estrella favorito */
+.grupo-star {
+    font-size: 16px !important;   /* Tamaño igual a los otros íconos */
+    width: 10px;
+    height: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

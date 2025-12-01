@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, of, throwError, BehaviorSubject } from 'rxjs';
 import { tap, catchError, shareReplay, finalize } from 'rxjs';
 import { URL_SERVICIOS } from 'src/app/config/config';
 import { AuthService } from '../../auth';
@@ -20,11 +20,19 @@ export class ProfileService {
   private tareasCacheTime: number = 0;
   private CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
+  // ⭐ NUEVO: BehaviorSubject para sincronización de avatar
+  private currentUserSubject: BehaviorSubject<any>;
+  public currentUser$: Observable<any>;
+
   constructor(
     private http: HttpClient,
     public authservice: AuthService,
   ) {
-    console.log('🔧 ProfileService inicializado');
+    console.log('🔧 ProfileService (Profile) inicializado');
+    
+    // ⭐ Inicializar BehaviorSubject con el usuario actual
+    this.currentUserSubject = new BehaviorSubject<any>(this.authservice.user);
+    this.currentUser$ = this.currentUserSubject.asObservable();
   }
 
   // =============================
@@ -70,7 +78,6 @@ export class ProfileService {
   getUserTareas(forceRefresh: boolean = false): Observable<any> {
     console.log('🌐 ProfileService.getUserTareas', { forceRefresh });
     
-    // ⚠️ TEMPORALMENTE SIN CACHÉ PARA DEBUGGING
     // Si el caché es válido y no se fuerza el refresh, devolver caché
     if (!forceRefresh && this.tareasCache$ && this.isCacheValid(this.tareasCacheTime)) {
       console.log('📦 Devolviendo tareas desde caché');
@@ -80,7 +87,7 @@ export class ProfileService {
     const headers = this.getHeaders();
     const URL = `${URL_SERVICIOS}/profile/tareas`;
     
-    console.log('🔄 Realizando petición HTTP para tareas:', URL);
+    console.log('📄 Realizando petición HTTP para tareas:', URL);
     console.log('🔑 Token:', this.authservice.token?.substring(0, 20) + '...');
     
     // ✅ shareReplay mantiene el observable vivo y comparte el resultado
@@ -123,7 +130,7 @@ export class ProfileService {
     const headers = this.getHeaders();
     const URL = `${URL_SERVICIOS}/profile/documentos?search=${search}`;
     
-    console.log('🔄 Realizando petición HTTP para documentos:', URL);
+    console.log('📄 Realizando petición HTTP para documentos:', URL);
     
     const request$ = this.http.get(URL, { headers }).pipe(
       tap((response: any) => {
@@ -164,7 +171,7 @@ export class ProfileService {
     const headers = this.getHeaders();
     const URL = `${URL_SERVICIOS}/profile/stats`;
     
-    console.log('🔄 Realizando petición HTTP para estadísticas:', URL);
+    console.log('📄 Realizando petición HTTP para estadísticas:', URL);
     
     this.statsCache$ = this.http.get(URL, { headers }).pipe(
       tap((response: any) => {
@@ -209,7 +216,7 @@ export class ProfileService {
     const headers = this.getHeaders();
     const URL = `${URL_SERVICIOS}/profile/complete?tareas=${loadTareas}&documentos=${loadDocumentos}&stats=${loadStats}`;
     
-    console.log('🔄 Realizando petición HTTP para perfil completo:', URL);
+    console.log('📄 Realizando petición HTTP para perfil completo:', URL);
     
     return this.http.get(URL, { headers }).pipe(
       tap((response: any) => {
@@ -238,5 +245,36 @@ export class ProfileService {
       next: () => console.log('✅ Tareas pre-cargadas'),
       error: (err) => console.error('❌ Error pre-cargando tareas:', err)
     });
+  }
+
+  // =============================
+  // ⭐ NUEVO: MÉTODOS PARA SINCRONIZACIÓN DE USUARIO
+  // =============================
+
+  /**
+   * ⭐ Actualizar el usuario en el BehaviorSubject Y en AuthService
+   */
+  setCurrentUser(user: any): void {
+    console.log('💾 Actualizando usuario en ProfileService (Profile):', user);
+    
+    // Actualizar en el BehaviorSubject
+    this.currentUserSubject.next(user);
+    
+    // ✅ CRÍTICO: También actualizar en el AuthService
+    this.authservice.user = user;
+    
+    // ✅ También actualizar el currentUserSubject del AuthService si existe
+    if (this.authservice.currentUserSubject) {
+      this.authservice.currentUserSubject.next(user);
+    }
+    
+    console.log('✅ Usuario actualizado en ambos servicios');
+  }
+
+  /**
+   * Obtener el usuario actual del BehaviorSubject
+   */
+  getCurrentUserValue(): any {
+    return this.currentUserSubject.value;
   }
 }

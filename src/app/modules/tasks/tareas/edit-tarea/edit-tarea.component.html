@@ -95,7 +95,7 @@
                 class="miembro-card">
                 <div class="miembro-info">
                   <img 
-                    [src]="miembro.avatar || defaultAvatar" 
+                    [src]="getUserAvatar(miembro)" 
                     [alt]="miembro.name"
                     class="miembro-avatar">
                   <div class="miembro-details">
@@ -419,7 +419,7 @@
           <div *ngFor="let item of timeline" class="activity-item">
 
             <div class="avatar">
-              <img [src]="item.user?.avatar || defaultAvatar" (error)="onAvatarError($event)">
+              <img [src]="getUserAvatar(item.user)" (error)="onAvatarError($event)">
             </div>
 
             <div class="activity-content">

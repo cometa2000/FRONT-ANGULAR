@@ -2,6 +2,7 @@ import { Component, HostBinding, OnDestroy, OnInit } from '@angular/core';
 import { Observable, Subscription } from 'rxjs';
 import { TranslationService } from '../../../../../../modules/i18n';
 import { AuthService, UserType } from '../../../../../../modules/auth';
+import { ProfileService } from 'src/app/modules/profile/service/profile.service';
 
 @Component({
   selector: 'app-user-inner',
@@ -21,12 +22,31 @@ export class UserInnerComponent implements OnInit, OnDestroy {
 
   constructor(
     private auth: AuthService,
-    private translationService: TranslationService
+    private translationService: TranslationService,
+    private profileService: ProfileService
   ) {}
 
   ngOnInit(): void {
     this.user$ = this.auth.currentUserSubject.asObservable();
     this.setLanguage(this.translationService.getSelectedLanguage());
+
+    // ⭐ NUEVO: Suscribirse al usuario actual
+    const userSub = this.user$.subscribe((user) => {
+      if (user) {
+        console.log('🔄 UserInner detectó cambio de usuario:', user);
+        this.user = user;
+      }
+    });
+    this.unsubscribe.push(userSub);
+
+    // ⭐ NUEVO: También suscribirse a cambios en ProfileService
+    const profileUserSub = this.profileService.currentUser$.subscribe((updatedUser) => {
+      if (updatedUser) {
+        console.log('🔄 UserInner detectó cambio de usuario desde ProfileService:', updatedUser);
+        this.user = updatedUser;
+      }
+    });
+    this.unsubscribe.push(profileUserSub);
   }
 
   logout() {
@@ -37,7 +57,6 @@ export class UserInnerComponent implements OnInit, OnDestroy {
   selectLanguage(lang: string) {
     this.translationService.setLanguage(lang);
     this.setLanguage(lang);
-    // document.location.reload();
   }
 
   setLanguage(lang: string) {
@@ -49,10 +68,6 @@ export class UserInnerComponent implements OnInit, OnDestroy {
         language.active = false;
       }
     });
-  }
-
-  ngOnDestroy() {
-    this.unsubscribe.forEach((sb) => sb.unsubscribe());
   }
 
   getUserAvatar(): string {
@@ -75,6 +90,10 @@ export class UserInnerComponent implements OnInit, OnDestroy {
     
     // Avatar por defecto
     return 'assets/media/avatars/1.png';
+  }
+
+  ngOnDestroy() {
+    this.unsubscribe.forEach((sb) => sb.unsubscribe());
   }
 }
 

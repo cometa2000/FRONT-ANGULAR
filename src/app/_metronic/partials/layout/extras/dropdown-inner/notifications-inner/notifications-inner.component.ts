@@ -35,7 +35,7 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadNotifications();
     
-    // Suscribirse a cambios en notificaciones
+    // ✅ Suscribirse a cambios en notificaciones del servicio
     this.subscription.add(
       this.notificationService.notifications$.subscribe((notifications: Notification[]) => {
         this.notifications = notifications;
@@ -43,7 +43,7 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Suscribirse al contador de no leídas
+    // ✅ Suscribirse al contador de no leídas
     this.subscription.add(
       this.notificationService.unreadCount$.subscribe((count: number) => {
         this.unreadCount = count;
@@ -56,7 +56,7 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Cargar notificaciones
+   * ✅ CORRECCIÓN: Cargar notificaciones siempre establece isLoading = false
    */
   loadNotifications(): void {
     this.isLoading = true;
@@ -64,17 +64,21 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
     
     this.notificationService.getAllNotifications(20).subscribe({
       next: (response: any) => {
+        // ✅ Establecer isLoading = false SIEMPRE, independientemente del success
+        this.isLoading = false;
+        
         if (response.success) {
-          this.notifications = response.notifications;
-          this.unreadCount = response.unread_count;
-          this.updateNotificationLists();
-          this.isLoading = false;
+          // Los datos ya fueron actualizados por el BehaviorSubject
+          // Solo verificamos que tengamos datos
+          console.log('✅ Notificaciones cargadas:', response.total);
+        } else {
+          this.error = response.error || 'Error al cargar las notificaciones';
         }
       },
       error: (error: any) => {
         console.error('Error al cargar notificaciones:', error);
         this.error = 'Error al cargar las notificaciones';
-        this.isLoading = false;
+        this.isLoading = false; // ✅ También establecer en false en error
       }
     });
   }
@@ -95,7 +99,7 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Marcar notificación como leída
+   * ✅ CORRECCIÓN: Marcar notificación como leída sin eliminarla de la lista
    */
   markAsRead(notification: Notification, event?: Event): void {
     if (event) {
@@ -106,8 +110,8 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
       this.notificationService.markAsRead(notification.id).subscribe({
         next: (response: any) => {
           if (response.success) {
-            notification.is_read = true;
-            this.updateNotificationLists();
+            // ✅ La notificación se actualizará automáticamente via BehaviorSubject
+            console.log('✅ Notificación marcada como leída');
           }
         },
         error: (error: any) => {
@@ -118,7 +122,7 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Marcar todas como leídas
+   * ✅ CORRECCIÓN: Marcar todas como leídas sin eliminarlas
    */
   markAllAsRead(): void {
     if (this.unreadCount === 0) return;
@@ -126,8 +130,8 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
     this.notificationService.markAllAsRead().subscribe({
       next: (response: any) => {
         if (response.success) {
-          this.notifications.forEach(n => n.is_read = true);
-          this.updateNotificationLists();
+          // ✅ Las notificaciones se actualizarán automáticamente via BehaviorSubject
+          console.log('✅ Todas las notificaciones marcadas como leídas');
         }
       },
       error: (error: any) => {
@@ -146,8 +150,8 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
       this.notificationService.deleteNotification(notificationId).subscribe({
         next: (response: any) => {
           if (response.success) {
-            this.notifications = this.notifications.filter(n => n.id !== notificationId);
-            this.updateNotificationLists();
+            // ✅ La notificación se eliminará automáticamente via BehaviorSubject
+            console.log('✅ Notificación eliminada');
           }
         },
         error: (error: any) => {
@@ -167,8 +171,8 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
       this.notificationService.deleteAllRead().subscribe({
         next: (response: any) => {
           if (response.success) {
-            this.notifications = this.unreadNotifications;
-            this.updateNotificationLists();
+            // ✅ Las notificaciones se actualizarán automáticamente via BehaviorSubject
+            console.log('✅ Notificaciones leídas eliminadas');
           }
         },
         error: (error: any) => {
@@ -183,7 +187,9 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
    */
   goToTarea(notification: Notification): void {
     // Marcar como leída
-    this.markAsRead(notification);
+    if (!notification.is_read) {
+      this.markAsRead(notification);
+    }
     
     // Navegar si tiene tarea
     if (notification.tarea) {

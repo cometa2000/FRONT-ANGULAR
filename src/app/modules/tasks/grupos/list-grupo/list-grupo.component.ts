@@ -33,6 +33,9 @@ export class ListGrupoComponent {
   miembrosGrupo: any[] = [];
   loadingMiembros: boolean = false;
 
+  currentUser: any = null;
+  user: any = null;
+
   constructor(
     public modalService: NgbModal,
     public grupoService: GrupoService,
@@ -344,5 +347,55 @@ export class ListGrupoComponent {
       }
       this.toast.success('Permisos actualizados correctamente');
     });
+  }
+
+  /**
+   * 🎨 Obtener la ruta correcta del avatar del propietario del grupo
+   */
+  getUserAvatar(): string {
+    // Obtener el usuario del grupo seleccionado (propietario)
+    const userToCheck = this.selectedGrupo?.user;
+    
+    if (userToCheck?.avatar) {
+      return this.getAvatarUrl(userToCheck.avatar);
+    }
+    
+    // Avatar por defecto
+    return 'assets/media/avatars/blank.png';
+  }
+
+  /**
+   * 🎨 Obtener la ruta correcta del avatar de un miembro
+   */
+  getMemberAvatar(member: any): string {
+    if (member?.avatar) {
+      return this.getAvatarUrl(member.avatar);
+    }
+    
+    // Avatar por defecto
+    return 'assets/media/avatars/blank.png';
+  }
+
+  /**
+   * 🔧 Helper genérico para construir la URL del avatar
+   * Maneja los formatos: "1.png", "2.png", URLs completas, y rutas storage
+   */
+  private getAvatarUrl(avatarValue: string): string {
+    if (!avatarValue) {
+      return 'assets/media/avatars/blank.png';
+    }
+    
+    // Si ya es solo el nombre del archivo (ejemplo: "3.png")
+    if (avatarValue.match(/^\d+\.png$/)) {
+      return `assets/media/avatars/${avatarValue}`;
+    }
+    
+    // Si contiene la ruta completa, usarla tal cual (retrocompatibilidad)
+    if (avatarValue.includes('http') || avatarValue.includes('storage')) {
+      return avatarValue;
+    }
+    
+    // Si no coincide con ningún patrón, intentar construir la ruta
+    return `assets/media/avatars/${avatarValue}`;
   }
 }

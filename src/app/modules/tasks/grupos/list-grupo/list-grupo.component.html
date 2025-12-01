@@ -32,7 +32,7 @@
                             *ngIf="GRUPO.is_starred"
                             class="position-absolute top-0 start-0 m-3"
                             style="z-index: 10;">
-                            <i class="fa-solid fa-star fs-2 text-warning me-2"></i>
+                            <i class="fa-solid fa-star text-warning grupo-star"></i>
                         </div>
 
                         <div class="card-header border-0">
@@ -76,7 +76,7 @@
                                     <div class="fs-6 fw-bold text-gray-900 mb-2">Opciones</div>
                                     <ul class="list-unstyled mb-0">
                                       <!-- Marcar/Desmarcar (SIEMPRE visible) -->
-                                      <li class="mb-2">
+                                      <li class="mb-2" *ngIf="GRUPO.is_owner">
                                           <button 
                                               type="button"
                                               class="btn btn-link text-decoration-none fw-bold text-dark d-block w-100 text-start p-2 rounded"
@@ -109,7 +109,7 @@
                                       </li>
 
                                       <!-- ✅ Editar (SOLO CON PERMISOS DE ESCRITURA) -->
-                                      <li class="mb-2" *ngIf="GRUPO.is_owner || GRUPO.has_write_access">
+                                      <li class="mb-2" *ngIf="GRUPO.is_owner ">
                                           <button 
                                               type="button"
                                               class="btn btn-link text-decoration-none fw-bold text-dark d-block w-100 text-start p-2 rounded"
@@ -256,9 +256,10 @@
           <!-- Card del Propietario (siempre primero) -->
           <div class="miembro-card d-flex align-items-center gap-3" *ngIf="selectedGrupo?.user">
             <img 
-              [src]="selectedGrupo.user.avatar || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'" 
-              alt="Avatar del propietario"
-              class="miembro-avatar">
+              [src]="getUserAvatar()" 
+              [alt]="'Avatar de ' + selectedGrupo.user.name"
+              class="miembro-avatar" />
+
             
             <div class="miembro-info">
               <div class="miembro-nombre">
@@ -284,7 +285,7 @@
           <!-- Cards de los Miembros Compartidos -->
           <div class="miembro-card d-flex align-items-center gap-3" *ngFor="let miembro of miembrosGrupo">
             <img 
-              [src]="miembro.avatar || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'" 
+              [src]="getMemberAvatar(miembro)" 
               alt="Avatar de {{ miembro.name }}"
               class="miembro-avatar">
             

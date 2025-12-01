@@ -2,6 +2,7 @@ import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { AuthService } from 'src/app/modules/auth';
 import { NotificationService } from 'src/app/services/notification.service';
 import { Subscription } from 'rxjs';
+import { ProfileService } from 'src/app/modules/profile/service/profile.service';
 
 @Component({
   selector: 'app-navbar',
@@ -23,7 +24,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   constructor(
     public authService: AuthService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private profileService: ProfileService
   ) {}
 
   ngOnInit(): void {
@@ -38,10 +40,32 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
     // Cargar el contador inicial
     this.notificationService.getUnreadCount().subscribe();
+
+    // ⭐ NUEVO: Suscribirse a cambios del usuario en ProfileService
+    this.subscription.add(
+      this.profileService.currentUser$.subscribe((updatedUser) => {
+        if (updatedUser) {
+          console.log('🔄 Navbar detectó cambio de usuario:', updatedUser);
+          this.user = updatedUser;
+        }
+      })
+    );
+
+    // ⭐ NUEVO: También suscribirse a cambios en AuthService si tiene BehaviorSubject
+    if (this.authService.currentUserSubject) {
+      this.subscription.add(
+        this.authService.currentUserSubject.subscribe((updatedUser) => {
+          if (updatedUser) {
+            console.log('🔄 Navbar detectó cambio de usuario desde AuthService:', updatedUser);
+            this.user = updatedUser;
+          }
+        })
+      );
+    }
   }
 
   /**
-   * ✅ NUEVO: Obtener la URL del avatar del usuario
+   * ✅ Obtener la URL del avatar del usuario
    */
   getUserAvatar(): string {
     if (this.user?.avatar) {

@@ -254,7 +254,7 @@
                             class="member-avatar-wrapper"
                             [title]="member.name + ' ' + (member.surname || '')">
                             <img 
-                              [src]="member.avatar || 'assets/media/avatars/blank.png'" 
+                              [src]="getMemberAvatar(member)" 
                               [alt]="member.name"
                               class="member-avatar">
                           </div>
