@@ -3,6 +3,7 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { TareaService } from '../service/tarea.service';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from 'src/app/modules/auth'; // 👈 importar AuthService
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-create-tarea',
@@ -47,17 +48,24 @@ export class CreateTareaComponent {
 
   store() {
     if (!this.name.trim()) {
-      this.toast.error('Validación', 'El nombre de la tarea es requerido');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El nombre de la tarea es requerido',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
       return;
     }
 
-    // 👇 aquí ya se incluyen user_id y lista_id automáticamente
     let data = {
       name: this.name,
       description: this.description,
       type_task: this.type_task,
       priority: this.priority,
-      lista_id: this.lista_id, // 👈 lista seleccionada
+      lista_id: this.lista_id,
       start_date: this.start_date,
       due_date: this.due_date,
       estimated_time: this.estimated_time,
@@ -70,20 +78,50 @@ export class CreateTareaComponent {
     this.tareaService.registerTarea(data).subscribe({
       next: (resp: any) => {
         console.log(resp);
+
         if (resp.message == 403) {
-          this.toast.error('Validación', resp.message_text);
+          Swal.fire({
+            icon: 'error',
+            title: 'Validación',
+            text: resp.message_text,
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+
         } else {
-          this.toast.success('Éxito', 'La tarea se registró correctamente');
+          Swal.fire({
+            icon: 'success',
+            title: 'Tarea creada',
+            text: 'La tarea se registró correctamente',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+
           this.TareaC.emit(resp.tarea);
           this.modal.close();
         }
       },
+
       error: (err) => {
         console.error(err);
-        this.toast.error('Error', 'No se pudo registrar la tarea');
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo registrar la tarea',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
       }
     });
   }
+
 
   onFileSelected(event: any) {
     const file = event.target.files[0];

@@ -111,10 +111,16 @@ export class NotificationService {
       { headers: this.getHeaders() }
     ).pipe(
       tap((response: NotificationResponse) => {
-        console.log('📥 Respuesta del servidor:', response);
+        console.log('🔥 Respuesta del servidor:', response);
         if (response.success && response.notifications) {
+          // ✅ Actualizar el estado con las notificaciones recibidas
           this.notificationsSubject.next(response.notifications);
           this.unreadCountSubject.next(response.unread_count || 0);
+          
+          console.log('✅ BehaviorSubjects actualizados:', {
+            total: response.notifications.length,
+            unread: response.unread_count
+          });
         }
       }),
       catchError((error) => {
@@ -157,16 +163,30 @@ export class NotificationService {
     ).pipe(
       tap((response: any) => {
         if (response.success) {
-          // ✅ CORRECCIÓN: Actualizar el array sin eliminar la notificación
+          // ✅ Actualizar el array sin eliminar la notificación
           const notifications = this.notificationsSubject.value;
           const updatedNotifications = notifications.map(n => 
-            n.id === notificationId ? { ...n, is_read: true, read_at: new Date().toISOString() } : n
+            n.id === notificationId 
+              ? { ...n, is_read: true, read_at: new Date().toISOString() } 
+              : n
           );
+          
+          // ✅ Emitir el nuevo array
           this.notificationsSubject.next(updatedNotifications);
           
+          // ✅ Actualizar contador
           const currentCount = this.unreadCountSubject.value;
           this.unreadCountSubject.next(Math.max(0, currentCount - 1));
+          
+          console.log('✅ Notificación marcada como leída:', {
+            id: notificationId,
+            newCount: this.unreadCountSubject.value
+          });
         }
+      }),
+      catchError((error) => {
+        console.error('❌ Error al marcar como leída:', error);
+        return of({ success: false, error: error.message });
       })
     );
   }
@@ -179,14 +199,27 @@ export class NotificationService {
     ).pipe(
       tap((response: any) => {
         if (response.success) {
-          // ✅ CORRECCIÓN: Actualizar todas las notificaciones sin eliminarlas
+          // ✅ Actualizar todas las notificaciones sin eliminarlas
           const notifications = this.notificationsSubject.value;
           const updatedNotifications = notifications.map(n => 
             ({ ...n, is_read: true, read_at: new Date().toISOString() })
           );
+          
+          // ✅ Emitir el nuevo array
           this.notificationsSubject.next(updatedNotifications);
+          
+          // ✅ Contador a 0
           this.unreadCountSubject.next(0);
+          
+          console.log('✅ Todas las notificaciones marcadas como leídas:', {
+            total: updatedNotifications.length,
+            unreadCount: 0
+          });
         }
+      }),
+      catchError((error) => {
+        console.error('❌ Error al marcar todas como leídas:', error);
+        return of({ success: false, error: error.message });
       })
     );
   }
@@ -207,7 +240,13 @@ export class NotificationService {
             const currentCount = this.unreadCountSubject.value;
             this.unreadCountSubject.next(Math.max(0, currentCount - 1));
           }
+          
+          console.log('✅ Notificación eliminada:', notificationId);
         }
+      }),
+      catchError((error) => {
+        console.error('❌ Error al eliminar notificación:', error);
+        return of({ success: false, error: error.message });
       })
     );
   }
@@ -222,7 +261,13 @@ export class NotificationService {
           const notifications = this.notificationsSubject.value;
           const unreadNotifications = notifications.filter(n => !n.is_read);
           this.notificationsSubject.next(unreadNotifications);
+          
+          console.log('✅ Notificaciones leídas eliminadas');
         }
+      }),
+      catchError((error) => {
+        console.error('❌ Error al eliminar leídas:', error);
+        return of({ success: false, error: error.message });
       })
     );
   }

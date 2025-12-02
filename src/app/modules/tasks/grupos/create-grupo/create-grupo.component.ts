@@ -4,6 +4,8 @@ import { ToastrService } from 'ngx-toastr';
 import { GrupoService } from '../service/grupo.service';
 import { Observable } from 'rxjs';
 
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-create-grupo',
   templateUrl: './create-grupo.component.html',
@@ -51,31 +53,67 @@ export class CreateGrupoComponent {
    */
   store() {
     if (!this.name.trim()) {
-      this.toast.error('El nombre del grupo es requerido', 'Validación');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El nombre del grupo es requerido',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
       return;
     }
 
     const data = { 
       name: this.name,
-      image: this.selectedBackgroundName  // ✅ Enviar solo el nombre del archivo
+      image: this.selectedBackgroundName
     };
 
     this.grupoService.registerGrupo(data).subscribe({
       next: (resp: any) => {
         console.log('✅ Respuesta del servidor:', resp);
-        
+
         if (resp.message == 403) {
-          this.toast.error(resp.message_text, 'Error');
+          Swal.fire({
+            icon: 'error',
+            title: 'Validación',
+            text: resp.message_text,
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
         } else {
-          this.toast.success('El grupo se registró correctamente', 'Éxito');
+          Swal.fire({
+            icon: 'success',
+            title: 'Grupo creado',
+            text: 'El grupo se registró correctamente',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+
           this.GrupoC.emit(resp.grupo);
           this.modal.close();
         }
       },
+
       error: (err) => {
         console.error('❌ Error al registrar:', err);
-        this.toast.error('Error al registrar el grupo', 'Error');
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error al registrar el grupo',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
       }
     });
   }
+
 }

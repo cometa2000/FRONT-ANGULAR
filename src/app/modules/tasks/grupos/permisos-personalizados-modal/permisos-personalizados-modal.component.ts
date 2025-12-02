@@ -3,6 +3,8 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { GrupoService } from '../service/grupo.service';
 import { ToastrService } from 'ngx-toastr';
 
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-permisos-personalizados-modal',
   templateUrl: './permisos-personalizados-modal.component.html',
@@ -52,7 +54,6 @@ export class PermisosPersonalizadosModalComponent implements OnInit {
   savePermissions() {
     this.isSaving = true;
 
-    // Preparar datos para actualización en lote
     const usersToUpdate = this.users.map(user => ({
       user_id: user.id,
       permission_level: user.permission_level
@@ -62,31 +63,65 @@ export class PermisosPersonalizadosModalComponent implements OnInit {
     this.grupoService.updatePermissionType(this.GRUPO_SELECTED.id, 'custom').subscribe({
       next: (resp: any) => {
         if (resp.message === 200) {
+
           // Luego actualizar los permisos de todos los usuarios
           this.grupoService.batchUpdateUserPermissions(this.GRUPO_SELECTED.id, usersToUpdate).subscribe({
             next: (batchResp: any) => {
               if (batchResp.message === 200) {
-                this.toast.success('Permisos personalizados guardados correctamente');
+
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Permisos guardados',
+                  text: 'Permisos personalizados guardados correctamente',
+                  timer: 3500,
+                  showConfirmButton: false,
+                  toast: true,
+                  position: 'top-end'
+                });
+
                 this.PermisosChanged.emit(this.GRUPO_SELECTED);
                 this.modal.close();
               }
+
               this.isSaving = false;
             },
+
             error: (err) => {
               console.error('Error al guardar permisos:', err);
-              this.toast.error('Error al guardar permisos');
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error al guardar permisos personalizados',
+                timer: 3500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+              });
               this.isSaving = false;
             }
           });
+
+        } else {
+          this.isSaving = false;
         }
       },
+
       error: (err) => {
         console.error('Error al actualizar tipo de permiso:', err);
-        this.toast.error('Error al actualizar permisos');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error al actualizar permisos',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
         this.isSaving = false;
       }
     });
   }
+
 
   getInitials(name: string, surname: string): string {
     const firstInitial = name ? name.charAt(0).toUpperCase() : '';

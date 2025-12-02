@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { TareaService } from '../service/tarea.service';
 import { ToastrService } from 'ngx-toastr';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-edit-lista',
@@ -37,26 +38,71 @@ export class EditListaComponent {
    
   }
 
-  store(){
-    if(!this.name){
-      this.toast.error("Validación","El nombre de la tarea es requerido");
+  store() {
+    if (!this.name.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El nombre de la lista es requerido',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
       return false;
     }
 
-    let data = {
-      name: this.name,
-      
-    }
+    let data = { name: this.name };
 
-    this.tareaService.updateLista(this.LISTA_SELECTED.id,data).subscribe((resp:any) => {
-      console.log(resp);
-      if(resp.message == 403){
-        this.toast.error("Validación",resp.message_text);
-      }else{
-        this.toast.success("Exito","La lista se edito correctamente");
-        this.ListaE.emit(resp.tarea);
-        this.modal.close();
+    if (typeof this.LISTA_SELECTED.id !== 'number') return;
+
+    this.tareaService.updateLista(this.LISTA_SELECTED.id, data).subscribe({
+      next: (resp: any) => {
+        console.log(resp);
+
+        if (resp.message == 403) {
+
+          Swal.fire({
+            icon: 'error',
+            title: 'Validación',
+            text: resp.message_text,
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+
+        } else {
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Lista actualizada',
+            text: 'La lista se editó correctamente',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+
+          this.ListaE.emit(resp.tarea);
+          this.modal.close();
+        }
+      },
+
+      error: (err) => {
+        console.error(err);
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo actualizar la lista',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
       }
-    })
+    });
   }
+
 }

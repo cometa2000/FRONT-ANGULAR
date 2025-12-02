@@ -3,6 +3,7 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { GrupoService } from '../service/grupo.service';
 import { Observable } from 'rxjs';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-edit-grupo',
@@ -67,13 +68,21 @@ export class EditGrupoComponent implements OnInit {
    */
   store() {
     if (!this.name.trim()) {
-      this.toast.error('El nombre del grupo es requerido', 'Validación');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El nombre del grupo es requerido',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
       return;
     }
 
     const data = { 
       name: this.name,
-      image: this.selectedBackgroundName  // ✅ Enviar el nombre del archivo
+      image: this.selectedBackgroundName
     };
 
     console.log('📤 Enviando actualización:', data);
@@ -81,19 +90,45 @@ export class EditGrupoComponent implements OnInit {
     this.grupoService.updateGrupo(this.GRUPO_SELECTED.id, data).subscribe({
       next: (resp: any) => {
         console.log('✅ Respuesta del servidor:', resp);
-        
+
         if (resp.message == 403) {
-          this.toast.error(resp.message_text, 'Error');
+          Swal.fire({
+            icon: 'error',
+            title: 'Validación',
+            text: resp.message_text,
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
         } else {
-          this.toast.success('El grupo se actualizó correctamente', 'Éxito');
+          Swal.fire({
+            icon: 'success',
+            title: 'Grupo actualizado',
+            text: 'El grupo se actualizó correctamente',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+
           this.GrupoE.emit(resp.grupo);
           this.modal.close();
         }
       },
       error: (err) => {
         console.error('❌ Error al actualizar:', err);
-        this.toast.error('Error al actualizar el grupo', 'Error');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error al actualizar el grupo',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
       }
     });
   }
+
 }

@@ -9,6 +9,7 @@ import { EditListaComponent } from '../edit-lista/edit-lista.component';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { DelteListaComponent } from '../delte-lista/delte-lista.component';
 import { ActivatedRoute } from '@angular/router';
+import Swal from 'sweetalert2';
 
 
 @Component({

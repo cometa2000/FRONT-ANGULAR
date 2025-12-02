@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { TareaService } from '../service/tarea.service';
 import { ToastrService } from 'ngx-toastr';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-create-lista',
@@ -23,14 +24,21 @@ export class CreateListaComponent {
 
   store() {
     if (!this.name.trim()) {
-      this.toast.error('El nombre de la lista es obligatorio', 'Validación');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El nombre de la lista es obligatorio',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
       return;
     }
 
-    // ✅ Incluir el grupo_id en el payload
     const data = { 
       name: this.name,
-      grupo_id: this.grupo_id 
+      grupo_id: this.grupo_id
     };
 
     this.isLoading = true;
@@ -38,18 +46,52 @@ export class CreateListaComponent {
     this.tareaService.registerLista(data).subscribe({
       next: (resp: any) => {
         console.log('✅ Lista creada:', resp);
+
         if (resp.message === 200) {
-          this.toast.success('La lista se registró correctamente', 'Éxito');
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Lista creada',
+            text: 'La lista se registró correctamente',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+
           this.ListaC.emit(resp.lista);
+
         } else {
-          this.toast.error('Error al registrar la lista', 'Error');
+
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error al registrar la lista',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+
         }
       },
+
       error: (err) => {
         console.error('❌ Error al crear lista:', err);
-        this.toast.error('Error al crear la lista', 'Error');
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error al crear la lista',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
       },
+
       complete: () => this.isLoading = false
     });
   }
+
 }

@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { TareaService } from '../service/tarea.service';
 import { ToastrService } from 'ngx-toastr';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-delte-lista',
@@ -24,17 +25,57 @@ export class DelteListaComponent {
   ngOnInit(): void {
   }
 
-  delete(){
-    
-    this.tareasService.deleteLista(this.LISTA_SELECTED.id).subscribe((resp:any) => {
-      console.log(resp);
-      if(resp.message == 403){
-        this.toast.error("Validación",resp.message_text);
-      }else{
-        this.toast.success("Exito","La lista se elimino correctamente");
-        this.ListaD.emit(resp.message);
-        this.modal.close();
+  delete() {
+
+    Swal.fire({
+      icon: 'warning',
+      title: '¿Eliminar lista?',
+      text: 'Esta acción no se puede deshacer',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6'
+    }).then(result => {
+
+      if (result.isConfirmed && typeof this.LISTA_SELECTED.id === 'number') {
+
+        this.tareasService.deleteLista(this.LISTA_SELECTED.id).subscribe((resp: any) => {
+          console.log(resp);
+
+          if (resp.message == 403) {
+
+            Swal.fire({
+              icon: 'error',
+              title: 'Validación',
+              text: resp.message_text,
+              timer: 3500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+
+          } else {
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Lista eliminada',
+              text: 'La lista se eliminó correctamente',
+              timer: 3500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+
+            this.ListaD.emit(resp.message);
+            this.modal.close();
+          }
+
+        });
+
       }
-    })
+
+    });
   }
+
 }

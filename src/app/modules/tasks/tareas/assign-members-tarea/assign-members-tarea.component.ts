@@ -5,6 +5,7 @@ import { TareaService } from '../service/tarea.service';
 import { GrupoService } from '../../grupos/service/grupo.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-assign-members-tarea',
@@ -95,47 +96,77 @@ export class AssignMembersTareaComponent implements OnInit {
    */
   performSearch(term: string) {
     if (!term || term.trim().length < 3) {
-      this.toast.warning('Ingresa al menos 3 caracteres para buscar', 'Búsqueda');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Búsqueda',
+        text: 'Ingresa al menos 3 caracteres para buscar',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
       return;
     }
 
     this.searchPerformed = true;
     console.log('🔍 Buscando miembro:', term);
-    
-    // Buscar en los miembros del grupo
+
     this.grupoService.getSharedUsers(this.GRUPO_ID).subscribe({
       next: (resp: any) => {
         console.log('📥 Respuesta del servidor:', resp);
-        
+
         const allMembers = resp.shared_users || [];
-        
-        // Filtrar por el término de búsqueda
+
         this.searchResults = allMembers.filter((member: any) => {
           const fullName = `${member.name} ${member.surname || ''}`.toLowerCase();
           const email = (member.email || '').toLowerCase();
           const searchLower = term.toLowerCase();
-          
+
           return fullName.includes(searchLower) || email.includes(searchLower);
         });
-        
+
         this.cdr.detectChanges();
-        
-        console.log('👥 Miembros encontrados:', this.searchResults.length);
-        
+
         if (this.searchResults.length === 0) {
-          this.toast.info('No se encontraron miembros que coincidan', 'Búsqueda');
+          Swal.fire({
+            icon: 'info',
+            title: 'Búsqueda',
+            text: 'No se encontraron miembros que coincidan',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
         } else {
-          this.toast.success(`Se encontraron ${this.searchResults.length} miembro(s)`, 'Búsqueda');
+          Swal.fire({
+            icon: 'success',
+            title: 'Búsqueda',
+            text: `Se encontraron ${this.searchResults.length} miembro(s)`,
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
         }
       },
       error: (err) => {
         console.error('❌ Error al buscar miembros:', err);
-        this.toast.error('Error al buscar miembros', 'Error');
         this.searchResults = [];
         this.cdr.detectChanges();
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error al buscar miembros',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
       }
     });
   }
+
 
   /**
    * Verificar si el usuario ya está seleccionado
@@ -156,16 +187,37 @@ export class AssignMembersTareaComponent implements OnInit {
    */
   toggleUserSelection(user: any) {
     const index = this.selectedUsers.findIndex(u => u.id === user.id);
+
     if (index === -1) {
       this.selectedUsers.push(user);
-      this.toast.success(`${user.name} agregado`, 'Usuario seleccionado');
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Usuario seleccionado',
+        text: `${user.name} agregado`,
+        timer: 2500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+
     } else {
       this.selectedUsers.splice(index, 1);
-      this.toast.info(`${user.name} removido de la selección`, 'Usuario deseleccionado');
+
+      Swal.fire({
+        icon: 'info',
+        title: 'Usuario deseleccionado',
+        text: `${user.name} removido de la selección`,
+        timer: 2500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
     }
-    
+
     this.cdr.detectChanges();
   }
+
 
   /**
    * Remover usuario de la selección
@@ -180,42 +232,74 @@ export class AssignMembersTareaComponent implements OnInit {
    */
   assignMembers() {
     if (this.selectedUsers.length === 0) {
-      this.toast.warning('Selecciona al menos un miembro', 'Validación');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'Selecciona al menos un miembro',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
       return;
     }
 
     const userIds = this.selectedUsers.map(u => u.id);
+
     console.log('📤 Asignando miembros:', userIds);
 
     this.tareaService.assignMembersToTarea(this.TAREA_SELECTED.id, userIds).subscribe({
       next: (resp: any) => {
-        console.log('✅ Miembros asignados exitosamente:', resp);
-        
         if (resp.message === 200) {
-          this.toast.success('Miembros asignados correctamente', 'Éxito');
-          
-          // Agregar los nuevos miembros a la lista de asignados
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Miembros asignados',
+            text: 'Miembros asignados correctamente',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+
           this.assignedMembers.push(...this.selectedUsers);
-          
-          // Limpiar selección
+
           this.selectedUsers = [];
           this.searchResults = [];
           this.searchTerm = '';
-          
-          // Emitir evento de actualización
+
           this.MembersAssigned.emit(resp.tarea || this.TAREA_SELECTED);
-          
+
           this.cdr.detectChanges();
         } else {
-          this.toast.warning(resp.message_text || 'Algo salió mal', 'Advertencia');
+          Swal.fire({
+            icon: 'warning',
+            title: 'Advertencia',
+            text: resp.message_text || 'Algo salió mal',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
         }
       },
+
       error: (err) => {
         console.error('❌ Error al asignar miembros:', err);
-        this.toast.error('Error al asignar miembros', 'Error');
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error al asignar miembros',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
       }
     });
   }
+
 
   /**
    * Desasignar un miembro de la tarea
@@ -224,28 +308,59 @@ export class AssignMembersTareaComponent implements OnInit {
     const member = this.assignedMembers.find(m => m.id === userId);
     const memberName = member ? member.name : 'este miembro';
 
-    if (confirm(`¿Estás seguro de desasignar a ${memberName} de esta tarea?`)) {
-      console.log('🗑️ Desasignando miembro:', userId);
-      
-      this.tareaService.unassignMemberFromTarea(this.TAREA_SELECTED.id, userId).subscribe({
-        next: (resp: any) => {
-          if (resp.message === 200) {
-            this.assignedMembers = this.assignedMembers.filter(m => m.id !== userId);
-            this.toast.success('Miembro desasignado correctamente', 'Éxito');
-            
-            // Emitir evento de actualización
-            this.MembersAssigned.emit(resp.tarea || this.TAREA_SELECTED);
-            
-            this.cdr.detectChanges();
+    Swal.fire({
+      icon: 'warning',
+      title: 'Desasignar miembro',
+      text: `¿Estás seguro de desasignar a ${memberName} de esta tarea?`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, desasignar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6'
+    }).then((result) => {
+
+      if (result.isConfirmed) {
+
+        this.tareaService.unassignMemberFromTarea(this.TAREA_SELECTED.id, userId).subscribe({
+          next: (resp: any) => {
+            if (resp.message === 200) {
+
+              this.assignedMembers = this.assignedMembers.filter(m => m.id !== userId);
+
+              Swal.fire({
+                icon: 'success',
+                title: 'Miembro desasignado',
+                text: 'Miembro desasignado correctamente',
+                timer: 3500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+              });
+
+              this.MembersAssigned.emit(resp.tarea || this.TAREA_SELECTED);
+              this.cdr.detectChanges();
+            }
+          },
+          error: (err) => {
+            console.error('❌ Error al desasignar miembro:', err);
+
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'Error al desasignar miembro',
+              timer: 3500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
           }
-        },
-        error: (err) => {
-          console.error('❌ Error al desasignar miembro:', err);
-          this.toast.error('Error al desasignar miembro', 'Error');
-        }
-      });
-    }
+        });
+
+      }
+
+    });
   }
+
 
   /**
    * 🎨 Obtener la ruta correcta del avatar de un usuario

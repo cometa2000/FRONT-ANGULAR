@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
+import Swal from 'sweetalert2';
 
 export interface Enlace {
   id?: number;
@@ -148,8 +149,17 @@ export class AdjuntarModalComponent {
   // =============================
   guardarAdjunto(): void {
     if (this.activeTab === 'archivo') {
+
       if (!this.archivoSeleccionado) {
-        this.toast.warning('Selecciona un archivo', 'Validación');
+        Swal.fire({
+          icon: 'warning',
+          title: 'Validación',
+          text: 'Selecciona un archivo',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
         return;
       }
 
@@ -166,17 +176,42 @@ export class AdjuntarModalComponent {
         archivos: [archivo]
       });
 
-      this.toast.success('Archivo adjuntado', 'Éxito');
+      Swal.fire({
+        icon: 'success',
+        title: 'Archivo adjuntado',
+        timer: 3000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+
       this.modal.close({ type: 'archivo', data: archivo });
 
     } else if (this.activeTab === 'enlace') {
+
       if (!this.enlaceUrl || !this.enlaceNombre) {
-        this.toast.warning('Completa los campos del enlace', 'Validación');
+        Swal.fire({
+          icon: 'warning',
+          title: 'Validación',
+          text: 'Completa los campos del enlace',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
         return;
       }
 
       if (!this.validarUrl(this.enlaceUrl)) {
-        this.toast.warning('URL no válida', 'Validación');
+        Swal.fire({
+          icon: 'warning',
+          title: 'Validación',
+          text: 'URL no válida',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
         return;
       }
 
@@ -190,10 +225,19 @@ export class AdjuntarModalComponent {
         archivos: []
       });
 
-      this.toast.success('Enlace agregado', 'Éxito');
+      Swal.fire({
+        icon: 'success',
+        title: 'Enlace agregado',
+        timer: 3000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+
       this.modal.close({ type: 'enlace', data: enlace });
     }
   }
+
 
   // =============================
   // 🎨 OBTENER ICONO POR TIPO

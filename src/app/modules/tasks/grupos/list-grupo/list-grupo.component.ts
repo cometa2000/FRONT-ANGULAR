@@ -9,6 +9,7 @@ import { ToastrService } from 'ngx-toastr';
 import { PermisosGrupoModalComponent } from '../permisos-grupo-modal/permisos-grupo-modal.component';
 import { AuthService } from 'src/app/modules/auth';
 
+import Swal from 'sweetalert2';
 @Component({
   selector: 'app-list-grupo',
   templateUrl: './list-grupo.component.html',

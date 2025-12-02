@@ -1,4 +1,4 @@
-import { Component, HostBinding, OnInit, OnDestroy } from '@angular/core';
+import { Component, HostBinding, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { NotificationService, Notification } from 'src/app/services/notification.service';
 import { Subscription } from 'rxjs';
@@ -29,26 +29,31 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
 
   constructor(
     private notificationService: NotificationService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.loadNotifications();
-    
-    // ✅ Suscribirse a cambios en notificaciones del servicio
+    // ✅ Primero configurar las suscripciones
     this.subscription.add(
       this.notificationService.notifications$.subscribe((notifications: Notification[]) => {
         this.notifications = notifications;
         this.updateNotificationLists();
+        // ✅ CRÍTICO: Forzar detección de cambios
+        this.cdr.detectChanges();
       })
     );
 
-    // ✅ Suscribirse al contador de no leídas
     this.subscription.add(
       this.notificationService.unreadCount$.subscribe((count: number) => {
         this.unreadCount = count;
+        // ✅ CRÍTICO: Forzar detección de cambios
+        this.cdr.detectChanges();
       })
     );
+
+    // ✅ Luego cargar las notificaciones
+    this.loadNotifications();
   }
 
   ngOnDestroy(): void {
@@ -56,39 +61,51 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * ✅ CORRECCIÓN: Cargar notificaciones siempre establece isLoading = false
+   * ✅ Cargar notificaciones con detección de cambios forzada
    */
   loadNotifications(): void {
     this.isLoading = true;
     this.error = '';
     
+    // ✅ Forzar detección de cambios después de establecer isLoading
+    this.cdr.detectChanges();
+    
     this.notificationService.getAllNotifications(20).subscribe({
       next: (response: any) => {
-        // ✅ Establecer isLoading = false SIEMPRE, independientemente del success
         this.isLoading = false;
         
         if (response.success) {
-          // Los datos ya fueron actualizados por el BehaviorSubject
-          // Solo verificamos que tengamos datos
           console.log('✅ Notificaciones cargadas:', response.total);
         } else {
           this.error = response.error || 'Error al cargar las notificaciones';
         }
+        
+        // ✅ CRÍTICO: Forzar detección de cambios después de recibir respuesta
+        this.cdr.detectChanges();
       },
       error: (error: any) => {
         console.error('Error al cargar notificaciones:', error);
         this.error = 'Error al cargar las notificaciones';
-        this.isLoading = false; // ✅ También establecer en false en error
+        this.isLoading = false;
+        
+        // ✅ CRÍTICO: Forzar detección de cambios en caso de error
+        this.cdr.detectChanges();
       }
     });
   }
 
   /**
-   * Actualizar listas de notificaciones leídas y no leídas
+   * ✅ Actualizar listas de notificaciones con detección de cambios
    */
   updateNotificationLists(): void {
     this.unreadNotifications = this.notifications.filter(n => !n.is_read);
     this.readNotifications = this.notifications.filter(n => n.is_read);
+    
+    console.log('📊 Listas actualizadas:', {
+      total: this.notifications.length,
+      unread: this.unreadNotifications.length,
+      read: this.readNotifications.length
+    });
   }
 
   /**
@@ -96,10 +113,11 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
    */
   setActiveTabId(tabId: NotificationsTabsType): void {
     this.activeTabId = tabId;
+    this.cdr.detectChanges();
   }
 
   /**
-   * ✅ CORRECCIÓN: Marcar notificación como leída sin eliminarla de la lista
+   * ✅ Marcar notificación como leída con detección de cambios
    */
   markAsRead(notification: Notification, event?: Event): void {
     if (event) {
@@ -110,8 +128,10 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
       this.notificationService.markAsRead(notification.id).subscribe({
         next: (response: any) => {
           if (response.success) {
-            // ✅ La notificación se actualizará automáticamente via BehaviorSubject
-            console.log('✅ Notificación marcada como leída');
+            console.log('✅ Notificación marcada como leída:', notification.id);
+            // Las listas se actualizarán automáticamente vía la suscripción
+            // pero forzamos la detección por si acaso
+            this.cdr.detectChanges();
           }
         },
         error: (error: any) => {
@@ -122,7 +142,7 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * ✅ CORRECCIÓN: Marcar todas como leídas sin eliminarlas
+   * ✅ Marcar todas como leídas con detección de cambios
    */
   markAllAsRead(): void {
     if (this.unreadCount === 0) return;
@@ -130,8 +150,9 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
     this.notificationService.markAllAsRead().subscribe({
       next: (response: any) => {
         if (response.success) {
-          // ✅ Las notificaciones se actualizarán automáticamente via BehaviorSubject
           console.log('✅ Todas las notificaciones marcadas como leídas');
+          // Las listas se actualizarán automáticamente vía la suscripción
+          this.cdr.detectChanges();
         }
       },
       error: (error: any) => {
@@ -150,8 +171,8 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
       this.notificationService.deleteNotification(notificationId).subscribe({
         next: (response: any) => {
           if (response.success) {
-            // ✅ La notificación se eliminará automáticamente via BehaviorSubject
             console.log('✅ Notificación eliminada');
+            this.cdr.detectChanges();
           }
         },
         error: (error: any) => {
@@ -171,8 +192,8 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
       this.notificationService.deleteAllRead().subscribe({
         next: (response: any) => {
           if (response.success) {
-            // ✅ Las notificaciones se actualizarán automáticamente via BehaviorSubject
             console.log('✅ Notificaciones leídas eliminadas');
+            this.cdr.detectChanges();
           }
         },
         error: (error: any) => {

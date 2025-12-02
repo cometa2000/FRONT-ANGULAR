@@ -23,7 +23,7 @@ export class TareaService {
   // =============================
   // 🔧 MÉTODO PRIVADO PARA HEADERS
   // =============================
-  private getHeaders(): HttpHeaders {
+  public getHeaders(): HttpHeaders {
     return new HttpHeaders({
       'Authorization': 'Bearer ' + this.authservice.token,
       'Content-Type': 'application/json',
@@ -34,7 +34,7 @@ export class TareaService {
   // =============================
   // 🔧 MÉTODO PRIVADO PARA MANEJO DE ERRORES
   // =============================
-  private handleError(error: HttpErrorResponse) {
+  public handleError(error: HttpErrorResponse) {
     console.error('❌ Error HTTP:', error);
     
     let errorMessage = 'Ocurrió un error desconocido';

@@ -126,15 +126,24 @@ export class FechasComponent implements OnInit {
   }
 
   saveDates(): void {
-    if (!this.tareaId) return;
+    // 🔥 Narrowing real: TS ahora sabe que tareaId es number
+    if (typeof this.tareaId !== 'number') {
+      console.error('❌ tareaId es undefined');
+      return;
+    }
 
-    // 🆕 Validar que si se habilitan notificaciones, haya una fecha de vencimiento
+    const tareaId = this.tareaId; // ← clave para evitar TS2345
+
+    // Validación notificaciones
     if (this.enableNotifications && !this.dueDate) {
       Swal.fire({
         icon: 'warning',
         title: 'Fecha requerida',
         text: 'Debes establecer una fecha de vencimiento para habilitar las notificaciones',
-        confirmButtonColor: '#EB5A46'
+        toast: true,
+        position: 'top-end',
+        timer: 3500,
+        showConfirmButton: false
       });
       return;
     }
@@ -143,58 +152,64 @@ export class FechasComponent implements OnInit {
       ? {
           start_date: this.startDate || null,
           due_date: this.dueDate || null,
-          // 🆕 Incluir configuración de notificaciones
           notifications_enabled: this.enableNotifications,
           notification_days_before: this.enableNotifications ? this.notificationDaysBefore : null
         }
       : {
           start_date: null,
           due_date: null,
-          // 🆕 Si no hay fechas, deshabilitar notificaciones
           notifications_enabled: false,
           notification_days_before: null
         };
 
     console.log('💾 Guardando fechas y notificaciones:', updateData);
 
-    this.tareaService.update(String(this.tareaId!), updateData).subscribe({
+    this.tareaService.update(String(tareaId), updateData).subscribe({
       next: (resp: any) => {
-        this.currentStartDate = resp.tarea?.start_date ?? (this.enableDates ? (this.startDate || '') : '');
-        this.currentDueDate = resp.tarea?.due_date ?? (this.enableDates ? (this.dueDate || '') : '');
+        this.currentStartDate =
+          resp.tarea?.start_date ?? (this.enableDates ? this.startDate || '' : '');
+        this.currentDueDate =
+          resp.tarea?.due_date ?? (this.enableDates ? this.dueDate || '' : '');
+
         this.hasDates = !!(this.currentStartDate || this.currentDueDate);
-        
-        // 🆕 Actualizar estado de notificaciones
+
         this.currentNotificationsEnabled = resp.tarea?.notifications_enabled || false;
         this.currentNotificationDaysBefore = resp.tarea?.notification_days_before || 1;
-        
+
         this.closeModal();
         this.fechasActualizadas.emit(resp.tarea);
-        
-        // 🆕 Mensaje de éxito más informativo
+
         let successMessage = 'Fechas guardadas correctamente';
         if (this.enableNotifications) {
           successMessage += `. Recibirás notificaciones ${this.notificationDaysBefore} día(s) antes del vencimiento.`;
         }
-        
+
         Swal.fire({
           icon: 'success',
           title: 'Guardado',
           text: successMessage,
+          toast: true,
+          position: 'top-end',
           timer: 3000,
           showConfirmButton: false
         });
       },
       error: (error) => {
-        console.error('Error al guardar fechas:', error);
+        console.error('❌ Error al guardar fechas:', error);
+
         Swal.fire({
           icon: 'error',
           title: 'Error',
           text: 'No se pudieron guardar las fechas y notificaciones',
-          confirmButtonColor: '#EB5A46'
+          toast: true,
+          position: 'top-end',
+          timer: 3500,
+          showConfirmButton: false
         });
       }
     });
   }
+
 
   // 🆕 Eliminar fechas y notificaciones
   deleteFechas(): void {
@@ -202,56 +217,73 @@ export class FechasComponent implements OnInit {
   }
 
   clearDates(): void {
-    if (!this.tareaId) return;
+    if (typeof this.tareaId !== 'number') {
+      console.error('❌ tareaId es undefined');
+      return;
+    }
+
+    const tareaId = this.tareaId; // ← evitar TS2345
 
     Swal.fire({
+      icon: 'warning',
       title: '¿Eliminar fechas?',
       text: 'Se eliminarán las fechas y la configuración de notificaciones',
-      icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#EB5A46',
-      cancelButtonColor: '#B3BAC5',
       confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#EB5A46',
+      cancelButtonColor: '#B3BAC5'
+    }).then(result => {
+
       if (result.isConfirmed) {
-        const updateData = { 
-          start_date: null, 
+
+        const updateData = {
+          start_date: null,
           due_date: null,
-          // 🆕 Eliminar también notificaciones
           notifications_enabled: false,
           notification_days_before: null
         };
 
-        this.tareaService.update(String(this.tareaId!), updateData).subscribe({
+        this.tareaService.update(String(tareaId), updateData).subscribe({
           next: (resp: any) => {
             this.hasDates = false;
             this.currentStartDate = '';
             this.currentDueDate = '';
             this.currentNotificationsEnabled = false;
             this.currentNotificationDaysBefore = 1;
+
             this.closeModal();
             this.fechasActualizadas.emit(resp.tarea);
-            
+
             Swal.fire({
               icon: 'success',
               title: 'Eliminado',
               text: 'Fechas y notificaciones eliminadas correctamente',
-              timer: 1500,
+              toast: true,
+              position: 'top-end',
+              timer: 2000,
               showConfirmButton: false
             });
           },
+
           error: (error) => {
-            console.error('Error al eliminar fechas:', error);
+            console.error('❌ Error al eliminar fechas:', error);
+
             Swal.fire({
               icon: 'error',
               title: 'Error',
               text: 'No se pudieron eliminar las fechas',
-              confirmButtonColor: '#EB5A46'
+              toast: true,
+              position: 'top-end',
+              timer: 3500,
+              showConfirmButton: false
             });
           }
         });
+
       }
+
     });
   }
+
 }

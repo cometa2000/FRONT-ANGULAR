@@ -5,6 +5,8 @@ import { GrupoService } from '../service/grupo.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-share-grupo',
   templateUrl: './share-grupo.component.html',
@@ -84,54 +86,88 @@ export class ShareGrupoComponent implements OnInit {
 
   performSearch(term: string) {
     if (!term || term.trim().length < 3) {
-      this.toast.warning('Ingresa al menos 3 caracteres para buscar', 'Búsqueda');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Búsqueda',
+        text: 'Ingresa al menos 3 caracteres para buscar',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
       return;
     }
 
     this.searchPerformed = true;
     console.log('🔍 Buscando usuario:', term);
-    
+
     this.grupoService.searchUsers(term).subscribe({
       next: (resp: any) => {
         console.log('📥 Respuesta del servidor:', resp);
-        
-        // Manejar diferentes estructuras de respuesta
+
         if (!resp) {
           console.error('❌ Respuesta vacía del servidor');
           this.searchResults = [];
-          this.toast.error('Error: respuesta vacía del servidor', 'Error');
+
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Respuesta vacía del servidor',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+
           return;
         }
-        
-        // Intentar obtener users de diferentes formas
+
         this.searchResults = resp.users || resp.data || [];
-        
-        // ✅ NUEVO: Forzar detección después de buscar
         this.cdr.detectChanges();
-        
+
         console.log('👥 Usuarios encontrados:', this.searchResults.length);
-        
+
         if (this.searchResults.length === 0) {
-          this.toast.info('No se encontraron usuarios', 'Búsqueda');
+          Swal.fire({
+            icon: 'info',
+            title: 'Búsqueda',
+            text: 'No se encontraron usuarios',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
         } else {
-          this.toast.success(`Se encontraron ${this.searchResults.length} usuario(s)`, 'Búsqueda');
+          Swal.fire({
+            icon: 'success',
+            title: 'Búsqueda',
+            text: `Se encontraron ${this.searchResults.length} usuario(s)`,
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
         }
       },
+
       error: (err) => {
         console.error('❌ Error al buscar usuarios:', err);
-        console.error('Detalles del error:', {
-          status: err.status,
-          statusText: err.statusText,
-          message: err.message,
-          error: err.error
-        });
-        
-        this.toast.error('Error al buscar usuarios. Revisa la consola.', 'Error');
         this.searchResults = [];
-        this.cdr.detectChanges(); // ✅ También en error
+        this.cdr.detectChanges();
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error al buscar usuarios. Revisa la consola.',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
       }
     });
   }
+
 
   isUserSelected(userId: number): boolean {
     return this.selectedUsers.some(u => u.id === userId);
@@ -143,17 +179,37 @@ export class ShareGrupoComponent implements OnInit {
 
   toggleUserSelection(user: any) {
     const index = this.selectedUsers.findIndex(u => u.id === user.id);
+
     if (index === -1) {
       this.selectedUsers.push(user);
-      this.toast.success(`${user.name} agregado`, 'Usuario seleccionado');
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Usuario seleccionado',
+        text: `${user.name} agregado`,
+        timer: 2500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+
     } else {
       this.selectedUsers.splice(index, 1);
-      this.toast.info(`${user.name} removido de la selección`, 'Usuario deseleccionado');
+
+      Swal.fire({
+        icon: 'info',
+        title: 'Usuario deseleccionado',
+        text: `${user.name} removido de la selección`,
+        timer: 2500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
     }
-    
-    // ✅ NUEVO: Forzar detección al seleccionar/deseleccionar
+
     this.cdr.detectChanges();
   }
+
 
   removeUser(userId: number) {
     this.selectedUsers = this.selectedUsers.filter(u => u.id !== userId);
@@ -163,75 +219,123 @@ export class ShareGrupoComponent implements OnInit {
   }
 
   unshareUser(userId: number) {
-    if (confirm('¿Estás seguro de dejar de compartir este grupo con este usuario?')) {
-      console.log('🗑️ Eliminando usuario compartido:', userId);
-      
-      this.grupoService.unshareGrupo(this.GRUPO_SELECTED.id, userId).subscribe({
-        next: (resp: any) => {
-          if (resp.message === 200) {
-            // Filtrar el usuario eliminado
-            this.sharedUsers = this.sharedUsers.filter(u => u.id !== userId);
-            
-            console.log('✅ Usuario eliminado. Quedan:', this.sharedUsers.length);
-            
-            // ✅ CRÍTICO: Forzar detección de cambios
-            this.cdr.detectChanges();
-            
-            this.toast.success('Grupo dejado de compartir correctamente', 'Éxito');
-            this.GrupoShared.emit(this.sharedUsers);
+
+    Swal.fire({
+      icon: 'warning',
+      title: '¿Dejar de compartir?',
+      text: '¿Estás seguro de dejar de compartir este grupo con este usuario?',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, dejar de compartir',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6'
+    }).then((result) => {
+
+      if (result.isConfirmed) {
+        console.log('🗑️ Eliminando usuario compartido:', userId);
+
+        this.grupoService.unshareGrupo(this.GRUPO_SELECTED.id, userId).subscribe({
+          next: (resp: any) => {
+            if (resp.message === 200) {
+
+              this.sharedUsers = this.sharedUsers.filter(u => u.id !== userId);
+              this.cdr.detectChanges();
+
+              Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: 'Grupo dejado de compartir correctamente',
+                timer: 3500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+              });
+
+              this.GrupoShared.emit(this.sharedUsers);
+            }
+          },
+          error: (err) => {
+            console.error('❌ Error al dejar de compartir:', err);
+
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'Error al dejar de compartir el grupo',
+              timer: 3500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
           }
-        },
-        error: (err) => {
-          console.error('❌ Error al dejar de compartir:', err);
-          this.toast.error('Error al dejar de compartir el grupo', 'Error');
-        }
-      });
-    }
+        });
+
+      }
+
+    });
   }
+
 
   shareGrupo() {
     if (this.selectedUsers.length === 0) {
-      this.toast.warning('Selecciona al menos un usuario', 'Validación');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'Selecciona al menos un usuario',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
       return;
     }
 
     const userIds = this.selectedUsers.map(u => u.id);
-
     console.log('📤 Compartiendo grupo con usuarios:', userIds);
 
     this.grupoService.shareGrupo(this.GRUPO_SELECTED.id, userIds).subscribe({
       next: (resp: any) => {
         if (resp.message === 200) {
-          this.toast.success(
-            `Grupo compartido con ${this.selectedUsers.length} usuario(s)`, 
-            'Éxito'
-          );
-          
-          // Mover usuarios de selectedUsers a sharedUsers
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Grupo compartido',
+            text: `Grupo compartido con ${this.selectedUsers.length} usuario(s)`,
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+
           this.sharedUsers = [...this.sharedUsers, ...this.selectedUsers];
           this.selectedUsers = [];
           this.searchResults = [];
           this.searchTerm = '';
-          
-          console.log('✅ Usuarios compartidos actualizados:', this.sharedUsers.length);
-          
-          // ✅ CRÍTICO: Forzar detección de cambios
+
           this.cdr.detectChanges();
-          
           this.GrupoShared.emit(resp.shared_with);
-          
-          // Cerrar modal después de compartir exitosamente
+
           setTimeout(() => {
             this.modal.close();
           }, 1500);
         }
       },
+
       error: (err) => {
         console.error('❌ Error al compartir grupo:', err);
-        this.toast.error('Error al compartir el grupo', 'Error');
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error al compartir el grupo',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
       }
     });
   }
+
 
   /**
    * Obtener avatar correcto del usuario compartido

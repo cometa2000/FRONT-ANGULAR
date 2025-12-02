@@ -10,6 +10,7 @@ import { AssignMembersTareaComponent } from '../assign-members-tarea/assign-memb
 import { GrupoService } from '../../grupos/service/grupo.service';
 import { ToastrService } from 'ngx-toastr';
 
+
 export interface Tarea {
   id: number;
   name: string;
@@ -248,30 +249,38 @@ export class EditTareaComponent implements OnInit {
   // =============================
   updateStatus(): void {
     if (!this.tarea) return;
-    
-    console.log('🔄 Actualizando estado a:', this.tarea.status);
-    
+
     this.tareaService.updateTarea(this.tareaId, { status: this.tarea.status }).subscribe({
       next: () => {
-        console.log('✅ Estado actualizado correctamente');
         this.TareaE.emit(this.tarea);
-        Swal.fire({ 
-          icon: 'success', 
-          title: 'Estado actualizado', 
-          timer: 1200, 
-          showConfirmButton: false 
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Estado actualizado',
+          timer: 1500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
         });
+
         this.loadTimeline();
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error('❌ Error al actualizar estado:', error);
-        Swal.fire({ 
-          icon: 'error', 
-          title: 'No se pudo actualizar el estado' 
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo actualizar el estado',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
         });
       }
     });
   }
+
 
   // =============================
   // ✏️ DESCRIPCIÓN
@@ -289,31 +298,39 @@ export class EditTareaComponent implements OnInit {
 
   saveDescription(): void {
     if (!this.tarea) return;
-    
-    console.log('💾 Guardando descripción:', this.tarea.description);
-    
+
     this.tareaService.updateTarea(this.tareaId, { description: this.tarea.description }).subscribe({
       next: () => {
-        console.log('✅ Descripción guardada correctamente');
         this.editingDescription = false;
         this.TareaE.emit(this.tarea);
-        Swal.fire({ 
-          icon: 'success', 
-          title: 'Descripción guardada', 
-          timer: 1200, 
-          showConfirmButton: false 
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Descripción guardada',
+          timer: 1500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
         });
+
         this.loadTimeline();
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error('❌ Error al guardar descripción:', error);
-        Swal.fire({ 
-          icon: 'error', 
-          title: 'No se pudo guardar la descripción' 
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo guardar la descripción',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
         });
       }
     });
   }
+
 
   // =============================
   // 📅 FECHAS - CORRECCIÓN APLICADA
@@ -372,106 +389,113 @@ export class EditTareaComponent implements OnInit {
 
   saveFechas(): void {
     if (!this.dueDate) {
-      Swal.fire({ 
-        icon: 'warning', 
-        title: 'Fecha de vencimiento requerida',
-        text: 'Debes ingresar al menos la fecha de vencimiento'
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'Debes ingresar al menos la fecha de vencimiento',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
       });
       return;
     }
 
-    const data: any = {
-      due_date: this.dueDate
-    };
-
-    // La fecha de inicio es opcional
-    if (this.startDate) {
-      data.start_date = this.startDate;
-    }
-
-    console.log('💾 Guardando fechas:', data);
+    const data: any = { due_date: this.dueDate };
+    if (this.startDate) data.start_date = this.startDate;
 
     this.tareaService.updateTarea(this.tareaId, data).subscribe({
-      next: (resp: any) => {
-        console.log('✅ Fechas guardadas');
+      next: () => {
         this.editingFechas = false;
-        
-        // 🆕 SOLUCIÓN: Actualizar la tarea localmente de inmediato
+
         if (this.tarea) {
           this.tarea.due_date = this.dueDate;
-          if (this.startDate) {
-            this.tarea.start_date = this.startDate;
-          }
-          
-          // Forzar detección de cambios para que la sección aparezca inmediatamente
+          if (this.startDate) this.tarea.start_date = this.startDate;
+
           this.cdr.detectChanges();
-          
-          // Emitir la tarea actualizada al componente padre
           this.TareaE.emit(this.tarea);
         }
-        
-        // Cargar la tarea completa del backend para sincronizar
+
         this.loadTarea();
-        
-        Swal.fire({ 
-          icon: 'success', 
-          title: 'Fechas guardadas', 
-          timer: 1200, 
-          showConfirmButton: false 
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Fechas guardadas',
+          timer: 1500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
         });
+
         this.loadTimeline();
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error('❌ Error al guardar fechas:', error);
-        Swal.fire({ 
-          icon: 'error', 
-          title: 'No se pudieron guardar las fechas' 
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudieron guardar las fechas',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
         });
       }
     });
   }
+
 
   deleteFechas(): void {
     Swal.fire({
+      icon: 'warning',
       title: '¿Eliminar fechas?',
       text: 'Se eliminarán las fechas de inicio y vencimiento',
-      icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#EB5A46',
-      cancelButtonColor: '#6c757d',
       confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d'
+    }).then(result => {
+
       if (result.isConfirmed) {
-        const data = {
-          start_date: null,
-          due_date: null
-        };
+        const data = { start_date: null, due_date: null };
 
         this.tareaService.updateTarea(this.tareaId, data).subscribe({
           next: () => {
-            console.log('✅ Fechas eliminadas');
             this.loadTarea();
             this.TareaE.emit(this.tarea);
-            Swal.fire({ 
-              icon: 'success', 
-              title: 'Fechas eliminadas', 
-              timer: 1200, 
-              showConfirmButton: false 
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Fechas eliminadas',
+              timer: 1500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
             });
+
             this.loadTimeline();
           },
-          error: (error: any) => {
+          error: (error) => {
             console.error('❌ Error al eliminar fechas:', error);
-            Swal.fire({ 
-              icon: 'error', 
-              title: 'No se pudieron eliminar las fechas' 
+
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'No se pudieron eliminar las fechas',
+              timer: 3500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
             });
           }
         });
       }
+
     });
   }
+
 
   // =============================
   // 🏷️ ETIQUETAS
@@ -505,64 +529,88 @@ export class EditTareaComponent implements OnInit {
 
     this.etiquetasService.updateEtiqueta(this.tareaId, this.editingEtiqueta.id, data).subscribe({
       next: () => {
-        console.log('✅ Etiqueta actualizada');
         this.closeEtiquetaModal();
         this.loadTarea();
         this.TareaE.emit(this.tarea);
-        Swal.fire({ 
-          icon: 'success', 
-          title: 'Etiqueta actualizada', 
-          timer: 1200, 
-          showConfirmButton: false 
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Etiqueta actualizada',
+          timer: 1500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
         });
+
         this.loadTimeline();
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error('❌ Error al actualizar etiqueta:', error);
-        Swal.fire({ 
-          icon: 'error', 
-          title: 'No se pudo actualizar la etiqueta' 
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo actualizar la etiqueta',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
         });
       }
     });
   }
 
+
   deleteEtiqueta(etiqueta: Etiqueta): void {
     Swal.fire({
+      icon: 'warning',
       title: '¿Eliminar etiqueta?',
       text: `Se eliminará la etiqueta "${etiqueta.name}"`,
-      icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#EB5A46',
-      cancelButtonColor: '#6c757d',
       confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
-      if (result.isConfirmed && etiqueta.id) {
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d'
+    }).then(result => {
+
+      if (result.isConfirmed && typeof etiqueta.id === 'number') {
+
         this.etiquetasService.deleteEtiqueta(this.tareaId, etiqueta.id).subscribe({
           next: () => {
-            console.log('✅ Etiqueta eliminada');
             this.loadTarea();
             this.TareaE.emit(this.tarea);
-            Swal.fire({ 
-              icon: 'success', 
-              title: 'Etiqueta eliminada', 
-              timer: 1200, 
-              showConfirmButton: false 
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Etiqueta eliminada',
+              timer: 1500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
             });
+
             this.loadTimeline();
           },
-          error: (error: any) => {
+          error: (error) => {
             console.error('❌ Error al eliminar etiqueta:', error);
-            Swal.fire({ 
-              icon: 'error', 
-              title: 'No se pudo eliminar la etiqueta' 
+
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'No se pudo eliminar la etiqueta',
+              timer: 3500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
             });
           }
         });
+
       }
+
     });
   }
+
 
   getEtiquetaColorClass(color: string): string {
     const colorMap: { [key: string]: string } = {
@@ -662,77 +710,104 @@ export class EditTareaComponent implements OnInit {
 
   deleteChecklist(checklistId: number): void {
     Swal.fire({
+      icon: 'warning',
       title: '¿Eliminar checklist?',
       text: 'Se eliminarán todos los elementos del checklist',
-      icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#EB5A46',
-      cancelButtonColor: '#6c757d',
       confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d'
+    }).then(result => {
+
       if (result.isConfirmed) {
+
         this.checklistsService.deleteChecklist(this.tareaId, checklistId).subscribe({
           next: () => {
-            console.log('✅ Checklist eliminado');
             this.loadTarea();
             this.TareaE.emit(this.tarea);
+
             Swal.fire({
               icon: 'success',
               title: 'Checklist eliminado',
-              timer: 1200,
-              showConfirmButton: false
+              timer: 1500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
             });
+
             this.loadTimeline();
           },
-          error: (error: any) => {
+          error: (error) => {
             console.error('❌ Error al eliminar checklist:', error);
+
             Swal.fire({
               icon: 'error',
-              title: 'No se pudo eliminar el checklist'
+              title: 'Error',
+              text: 'No se pudo eliminar el checklist',
+              timer: 3500,
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false
             });
           }
         });
+
+      }
+
+    });
+  }
+
+
+  deleteChecklistItem(checklistId: number, itemId: number): void {
+    Swal.fire({
+      icon: 'warning',
+      title: '¿Eliminar elemento?',
+      text: 'Esta acción no se puede deshacer',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d'
+    }).then(result => {
+
+      if (result.isConfirmed) {
+
+        this.checklistsService.deleteItem(this.tareaId, checklistId, itemId).subscribe({
+          next: () => {
+            this.loadTarea();
+            this.TareaE.emit(this.tarea);
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Elemento eliminado',
+              timer: 1500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+
+            this.loadTimeline();
+          },
+          error: (error) => {
+            console.error('❌ Error al eliminar item:', error);
+
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'No se pudo eliminar el elemento',
+              timer: 3500,
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false
+            });
+          }
+        });
+
       }
     });
   }
 
-  deleteChecklistItem(checklistId: number, itemId: number): void {
-    Swal.fire({
-      title: '¿Eliminar elemento?',
-      text: 'Esta acción no se puede deshacer',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#EB5A46',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.checklistsService.deleteItem(this.tareaId, checklistId, itemId).subscribe({
-          next: () => {
-            console.log('✅ Item eliminado');
-            this.loadTarea();
-            this.TareaE.emit(this.tarea);
-            Swal.fire({
-              icon: 'success',
-              title: 'Elemento eliminado',
-              timer: 1200,
-              showConfirmButton: false
-            });
-            this.loadTimeline();
-          },
-          error: (error: any) => {
-            console.error('❌ Error al eliminar item:', error);
-            Swal.fire({
-              icon: 'error',
-              title: 'No se pudo eliminar el elemento'
-            });
-          }
-        });
-      }
-    });
-  }
 
   showAddItemInput(checklist: any): void {
     checklist.addingItem = true;
@@ -745,39 +820,43 @@ export class EditTareaComponent implements OnInit {
   }
 
   addChecklistItem(checklist: any): void {
-    if (!checklist.newItemName || !checklist.newItemName.trim()) {
-      return;
-    }
-
-    console.log('➕ Agregando item:', checklist.newItemName);
+    if (!checklist.newItemName || !checklist.newItemName.trim()) return;
 
     this.checklistsService.addItem(this.tareaId, checklist.id, {
       name: checklist.newItemName.trim(),
       completed: false
     }).subscribe({
       next: () => {
-        console.log('✅ Item agregado');
         checklist.addingItem = false;
         checklist.newItemName = '';
         this.loadTarea();
         this.TareaE.emit(this.tarea);
+
         Swal.fire({
           icon: 'success',
           title: 'Elemento agregado',
           timer: 1200,
+          toast: true,
+          position: 'top-end',
           showConfirmButton: false
         });
+
         this.loadTimeline();
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error('❌ Error al agregar item:', error);
+
         Swal.fire({
           icon: 'error',
-          title: 'No se pudo agregar el elemento'
+          title: 'Error',
+          text: 'No se pudo agregar el elemento',
+          toast: true,
+          position: 'top-end'
         });
       }
     });
   }
+
 
   // =============================
   // 📎 ADJUNTOS - CORRECCIÓN APLICADA
@@ -813,54 +892,47 @@ export class EditTareaComponent implements OnInit {
    * 🔧 CORRECCIÓN 4: Mejorar la subida de archivos (especialmente imágenes)
    */
   guardarArchivo(archivo: Archivo): void {
-    if (!this.tarea || !archivo.file) {
-      console.error('❌ No hay tarea o archivo para guardar');
-      return;
-    }
+    if (!this.tarea || !archivo.file) return;
 
     const formData = new FormData();
     formData.append('tipo', 'archivo');
     formData.append('file', archivo.file, archivo.file.name);
-    
-    // Log para debug
-    console.log('📤 Subiendo archivo:', {
-      nombre: archivo.file.name,
-      tipo: archivo.file.type,
-      tamaño: archivo.file.size
-    });
 
     this.tareaService.addAdjunto(this.tareaId, formData).subscribe({
-      next: (resp) => {
-        console.log('✅ Archivo guardado:', resp);
+      next: () => {
         this.loadTarea();
         this.TareaE.emit(this.tarea);
+
         Swal.fire({
           icon: 'success',
-          title: 'Archivo adjuntado correctamente',
+          title: 'Archivo adjuntado',
           timer: 1500,
+          toast: true,
+          position: 'top-end',
           showConfirmButton: false
         });
       },
+
       error: (error) => {
         console.error('❌ Error al guardar archivo:', error);
-        
+
         let errorMsg = 'Error al adjuntar el archivo';
-        if (error.error?.message) {
-          errorMsg = error.error.message;
-        } else if (error.status === 413) {
-          errorMsg = 'El archivo es demasiado grande';
-        } else if (error.status === 422) {
-          errorMsg = 'Tipo de archivo no permitido';
-        }
-        
+        if (error.error?.message) errorMsg = error.error.message;
+        else if (error.status === 413) errorMsg = 'El archivo es demasiado grande';
+        else if (error.status === 422) errorMsg = 'Tipo de archivo no permitido';
+
         Swal.fire({
           icon: 'error',
           title: 'Error',
-          text: errorMsg
+          text: errorMsg,
+          toast: true,
+          position: 'top-end'
         });
       }
     });
   }
+
+
 
   guardarEnlace(enlace: Enlace): void {
     if (!this.tarea) return;
@@ -872,26 +944,31 @@ export class EditTareaComponent implements OnInit {
     };
 
     this.tareaService.addAdjunto(this.tareaId, data).subscribe({
-      next: (resp) => {
-        console.log('✅ Enlace guardado:', resp);
+      next: () => {
         this.loadTarea();
         this.TareaE.emit(this.tarea);
+
         Swal.fire({
           icon: 'success',
           title: 'Enlace agregado',
-          timer: 1200,
+          timer: 1500,
+          toast: true,
+          position: 'top-end',
           showConfirmButton: false
         });
       },
-      error: (error) => {
-        console.error('❌ Error al guardar enlace:', error);
+      error: () => {
         Swal.fire({
           icon: 'error',
-          title: 'Error al agregar enlace'
+          title: 'Error',
+          text: 'No se pudo agregar el enlace',
+          toast: true,
+          position: 'top-end'
         });
       }
     });
   }
+
 
   /**
    * 🔧 CORRECCIÓN 3: Agregar método para descargar archivos
@@ -934,85 +1011,113 @@ export class EditTareaComponent implements OnInit {
 
   eliminarEnlace(index: number): void {
     const enlace = this.adjuntos.enlaces[index];
-    
+
     Swal.fire({
+      icon: 'warning',
       title: '¿Eliminar enlace?',
       text: 'Esta acción no se puede deshacer',
-      icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#F1416C',
-      cancelButtonColor: '#7E8299',
       confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d'
+    }).then(result => {
+
       if (result.isConfirmed) {
+
         if (enlace.id) {
+
           this.tareaService.deleteAdjunto(this.tareaId, enlace.id).subscribe({
             next: () => {
               this.loadTarea();
               this.TareaE.emit(this.tarea);
+
               Swal.fire({
                 icon: 'success',
                 title: 'Enlace eliminado',
-                timer: 1200,
+                timer: 1500,
+                toast: true,
+                position: 'top-end',
                 showConfirmButton: false
               });
             },
-            error: (error) => {
-              console.error('❌ Error al eliminar:', error);
+            error: () => {
               Swal.fire({
                 icon: 'error',
-                title: 'Error al eliminar'
+                title: 'Error',
+                text: 'No se pudo eliminar el enlace',
+                toast: true,
+                position: 'top-end'
               });
             }
           });
+
         } else {
           this.adjuntos.enlaces.splice(index, 1);
         }
+
       }
+
     });
   }
 
+
   eliminarArchivo(index: number): void {
     const archivo = this.adjuntos.archivos[index];
-    
+
     Swal.fire({
+      icon: 'warning',
       title: '¿Eliminar archivo?',
       text: 'Esta acción no se puede deshacer',
-      icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#F1416C',
-      cancelButtonColor: '#7E8299',
       confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d'
+    }).then(result => {
+
       if (result.isConfirmed) {
+
         if (archivo.id) {
+
           this.tareaService.deleteAdjunto(this.tareaId, archivo.id).subscribe({
             next: () => {
               this.loadTarea();
               this.TareaE.emit(this.tarea);
+
               Swal.fire({
                 icon: 'success',
                 title: 'Archivo eliminado',
-                timer: 1200,
+                timer: 1500,
+                toast: true,
+                position: 'top-end',
                 showConfirmButton: false
               });
             },
+
             error: (error) => {
               console.error('❌ Error al eliminar:', error);
+
               Swal.fire({
                 icon: 'error',
-                title: 'Error al eliminar'
+                title: 'Error al eliminar archivo',
+                timer: 3500,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false
               });
             }
           });
+
         } else {
           this.adjuntos.archivos.splice(index, 1);
         }
+
       }
+
     });
   }
+
 
   obtenerIconoArchivo(tipo: string): string {
     if (!tipo) return 'fa-file';
@@ -1117,30 +1222,38 @@ export class EditTareaComponent implements OnInit {
 
   addComment(): void {
     if (!this.newComment.trim()) return;
-    
-    console.log('💬 Agregando comentario:', this.newComment);
-    
+
     this.tareaService.addComment(this.tareaId, this.newComment).subscribe({
       next: () => {
-        console.log('✅ Comentario agregado');
         this.newComment = '';
         this.loadTimeline();
-        Swal.fire({ 
-          icon: 'success', 
-          title: 'Comentario agregado', 
-          timer: 1200, 
-          showConfirmButton: false 
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Comentario agregado',
+          timer: 1500,
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false
         });
       },
-      error: (error: any) => {
+
+      error: (error) => {
         console.error('❌ Error al agregar comentario:', error);
-        Swal.fire({ 
-          icon: 'error', 
-          title: 'No se pudo agregar el comentario' 
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo agregar el comentario',
+          timer: 3500,
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false
         });
       }
     });
   }
+
 
   editComment(commentId: number): void {
     // Implementar edición de comentarios
@@ -1149,38 +1262,52 @@ export class EditTareaComponent implements OnInit {
 
   deleteComment(commentId: number): void {
     Swal.fire({
+      icon: 'warning',
       title: '¿Eliminar comentario?',
       text: 'Esta acción no se puede deshacer',
-      icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#EB5A46',
-      cancelButtonColor: '#6c757d',
       confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d'
+    }).then(result => {
+
       if (result.isConfirmed) {
+
         this.tareaService.deleteComment(this.tareaId, commentId).subscribe({
           next: () => {
-            console.log('✅ Comentario eliminado');
             this.loadTimeline();
-            Swal.fire({ 
-              icon: 'success', 
-              title: 'Comentario eliminado', 
-              timer: 1200, 
-              showConfirmButton: false 
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Comentario eliminado',
+              timer: 1500,
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false
             });
           },
-          error: (error: any) => {
+
+          error: (error) => {
             console.error('❌ Error al eliminar comentario:', error);
-            Swal.fire({ 
-              icon: 'error', 
-              title: 'No se pudo eliminar el comentario' 
+
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'No se pudo eliminar el comentario',
+              timer: 3500,
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false
             });
           }
         });
+
       }
+
     });
   }
+
 
   getUserAvatar(user: any): string {
     if (user?.avatar) {
@@ -1330,54 +1457,67 @@ export class EditTareaComponent implements OnInit {
   /**
    * Desasignar un miembro de la tarea
    */
-  desasignarMiembro(userId: number) {
+  desasignarMiembro(userId: number): void {
     const miembro = this.miembrosAsignados.find(m => m.id === userId);
     const nombreMiembro = miembro ? `${miembro.name} ${miembro.surname || ''}` : 'este miembro';
 
     Swal.fire({
+      icon: 'warning',
       title: '¿Desasignar miembro?',
       text: `¿Estás seguro de desasignar a ${nombreMiembro} de esta tarea?`,
-      icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#dc3545',
-      cancelButtonColor: '#6c757d',
       confirmButtonText: 'Sí, desasignar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d'
+    }).then(result => {
+
       if (result.isConfirmed) {
+
         this.tareaService.unassignMemberFromTarea(this.tareaId, userId).subscribe({
           next: (resp: any) => {
             if (resp.message === 200) {
+
               this.miembrosAsignados = this.miembrosAsignados.filter(m => m.id !== userId);
-              
-              // 🆕 SOLUCIÓN: Actualizar la tarea localmente de inmediato
-              if (this.tarea && this.tarea.assigned_members) {
+
+              if (this.tarea?.assigned_members) {
                 this.tarea.assigned_members = this.tarea.assigned_members.filter((m: any) => m.id !== userId);
                 this.cdr.detectChanges();
               }
-              
+
               Swal.fire({
                 icon: 'success',
                 title: 'Miembro desasignado',
                 text: `${nombreMiembro} ha sido desasignado de la tarea.`,
-                timer: 2000,
+                timer: 1500,
+                toast: true,
+                position: 'top-end',
                 showConfirmButton: false
               });
-              
+
               this.loadTimeline();
               this.TareaE.emit(resp.tarea || this.tarea);
             }
           },
-          error: (error: any) => {
+
+          error: (error) => {
             console.error('❌ Error al desasignar miembro:', error);
+
             Swal.fire({
               icon: 'error',
               title: 'Error',
-              text: 'No se pudo desasignar el miembro. Intenta de nuevo.'
+              text: 'No se pudo desasignar el miembro. Intenta de nuevo.',
+              timer: 3500,
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false
             });
           }
         });
+
       }
+
     });
   }
+
 }

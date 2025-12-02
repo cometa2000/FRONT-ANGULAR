@@ -11,6 +11,7 @@ import { EditListaComponent } from '../edit-lista/edit-lista.component';
 import { DelteListaComponent } from '../delte-lista/delte-lista.component';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { ToastrService } from 'ngx-toastr';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-tablero-tareas',
@@ -165,16 +166,37 @@ export class TableroTareasComponent implements OnInit {
     this.tareaService.reorderListas(listas).subscribe({
       next: (resp: any) => {
         console.log('✅ Orden guardado correctamente');
-        this.toastr.success('Orden de listas actualizado', 'Éxito');
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Orden actualizado',
+          text: 'Las listas fueron reordenadas correctamente',
+          timer: 2000,
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false
+        });
+
         this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('❌ Error al guardar orden:', error);
-        this.toastr.error('No se pudo guardar el orden', 'Error');
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo guardar el nuevo orden',
+          toast: true,
+          position: 'top-end',
+          timer: 2500,
+          showConfirmButton: false
+        });
+
         this.listListas();
       }
     });
   }
+
 
   getConnectedLists(): string[] {
     return this.LISTAS.map(lista => 'lista-' + lista.id);
@@ -182,9 +204,16 @@ export class TableroTareasComponent implements OnInit {
 
   // ✅ MEJORADO: Verificar permisos antes de permitir mover tareas
   onTaskDrop(event: CdkDragDrop<any[]>, targetList: any) {
-    // ✅ NUEVO: Verificación adicional de permisos
     if (!this.hasWriteAccess) {
-      this.toastr.warning('No tienes permisos para mover tareas', 'Permiso denegado');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Permiso denegado',
+        text: 'No tienes permisos para mover tareas',
+        toast: true,
+        position: 'top-end',
+        timer: 2500,
+        showConfirmButton: false
+      });
       return;
     }
 
@@ -209,17 +238,32 @@ export class TableroTareasComponent implements OnInit {
       movedTask.lista = { id: newListId, name: targetList.name };
 
       this.tareaService.moveTarea(movedTask.id, newListId).subscribe({
-        next: (resp: any) => {
-          this.toastr.success(
-            `Tarea movida a "${targetList.name}"`, 
-            'Tarea actualizada'
-          );
+        next: () => {
+          Swal.fire({
+            icon: 'success',
+            title: 'Tarea movida',
+            text: `Ahora está en "${targetList.name}"`,
+            toast: true,
+            position: 'top-end',
+            timer: 2000,
+            showConfirmButton: false
+          });
         },
         error: (error) => {
-          this.toastr.error('Error al mover la tarea', 'Error');
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo mover la tarea',
+            toast: true,
+            position: 'top-end',
+            timer: 2500,
+            showConfirmButton: false
+          });
+
           console.error('Error al mover tarea:', error);
-          
+
           movedTask.lista_id = oldListId;
+
           transferArrayItem(
             event.container.data,
             event.previousContainer.data,
@@ -233,30 +277,58 @@ export class TableroTareasComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+
   // ✅ MEJORADO: Verificar permisos antes de crear lista
   createLista() {
     if (!this.hasWriteAccess) {
-      this.toastr.warning('No tienes permisos para crear listas', 'Permiso denegado');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Permiso denegado',
+        text: 'No tienes permisos para crear listas',
+        toast: true,
+        position: 'top-end',
+        timer: 2500,
+        showConfirmButton: false
+      });
       return;
     }
 
     const modalRef = this.modalService.open(CreateListaComponent, { centered: true, size: 'md' });
     modalRef.componentInstance.grupo_id = this.grupo_id;
-    
+
     modalRef.componentInstance.ListaC.subscribe((lista: any) => {
       lista.tareas = [];
       lista.orden = this.LISTAS.length;
       this.LISTAS.push(lista);
-      this.toastr.success('Lista creada exitosamente', 'Éxito');
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Lista creada',
+        toast: true,
+        position: 'top-end',
+        timer: 2000,
+        showConfirmButton: false
+      });
+
       this.cdr.detectChanges();
       modalRef.close();
     });
   }
 
+
+
   // ✅ MEJORADO: Verificar permisos antes de crear tarea
   createTarea(listaId: number) {
     if (!this.hasWriteAccess) {
-      this.toastr.warning('No tienes permisos para crear tareas', 'Permiso denegado');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Permiso denegado',
+        text: 'No tienes permisos para crear tareas',
+        toast: true,
+        position: 'top-end',
+        timer: 2500,
+        showConfirmButton: false
+      });
       return;
     }
 
@@ -265,32 +337,38 @@ export class TableroTareasComponent implements OnInit {
     modalRef.componentInstance.grupo_id = this.grupo_id;
     modalRef.componentInstance.users = this.users;
     modalRef.componentInstance.sucursales = this.sucursales;
-    
+
     modalRef.componentInstance.TareaC.subscribe((tarea: any) => {
       const targetList = this.LISTAS.find(l => l.id === listaId);
       if (targetList) {
         tarea.expanded = false;
         targetList.tareas.push(tarea);
-        this.toastr.success('Tarea creada exitosamente', 'Éxito');
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Tarea creada',
+          toast: true,
+          position: 'top-end',
+          timer: 2000,
+          showConfirmButton: false
+        });
+
         this.cdr.detectChanges();
       }
     });
   }
 
+
   // ✅ MEJORADO: Pasar permisos al modal de edición
   editTarea(TAREA: any) {
-    const modalRef = this.modalService.open(EditTareaComponent, { 
-      centered: true, 
-      size: 'xl'
-    });
+    const modalRef = this.modalService.open(EditTareaComponent, { centered: true, size: 'xl' });
     modalRef.componentInstance.TAREA_SELECTED = TAREA;
     modalRef.componentInstance.users = this.users;
     modalRef.componentInstance.sucursales = this.sucursales;
-    // ✅ NUEVO: Pasar información de permisos al modal
     modalRef.componentInstance.grupo_id = this.grupo_id;
     modalRef.componentInstance.hasWriteAccess = this.hasWriteAccess;
     modalRef.componentInstance.isOwner = this.isOwner;
-    
+
     modalRef.componentInstance.TareaE.subscribe((tareaEditada: any) => {
       this.LISTAS.forEach(lista => {
         const index = lista.tareas.findIndex((t: any) => t.id === tareaEditada.id);
@@ -298,68 +376,132 @@ export class TableroTareasComponent implements OnInit {
           lista.tareas[index] = { ...lista.tareas[index], ...tareaEditada };
         }
       });
-      this.toastr.success('Tarea actualizada correctamente', 'Éxito');
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Tarea actualizada',
+        toast: true,
+        position: 'top-end',
+        timer: 2000,
+        showConfirmButton: false
+      });
+
       this.cdr.detectChanges();
     });
   }
 
+
   // ✅ MEJORADO: Verificar permisos antes de editar lista
   editLista(LISTA: any) {
     if (!this.hasWriteAccess) {
-      this.toastr.warning('No tienes permisos para editar listas', 'Permiso denegado');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Permiso denegado',
+        text: 'No tienes permisos para editar listas',
+        toast: true,
+        position: 'top-end',
+        timer: 2500,
+        showConfirmButton: false
+      });
       return;
     }
 
     const modalRef = this.modalService.open(EditListaComponent, { centered: true, size: 'md' });
     modalRef.componentInstance.LISTA_SELECTED = LISTA;
-    
+
     modalRef.componentInstance.ListaE.subscribe((listaEditada: any) => {
       const index = this.LISTAS.findIndex(l => l.id === listaEditada.id);
       if (index !== -1) {
         this.LISTAS[index] = { ...this.LISTAS[index], ...listaEditada };
       }
-      this.toastr.success('Lista actualizada correctamente', 'Éxito');
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Lista actualizada',
+        toast: true,
+        position: 'top-end',
+        timer: 2000,
+        showConfirmButton: false
+      });
+
       this.cdr.detectChanges();
     });
   }
+
 
   // ✅ MEJORADO: Verificar permisos antes de eliminar tarea
   deleteTarea(TAREA: any, event?: MouseEvent) {
     if (event) event.stopPropagation();
-    
+
     if (!this.hasWriteAccess) {
-      this.toastr.warning('No tienes permisos para eliminar tareas', 'Permiso denegado');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Permiso denegado',
+        text: 'No tienes permisos para eliminar tareas',
+        toast: true,
+        position: 'top-end',
+        timer: 2500,
+        showConfirmButton: false
+      });
       return;
     }
-    
+
     const modalRef = this.modalService.open(DeleteTareaComponent, { centered: true, size: 'md' });
     modalRef.componentInstance.TAREA_SELECTED = TAREA;
-    
+
     modalRef.componentInstance.TareaD.subscribe(() => {
       this.LISTAS.forEach(list => {
         list.tareas = list.tareas.filter((t: any) => t.id !== TAREA.id);
       });
-      this.toastr.success('Tarea eliminada correctamente', 'Éxito');
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Tarea eliminada',
+        toast: true,
+        position: 'top-end',
+        timer: 2000,
+        showConfirmButton: false
+      });
+
       this.cdr.detectChanges();
     });
   }
 
+
   // ✅ MEJORADO: Verificar permisos antes de eliminar lista
   deleteLista(LISTA: any) {
     if (!this.hasWriteAccess) {
-      this.toastr.warning('No tienes permisos para eliminar listas', 'Permiso denegado');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Permiso denegado',
+        text: 'No tienes permisos para eliminar listas',
+        toast: true,
+        position: 'top-end',
+        timer: 2500,
+        showConfirmButton: false
+      });
       return;
     }
 
     const modalRef = this.modalService.open(DelteListaComponent, { centered: true, size: 'md' });
     modalRef.componentInstance.LISTA_SELECTED = LISTA;
-    
+
     modalRef.componentInstance.ListaD.subscribe(() => {
       this.LISTAS = this.LISTAS.filter((l: any) => l.id !== LISTA.id);
-      this.toastr.success('Lista eliminada correctamente', 'Éxito');
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Lista eliminada',
+        toast: true,
+        position: 'top-end',
+        timer: 2000,
+        showConfirmButton: false
+      });
+
       this.cdr.detectChanges();
     });
   }
+
 
   listListas() {
     this.tareaService.listListas(this.grupo_id).subscribe({
@@ -542,15 +684,13 @@ export class TableroTareasComponent implements OnInit {
    * 🎨 Obtener la ruta correcta del avatar de un miembro
    */
   getMemberAvatar(member: any): string {
-    console.log('🖼️ getMemberAvatar - Member:', member);
-    
     if (member?.avatar) {
       return this.getAvatarUrl(member.avatar);
     }
-    
-    console.log('⚠️ Sin avatar, usando blank.png');
+
     return 'assets/media/avatars/blank.png';
   }
+
 
   /**
    * 🔧 Helper genérico para construir la URL del avatar
@@ -560,25 +700,24 @@ export class TableroTareasComponent implements OnInit {
     if (!avatarValue) {
       return 'assets/media/avatars/blank.png';
     }
-    
-    console.log('🔍 getAvatarUrl - Procesando avatar:', avatarValue);
-    
-    // Si ya es solo el nombre del archivo (ejemplo: "3.png")
-    if (avatarValue.match(/^\d+\.png$/)) {
-      const url = `assets/media/avatars/${avatarValue}`;
-      console.log('✅ Formato nuevo detectado:', url);
-      return url;
+
+    // 🆕 Caso: solo el número sin extensión (ej. "3")
+    if (/^\d+$/.test(avatarValue)) {
+      return `assets/media/avatars/${avatarValue}.png`;
     }
-    
-    // Si contiene la ruta completa, usarla tal cual (retrocompatibilidad)
+
+    // Caso: formato nuevo "3.png"
+    if (/^\d+\.png$/.test(avatarValue)) {
+      return `assets/media/avatars/${avatarValue}`;
+    }
+
+    // Caso: URL completa
     if (avatarValue.includes('http') || avatarValue.includes('storage')) {
-      console.log('✅ URL completa detectada:', avatarValue);
       return avatarValue;
     }
-    
-    // Si no coincide con ningún patrón, intentar construir la ruta
-    const url = `assets/media/avatars/${avatarValue}`;
-    console.log('✅ Construyendo ruta genérica:', url);
-    return url;
+
+    // Caso general: intentar construir ruta
+    return `assets/media/avatars/${avatarValue}`;
   }
+
 }

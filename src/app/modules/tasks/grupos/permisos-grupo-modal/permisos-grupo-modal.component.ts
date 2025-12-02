@@ -4,6 +4,7 @@ import { ToastrService } from 'ngx-toastr';
 import { GrupoService } from '../service/grupo.service';
 import { PermisosPersonalizadosModalComponent } from '../permisos-personalizados-modal/permisos-personalizados-modal.component';
 
+import Swal from 'sweetalert2';
 @Component({
   selector: 'app-permisos-grupo-modal',
   templateUrl: './permisos-grupo-modal.component.html',
@@ -58,12 +59,21 @@ export class PermisosGrupoModalComponent implements OnInit {
       return;
     }
 
-    // Guardar el tipo de permiso general
     this.isLoading = true;
+
     this.grupoService.updatePermissionType(this.GRUPO_SELECTED.id, this.permissionType).subscribe({
       next: (resp: any) => {
         if (resp.message === 200) {
-          this.toast.success('Permisos actualizados correctamente');
+          Swal.fire({
+            icon: 'success',
+            title: 'Permisos actualizados',
+            text: 'Los permisos se actualizaron correctamente',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+
           this.PermisosChanged.emit(resp.grupo);
           this.modal.close();
         }
@@ -71,11 +81,20 @@ export class PermisosGrupoModalComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error al actualizar permisos:', err);
-        this.toast.error('Error al actualizar permisos');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error al actualizar permisos',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
         this.isLoading = false;
       }
     });
   }
+
 
   openCustomPermissionsModal() {
     const modalRef = this.modalService.open(PermisosPersonalizadosModalComponent, {

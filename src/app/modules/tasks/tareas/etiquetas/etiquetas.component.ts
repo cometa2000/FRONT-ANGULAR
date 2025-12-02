@@ -93,38 +93,56 @@ export class EtiquetasComponent implements OnInit {
     if (!this.tareaId) return;
 
     const name = (this.etiquetaName || '').trim();
-    if (!name) return;
+    if (!name) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El nombre de la etiqueta es requerido',
+        timer: 3000,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false
+      });
+      return;
+    }
 
-    // El servicio tipa el parámetro como Etiqueta → mandamos objeto completo mínimo
     const etiquetaData: Etiqueta = {
-      id: 0 as any, // backend asigna
+      id: 0 as any,
       name,
       color: this.selectedColor
     };
 
-    this.etiquetasService.createEtiqueta(this.tareaId!, etiquetaData).subscribe({
+    this.etiquetasService.createEtiqueta(this.tareaId, etiquetaData).subscribe({
       next: () => {
         this.closeModal();
         this.loadEtiquetas();
         this.etiquetasChanged.emit();
+
         Swal.fire({
           icon: 'success',
-          title: '¡Etiqueta creada!',
-          timer: 2000,
+          title: 'Etiqueta creada',
+          timer: 1500,
+          toast: true,
+          position: 'top-end',
           showConfirmButton: false
         });
       },
       error: (error) => {
         console.error('Error al crear etiqueta:', error);
+
         Swal.fire({
           icon: 'error',
           title: 'Error',
           text: 'No se pudo crear la etiqueta',
-          confirmButtonColor: '#EB5A46'
+          timer: 3500,
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false
         });
       }
     });
   }
+
 
   // HTML usa editEtiqueta(etiqueta) → alias a openModal(etiqueta)
   editEtiqueta(etiqueta: Etiqueta): void {
@@ -136,80 +154,121 @@ export class EtiquetasComponent implements OnInit {
     if (!this.tareaId || !this.editingEtiqueta) return;
 
     const name = (this.etiquetaName || '').trim();
-    if (!name) return;
+    if (!name) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El nombre de la etiqueta es requerido',
+        timer: 3000,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false
+      });
+      return;
+    }
 
-    // Servicio espera Etiqueta o DTO fuerte → mandamos objeto completo mínimo
     const etiquetaData: Etiqueta = {
       ...this.editingEtiqueta,
       name,
       color: this.selectedColor
     };
 
-    this.etiquetasService.updateEtiqueta(
-      this.tareaId!,
-      this.editingEtiqueta.id!,
-      etiquetaData
-    ).subscribe({
-      next: () => {
-        this.closeModal();
-        this.loadEtiquetas();
-        this.etiquetasChanged.emit();
-        Swal.fire({
-          icon: 'success',
-          title: '¡Etiqueta actualizada!',
-          timer: 2000,
-          showConfirmButton: false
-        });
-      },
-      error: (error) => {
-        console.error('Error al actualizar etiqueta:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudo actualizar la etiqueta',
-          confirmButtonColor: '#EB5A46'
-        });
-      }
-    });
+    this.etiquetasService.updateEtiqueta(this.tareaId, this.editingEtiqueta.id!, etiquetaData)
+      .subscribe({
+        next: () => {
+          this.closeModal();
+          this.loadEtiquetas();
+          this.etiquetasChanged.emit();
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Etiqueta actualizada',
+            timer: 1500,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false
+          });
+        },
+        error: (error) => {
+          console.error('Error al actualizar etiqueta:', error);
+
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo actualizar la etiqueta',
+            timer: 3500,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false
+          });
+        }
+      });
   }
+
 
   // Eliminar
   deleteEtiqueta(etiqueta: Etiqueta): void {
-    if (!this.tareaId) return;
+    // 🔥 Narrowing seguro
+    if (typeof this.tareaId !== 'number') {
+      console.error('❌ tareaId es undefined');
+      return;
+    }
 
+    if (typeof etiqueta.id !== 'number') {
+      console.error('❌ etiqueta.id es undefined');
+      return;
+    }
+
+    // 🔥 Truco definitivo: copiar tareaId e id a constantes
+    const tareaId = this.tareaId;
+    const etiquetaId = etiqueta.id;
+
+    // Ahora estos dos SIEMPRE son number ✔
     Swal.fire({
+      icon: 'warning',
       title: '¿Eliminar etiqueta?',
       text: `¿Seguro que deseas eliminar "${etiqueta.name}"?`,
-      icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#EB5A46',
-      cancelButtonColor: '#B3BAC5',
       confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#EB5A46',
+      cancelButtonColor: '#B3BAC5'
+    }).then(result => {
+
       if (result.isConfirmed) {
-        this.etiquetasService.deleteEtiqueta(this.tareaId!, etiqueta.id!).subscribe({
+
+        this.etiquetasService.deleteEtiqueta(tareaId, etiquetaId).subscribe({
           next: () => {
             this.loadEtiquetas();
             this.etiquetasChanged.emit();
+
             Swal.fire({
               icon: 'success',
               title: 'Etiqueta eliminada',
               timer: 1500,
+              toast: true,
+              position: 'top-end',
               showConfirmButton: false
             });
           },
+
           error: (error) => {
-            console.error('Error al eliminar etiqueta:', error);
+            console.error('❌ Error al eliminar etiqueta:', error);
+
             Swal.fire({
               icon: 'error',
               title: 'Error',
               text: 'No se pudo eliminar la etiqueta',
-              confirmButtonColor: '#EB5A46'
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false
             });
           }
         });
+
       }
+
     });
   }
+
 }

@@ -88,8 +88,12 @@ export class ChecklistsComponent implements OnInit {
     if (!this.checklistName.trim()) {
       Swal.fire({
         icon: 'warning',
-        title: 'Atención',
-        text: 'El nombre del checklist es requerido'
+        title: 'Validación',
+        text: 'El nombre del checklist es requerido',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
       });
       return;
     }
@@ -98,62 +102,81 @@ export class ChecklistsComponent implements OnInit {
       name: this.checklistName.trim()
     };
 
+    // 🔄 EDITAR
     if (this.editingChecklist && this.editingChecklist.id) {
-      // Actualizar checklist existente
       this.checklistsService.updateChecklist(this.tareaId, this.editingChecklist.id, checklistData).subscribe({
         next: (resp: any) => {
           console.log('✅ Checklist actualizado:', resp);
+
           Swal.fire({
             icon: 'success',
-            title: 'Éxito',
+            title: 'Checklist actualizado',
             text: 'Checklist actualizado correctamente',
-            timer: 1500,
-            showConfirmButton: false
+            timer: 3000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
           });
+
           this.loadChecklists();
           this.checklistsChanged.emit();
           this.closeModal();
         },
         error: (error) => {
           console.error('❌ Error al actualizar checklist:', error);
+
           Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'No se pudo actualizar el checklist'
+            text: 'No se pudo actualizar el checklist',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
           });
         }
       });
+
     } else {
-      // Crear nuevo checklist
+
+      // 🆕 CREAR
       this.checklistsService.createChecklist(this.tareaId, checklistData).subscribe({
         next: (resp: any) => {
           console.log('✅ Checklist creado:', resp);
+
           Swal.fire({
             icon: 'success',
-            title: 'Éxito',
+            title: 'Checklist creado',
             text: 'Checklist creado correctamente',
-            timer: 1500,
-            showConfirmButton: false
+            timer: 3000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
           });
+
           this.loadChecklists();
           this.checklistsChanged.emit();
           this.closeModal();
         },
         error: (error) => {
           console.error('❌ Error al crear checklist:', error);
+
           Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'No se pudo crear el checklist'
+            text: 'No se pudo crear el checklist',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
           });
         }
       });
     }
   }
 
-  deleteChecklist(checklist: Checklist): void {
-    if (!checklist.id) return;
 
+  deleteChecklist(checklist: Checklist): void {
     Swal.fire({
       title: '¿Estás seguro?',
       text: `Se eliminará el checklist "${checklist.name}"`,
@@ -164,32 +187,43 @@ export class ChecklistsComponent implements OnInit {
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar'
     }).then((result) => {
-      if (result.isConfirmed && checklist.id) {
+
+      // ⬅ El narrowing debe ocurrir AQUÍ
+      if (result.isConfirmed && typeof checklist.id === 'number') {
+
         this.checklistsService.deleteChecklist(this.tareaId, checklist.id).subscribe({
           next: (resp: any) => {
-            console.log('✅ Checklist eliminado:', resp);
             Swal.fire({
               icon: 'success',
               title: 'Eliminado',
               text: 'Checklist eliminado correctamente',
               timer: 1500,
-              showConfirmButton: false
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
             });
+
             this.loadChecklists();
             this.checklistsChanged.emit();
           },
-          error: (error) => {
-            console.error('❌ Error al eliminar checklist:', error);
+
+          error: () => {
             Swal.fire({
               icon: 'error',
               title: 'Error',
-              text: 'No se pudo eliminar el checklist'
+              text: 'No se pudo eliminar el checklist',
+              timer: 3500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
             });
           }
         });
       }
+
     });
   }
+
 
   addItem(checklist: Checklist, event?: Event): void {
     if (!checklist.id) return;
@@ -247,8 +281,6 @@ export class ChecklistsComponent implements OnInit {
   }
 
   deleteItem(checklist: Checklist, item: ChecklistItem): void {
-    if (!checklist.id || !item.id) return;
-
     Swal.fire({
       title: '¿Eliminar este paso?',
       text: `Se eliminará "${item.name}"`,
@@ -259,30 +291,45 @@ export class ChecklistsComponent implements OnInit {
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar'
     }).then((result) => {
-      if (result.isConfirmed && checklist.id && item.id) {
+
+      // ⬅ Aquí también debes hacer el narrowing
+      if (
+        result.isConfirmed &&
+        typeof checklist.id === 'number' &&
+        typeof item.id === 'number'
+      ) {
+
         this.checklistsService.deleteItem(this.tareaId, checklist.id, item.id).subscribe({
           next: (resp: any) => {
-            console.log('✅ Item eliminado:', resp);
             Swal.fire({
               icon: 'success',
               title: 'Eliminado',
               text: 'Paso eliminado correctamente',
               timer: 1500,
-              showConfirmButton: false
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
             });
+
             this.loadChecklists();
             this.checklistsChanged.emit();
           },
-          error: (error) => {
-            console.error('❌ Error al eliminar item:', error);
+
+          error: () => {
             Swal.fire({
               icon: 'error',
               title: 'Error',
-              text: 'No se pudo eliminar el paso'
+              text: 'No se pudo eliminar el paso',
+              timer: 3500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
             });
           }
         });
       }
+
     });
   }
+
 }
