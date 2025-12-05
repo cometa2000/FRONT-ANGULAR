@@ -113,18 +113,26 @@ export class NotificationService {
       tap((response: NotificationResponse) => {
         console.log('🔥 Respuesta del servidor:', response);
         if (response.success && response.notifications) {
-          // ✅ Actualizar el estado con las notificaciones recibidas
-          this.notificationsSubject.next(response.notifications);
+          // ✅ CRÍTICO: Crear un nuevo array para forzar detección de cambios
+          const newNotifications = [...response.notifications];
+          this.notificationsSubject.next(newNotifications);
           this.unreadCountSubject.next(response.unread_count || 0);
           
           console.log('✅ BehaviorSubjects actualizados:', {
-            total: response.notifications.length,
+            total: newNotifications.length,
             unread: response.unread_count
           });
+        } else {
+          // Si no hay éxito, emitir array vacío para que el componente salga del loading
+          this.notificationsSubject.next([]);
+          this.unreadCountSubject.next(0);
         }
       }),
       catchError((error) => {
         console.error('❌ Error al obtener notificaciones:', error);
+        // Emitir arrays vacíos para que el componente salga del loading
+        this.notificationsSubject.next([]);
+        this.unreadCountSubject.next(0);
         return of({
           success: false,
           notifications: [],
@@ -163,7 +171,7 @@ export class NotificationService {
     ).pipe(
       tap((response: any) => {
         if (response.success) {
-          // ✅ Actualizar el array sin eliminar la notificación
+          // ✅ CRÍTICO: Crear un NUEVO array, no modificar el existente
           const notifications = this.notificationsSubject.value;
           const updatedNotifications = notifications.map(n => 
             n.id === notificationId 
@@ -171,7 +179,7 @@ export class NotificationService {
               : n
           );
           
-          // ✅ Emitir el nuevo array
+          // ✅ Emitir el nuevo array (esto es clave para que Angular detecte el cambio)
           this.notificationsSubject.next(updatedNotifications);
           
           // ✅ Actualizar contador
@@ -180,7 +188,8 @@ export class NotificationService {
           
           console.log('✅ Notificación marcada como leída:', {
             id: notificationId,
-            newCount: this.unreadCountSubject.value
+            newCount: this.unreadCountSubject.value,
+            totalNotifications: updatedNotifications.length
           });
         }
       }),
@@ -199,13 +208,13 @@ export class NotificationService {
     ).pipe(
       tap((response: any) => {
         if (response.success) {
-          // ✅ Actualizar todas las notificaciones sin eliminarlas
+          // ✅ CRÍTICO: Crear un NUEVO array, no modificar el existente
           const notifications = this.notificationsSubject.value;
           const updatedNotifications = notifications.map(n => 
             ({ ...n, is_read: true, read_at: new Date().toISOString() })
           );
           
-          // ✅ Emitir el nuevo array
+          // ✅ Emitir el nuevo array (esto es clave para que Angular detecte el cambio)
           this.notificationsSubject.next(updatedNotifications);
           
           // ✅ Contador a 0

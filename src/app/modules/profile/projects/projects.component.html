@@ -190,7 +190,12 @@
               [attr.data-bs-toggle]="'tooltip'"
               [attr.title]="user.full_name"
             >
-              <img [src]="user.avatar" [alt]="user.full_name" />
+              <img 
+                [src]="getUserAvatar(user)" 
+                [alt]="user.full_name"
+                (error)="onAvatarError($event)"
+              />
+
             </div>
             <div 
               class="symbol symbol-35px symbol-circle" 
@@ -203,16 +208,7 @@
           </div>
         </div>
 
-        <!-- Botón para ver detalle -->
-        <div class="mt-auto">
-          <button 
-            class="btn btn-sm btn-light-primary w-100"
-            (click)="viewTarea(tarea)"
-          >
-            <app-keenicon name="eye" class="fs-4 me-1"></app-keenicon>
-            Ver Detalles
-          </button>
-        </div>
+       
 
       </div>
     </div>

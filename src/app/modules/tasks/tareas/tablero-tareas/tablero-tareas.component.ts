@@ -562,6 +562,22 @@ export class TableroTareasComponent implements OnInit {
               tarea.assigned_members = [];
             }
             
+            // 🔍 DEBUG: Logs detallados de assigned_members
+            if (tarea.assigned_members.length > 0) {
+              console.log(`🔍 DEBUG - Tarea: "${tarea.name}" tiene ${tarea.assigned_members.length} miembro(s)`);
+              tarea.assigned_members.forEach((member: any, index: number) => {
+                console.log(`   👤 Miembro ${index + 1}:`, {
+                  id: member.id,
+                  name: member.name,
+                  surname: member.surname,
+                  email: member.email,
+                  avatar: member.avatar,
+                  avatar_type: typeof member.avatar,
+                  todas_las_propiedades: Object.keys(member)
+                });
+              });
+            }
+            
             console.log(`✅ Tarea procesada: ${tarea.name}`, {
               etiquetas: tarea.etiquetas.length,
               adjuntos: tarea.adjuntos.archivos.length + tarea.adjuntos.enlaces.length,
@@ -676,18 +692,33 @@ export class TableroTareasComponent implements OnInit {
   }
 
   onAvatarError(event: any): void {
-    console.error('❌ Error al cargar avatar, usando fallback');
+    const failedUrl = event.target.src;
+    console.error('❌ Error al cargar avatar:', {
+      url_fallida: failedUrl,
+      elemento: event.target
+    });
+    console.log('   → Cambiando a blank.png');
     event.target.src = 'assets/media/avatars/blank.png';
   }
 
   /**
    * 🎨 Obtener la ruta correcta del avatar de un miembro
    */
-  getMemberAvatar(member: any): string {
+  public getMemberAvatar(member: any): string {
+    console.log('🎨 getMemberAvatar llamado con:', {
+      member_completo: member,
+      tiene_avatar: !!member?.avatar,
+      valor_avatar: member?.avatar,
+      tipo_avatar: typeof member?.avatar
+    });
+    
     if (member?.avatar) {
-      return this.getAvatarUrl(member.avatar);
+      const url = this.getAvatarUrl(member.avatar);
+      console.log('   ✅ Avatar URL generada:', url);
+      return url;
     }
 
+    console.log('   ⚠️ Sin avatar, usando blank.png');
     return 'assets/media/avatars/blank.png';
   }
 
@@ -696,28 +727,42 @@ export class TableroTareasComponent implements OnInit {
    * 🔧 Helper genérico para construir la URL del avatar
    * Maneja los formatos: "1.png", "2.png", URLs completas, y rutas storage
    */
-  private getAvatarUrl(avatarValue: string): string {
+  public getAvatarUrl(avatarValue: string): string {
+    console.log('🔧 getAvatarUrl recibió:', {
+      valor: avatarValue,
+      tipo: typeof avatarValue,
+      es_vacio: !avatarValue
+    });
+    
     if (!avatarValue) {
+      console.log('   → Retornando blank.png (valor vacío)');
       return 'assets/media/avatars/blank.png';
     }
 
     // 🆕 Caso: solo el número sin extensión (ej. "3")
     if (/^\d+$/.test(avatarValue)) {
-      return `assets/media/avatars/${avatarValue}.png`;
+      const url = `assets/media/avatars/${avatarValue}.png`;
+      console.log('   → Caso: solo número. URL:', url);
+      return url;
     }
 
     // Caso: formato nuevo "3.png"
     if (/^\d+\.png$/.test(avatarValue)) {
-      return `assets/media/avatars/${avatarValue}`;
+      const url = `assets/media/avatars/${avatarValue}`;
+      console.log('   → Caso: número.png. URL:', url);
+      return url;
     }
 
     // Caso: URL completa
     if (avatarValue.includes('http') || avatarValue.includes('storage')) {
+      console.log('   → Caso: URL completa. URL:', avatarValue);
       return avatarValue;
     }
 
     // Caso general: intentar construir ruta
-    return `assets/media/avatars/${avatarValue}`;
+    const url = `assets/media/avatars/${avatarValue}`;
+    console.log('   → Caso: general. URL:', url);
+    return url;
   }
 
 }

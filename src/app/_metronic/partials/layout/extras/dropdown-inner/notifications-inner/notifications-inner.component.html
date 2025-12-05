@@ -136,7 +136,9 @@
             <!-- User avatar (si existe) -->
             <div *ngIf="notification.from_user" class="d-flex align-items-center">
               <div class="symbol symbol-25px me-2">
-                <img [src]="notification.from_user.avatar" [alt]="notification.from_user.name" />
+                <img [src]="getAvatar(notification.from_user?.avatar)" 
+                  [alt]="notification.from_user?.name" />
+
               </div>
               <span class="text-gray-600 fs-8">{{ notification.from_user.name }}</span>
             </div>

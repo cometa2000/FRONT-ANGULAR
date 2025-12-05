@@ -233,4 +233,51 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   isDueSoon(tarea: any): boolean {
     return tarea.is_due_soon === true;
   }
+
+  /**
+   * 🔧 Construir la URL correcta del avatar
+   */
+  public getAvatarUrl(avatarValue: string | null): string {
+    if (!avatarValue) {
+      return 'assets/media/avatars/blank.png';
+    }
+
+    // Caso: solo número "3"
+    if (/^\d+$/.test(avatarValue)) {
+      return `assets/media/avatars/${avatarValue}.png`;
+    }
+
+    // Caso: "3.png"
+    if (/^\d+\.png$/.test(avatarValue)) {
+      return `assets/media/avatars/${avatarValue}`;
+    }
+
+    // Caso: URL completa del backend (seguridad adicional)
+    if (avatarValue.includes('http://') || avatarValue.includes('https://') || avatarValue.includes('storage')) {
+      const file = avatarValue.split('/').pop();
+      return `assets/media/avatars/${file}`;
+    }
+
+    // Caso general
+    return `assets/media/avatars/${avatarValue}`;
+  }
+
+  /**
+   * 🎨 Obtener avatar final del usuario
+   */
+  public getUserAvatar(user: any): string {
+    if (!user || !user.avatar) {
+      return 'assets/media/avatars/blank.png';
+    }
+
+    return this.getAvatarUrl(user.avatar);
+  }
+
+  /**
+   * 🛠 Fallback en caso de error
+   */
+  public onAvatarError(event: any): void {
+    event.target.src = 'assets/media/avatars/blank.png';
+  }
+
 }
