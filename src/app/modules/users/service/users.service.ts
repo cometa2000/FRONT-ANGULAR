@@ -9,7 +9,10 @@ import { URL_SERVICIOS } from 'src/app/config/config';
 })
 export class UsersService {
 
+  // ✅ Observable público para el estado de carga
   isLoading$: Observable<boolean>;
+  
+  // ✅ BehaviorSubject privado para controlar el estado
   isLoadingSubject: BehaviorSubject<boolean>;
   
   constructor(
@@ -20,6 +23,12 @@ export class UsersService {
     this.isLoading$ = this.isLoadingSubject.asObservable();
   }
 
+  /**
+   * ✅ Registrar un nuevo usuario
+   * ⚡ El estado de carga se activa automáticamente:
+   *    - isLoadingSubject.next(true) al inicio
+   *    - isLoadingSubject.next(false) al finalizar (éxito o error)
+   */
   registerUser(data:any) {
     this.isLoadingSubject.next(true);
     let headers = new HttpHeaders({'Authorization': 'Bearer '+ this.authservice.token});
@@ -29,6 +38,9 @@ export class UsersService {
     );
   }
 
+  /**
+   * Listar usuarios con paginación y búsqueda
+   */
   listUsers(page = 1,search:string = ''){
     this.isLoadingSubject.next(true);
     let headers = new HttpHeaders({'Authorization': 'Bearer '+ this.authservice.token});
@@ -38,6 +50,9 @@ export class UsersService {
     );
   }
 
+  /**
+   * Obtener configuración (roles y sucursales)
+   */
   configAll(){
     this.isLoadingSubject.next(true);
     let headers = new HttpHeaders({'Authorization': 'Bearer '+ this.authservice.token});
@@ -47,6 +62,9 @@ export class UsersService {
     );
   }
 
+  /**
+   * Actualizar un usuario existente
+   */
   updateUser(ID_USER:string,data:any) {
     this.isLoadingSubject.next(true);
     let headers = new HttpHeaders({'Authorization': 'Bearer '+ this.authservice.token});
@@ -56,6 +74,9 @@ export class UsersService {
     );
   }
 
+  /**
+   * Eliminar un usuario
+   */
   deleteUser(ID_USER:string) {
     this.isLoadingSubject.next(true);
     let headers = new HttpHeaders({'Authorization': 'Bearer '+ this.authservice.token});

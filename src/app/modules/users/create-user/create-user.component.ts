@@ -16,6 +16,7 @@ export class CreateUserComponent {
   @Input() roles:any = [];
   @Input() sucursales:any = [];
 
+  // ✅ Observable para controlar el estado de carga del botón
   isLoading:any;
   
   name:string = '';
@@ -29,7 +30,7 @@ export class CreateUserComponent {
   address:string = '';
   sucursale_id:string = '';
 
-  // ✅ NUEVAS PROPIEDADES PARA AVATARES PREDEFINIDOS
+  // ✅ PROPIEDADES PARA AVATARES PREDEFINIDOS
   selectedAvatar: string = '1.png'; // Avatar por defecto
   availableAvatars: string[] = [
     '1.png', '2.png', '3.png', '4.png', '5.png',
@@ -46,25 +47,26 @@ export class CreateUserComponent {
   }
 
   ngOnInit(): void {
-    // Inicialización del componente
+    // ✅ Suscribirse al observable de carga del servicio
+    this.isLoading = this.usersService.isLoading$;
   }
   
   /**
-   * ✅ NUEVO: Método para obtener la ruta completa del avatar
+   * ✅ Método para obtener la ruta completa del avatar
    */
   getAvatarPath(avatarName: string): string {
     return `assets/media/avatars/${avatarName}`;
   }
 
   /**
-   * ✅ NUEVO: Método para seleccionar un avatar
+   * ✅ Método para seleccionar un avatar
    */
   selectAvatar(avatarName: string): void {
     this.selectedAvatar = avatarName;
   }
 
   /**
-   * ✅ NUEVO: Método para permitir solo números en el input de teléfono
+   * ✅ Método para permitir solo números en el input de teléfono
    */
   onlyNumbers(event: KeyboardEvent): boolean {
     const charCode = event.which ? event.which : event.keyCode;
@@ -77,7 +79,7 @@ export class CreateUserComponent {
   }
 
   /**
-   * ✅ NUEVO: Método para validar pegado de texto en el campo de teléfono
+   * ✅ Método para validar pegado de texto en el campo de teléfono
    */
   onPaste(event: ClipboardEvent): void {
     event.preventDefault();
@@ -87,6 +89,10 @@ export class CreateUserComponent {
     this.phone = numericValue;
   }
   
+  /**
+   * ✅ Método principal para registrar un nuevo usuario
+   * ⚡ El estado de carga se maneja automáticamente en el servicio
+   */
   store() {
 
     // --- Validación: nombre ---
@@ -286,15 +292,18 @@ export class CreateUserComponent {
 
     formData.append("sucursale_id", this.sucursale_id);
     
-    // ✅ NUEVO: Enviar el avatar seleccionado en lugar de un archivo
+    // ✅ Enviar el avatar seleccionado
     formData.append("avatar", this.selectedAvatar);
 
     // ----------------------------------------------------
-    // Llamada al servicio
+    // ⚡ Llamada al servicio
+    // ⚡ El isLoadingSubject.next(true) se activa automáticamente en el servicio
+    // ⚡ El botón se deshabilitará y mostrará "Cargando..." automáticamente
     // ----------------------------------------------------
     this.usersService.registerUser(formData).subscribe({
 
       next: (resp: any) => {
+        // ⚡ El isLoadingSubject.next(false) se activa automáticamente al finalizar
 
         if (resp.message == 403) {
           Swal.fire({
@@ -317,6 +326,8 @@ export class CreateUserComponent {
       },
 
       error: () => {
+        // ⚡ El isLoadingSubject.next(false) se activa automáticamente incluso en error
+        
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -338,7 +349,7 @@ export class CreateUserComponent {
    */
   showPasswordModal(email: string, password: string) {
     Swal.fire({
-      title: '✅ Usuario Registrado Exitosamente',
+      title: 'Usuario Registrado Exitosamente',
       html: `
         <div style="text-align: left; padding: 20px; overflow: hidden;">
           <div style="margin-bottom: 20px;">
@@ -452,7 +463,7 @@ export class CreateUserComponent {
           document.execCommand('copy');
           
           // Cambiar texto del botón temporalmente
-          copyEmailBtn.innerHTML = '✅ Copiado';
+          copyEmailBtn.innerHTML = '<i class="fa-solid fa-check" style="color: #fcfcfd;"></i> Copiado';
           setTimeout(() => {
             copyEmailBtn.innerHTML = '📋 Copiar';
           }, 2000);
@@ -467,7 +478,7 @@ export class CreateUserComponent {
           document.execCommand('copy');
           
           // Cambiar texto del botón temporalmente
-          copyPasswordBtn.innerHTML = '✅ Copiado';
+          copyPasswordBtn.innerHTML = '<i class="fa-solid fa-check" style="color: #fcfcfd;"></i> Copiado';
           setTimeout(() => {
             copyPasswordBtn.innerHTML = '📋 Copiar';
           }, 2000);

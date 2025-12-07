@@ -165,13 +165,11 @@
 
   &::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-    border-radius: 10px;
-    border: 2px solid transparent; // 🔥 Borde transparente para mejor visualización
+    border-radius: 10px; // 🔥 Borde transparente para mejor visualización
     background-clip: padding-box; // 🔥 El borde crea espacio visual
 
     &:hover {
-      background: linear-gradient(180deg, #764ba2 0%, #667eea 100%);
-      border: 1px solid transparent; // 🔥 Más grueso al hover
+      background: linear-gradient(180deg, #764ba2 0%, #667eea 100%); // 🔥 Más grueso al hover
     }
   }
 }

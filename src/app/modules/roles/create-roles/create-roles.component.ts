@@ -25,20 +25,13 @@ export class CreateRolesComponent {
     public modal: NgbActiveModal,
     public rolesService: RolesService,
     public toast: ToastrService,
-  ) {
-    
-  }
-
-  ngOnInit(): void {
-    //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
-    //Add 'implements OnInit' to the class.
-    
-  }
+  ) {}
+  
   addPermission(permiso:string){
     let INDEX = this.permisions.findIndex((perm:string) => perm == permiso);
     if(INDEX != -1){
       this.permisions.splice(INDEX,1);
-    }else{
+    } else {
       this.permisions.push(permiso);
     }
     console.log(this.permisions);
@@ -54,7 +47,7 @@ export class CreateRolesComponent {
         showConfirmButton: false,
         toast: true,
         position: 'top-end'
-      });
+      }).then(() => this.modal.close());  // 🔥 Cierra modal también en validación
       return false;
     }
 
@@ -67,7 +60,7 @@ export class CreateRolesComponent {
         showConfirmButton: false,
         toast: true,
         position: 'top-end'
-      });
+      }).then(() => this.modal.close()); // 🔥 Cierra modal también en validación
       return false;
     }
 
@@ -89,7 +82,8 @@ export class CreateRolesComponent {
             showConfirmButton: false,
             toast: true,
             position: 'top-end'
-          });
+          }).then(() => this.modal.close()); // 🔥 Cierra modal en error del backend
+
         } else {
           Swal.fire({
             icon: 'success',
@@ -116,7 +110,7 @@ export class CreateRolesComponent {
           showConfirmButton: false,
           toast: true,
           position: 'top-end'
-        });
+        }).then(() => this.modal.close()); // 🔥 Cerrar modal también en error HTTP
       }
     });
   }

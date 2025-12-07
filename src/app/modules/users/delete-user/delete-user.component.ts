@@ -29,70 +29,65 @@ export class DeleteUserComponent {
   }
 
   ngOnInit(): void {
+    // ✅ Suscribirse al observable de carga del servicio
+    this.isLoading = this.rolesService.isLoading$;
   }
 
   delete() {
+    // ✅ Llamada directa al servicio
+    // ✅ El botón se deshabilita automáticamente porque isLoading$ = true
+    this.rolesService.deleteUser(this.USER_SELECTED.id).subscribe({
 
-    Swal.fire({
-      icon: 'warning',
-      title: '¿Eliminar usuario?',
-      text: 'Esta acción no se puede deshacer',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6'
-    }).then((result) => {
+      next: (resp: any) => {
 
-      if (result.isConfirmed) {
+        if (resp.message == 403) {
+          // Mostrar error
+          Swal.fire({
+            icon: 'error',
+            title: 'Validación',
+            text: resp.message_text,
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
 
-        this.rolesService.deleteUser(this.USER_SELECTED.id).subscribe({
+        } else {
+          // Emitir evento antes de cerrar
+          this.UserD.emit(resp.role);
+          
+          // Mostrar éxito
+          Swal.fire({
+            icon: 'success',
+            title: 'Eliminado',
+            text: 'El usuario se eliminó correctamente',
+            timer: 3500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+        }
 
-          next: (resp: any) => {
+        // ✅ Cerrar modal INMEDIATAMENTE después de mostrar el toast
+        // Esto previene que el usuario haga clic múltiples veces
+        this.modal.close();
 
-            if (resp.message == 403) {
-              Swal.fire({
-                icon: 'error',
-                title: 'Validación',
-                text: resp.message_text,
-                timer: 3500,
-                showConfirmButton: false,
-                toast: true,
-                position: 'top-end'
-              });
+      },
 
-            } else {
-
-              Swal.fire({
-                icon: 'success',
-                title: 'Eliminado',
-                text: 'El usuario se eliminó correctamente',
-                timer: 3500,
-                showConfirmButton: false,
-                toast: true,
-                position: 'top-end'
-              });
-
-              this.UserD.emit(resp.role);
-              this.modal.close();
-            }
-
-          },
-
-          error: () => {
-            Swal.fire({
-              icon: 'error',
-              title: 'Error',
-              text: 'No se pudo eliminar el usuario',
-              timer: 3500,
-              showConfirmButton: false,
-              toast: true,
-              position: 'top-end'
-            });
-          }
-
+      error: () => {
+        // Mostrar error
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo eliminar el usuario',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
         });
 
+        // ✅ Cerrar modal INMEDIATAMENTE incluso en caso de error
+        this.modal.close();
       }
 
     });

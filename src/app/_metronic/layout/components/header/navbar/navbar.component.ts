@@ -4,6 +4,12 @@ import { NotificationService } from 'src/app/services/notification.service';
 import { Subscription } from 'rxjs';
 import { ProfileService } from 'src/app/modules/profile/service/profile.service';
 
+// Servicio de modo oscuro de Metronic
+// import { ThemeModeService } from 'src/app/_metronic/partials/layout/theme-mode-switcher/theme-mode.service';
+import { ThemeModeService, ThemeModeType } from 'src/app/_metronic/partials/layout/theme-mode-switcher/theme-mode.service';
+import { Observable } from 'rxjs';
+
+
 @Component({
   selector: 'app-navbar',
   templateUrl: './navbar.component.html',
@@ -17,79 +23,126 @@ export class NavbarComponent implements OnInit, OnDestroy {
   btnClass: string = 'btn btn-icon btn-custom btn-icon-muted btn-active-light btn-active-color-primary w-35px h-35px w-md-40px h-md-40px';
   userAvatarClass: string = 'symbol-35px symbol-md-40px';
   btnIconClass: string = 'fs-2 fs-md-1';
+  
   user: any;
   unreadCount: number = 0;
-  
+  currentThemeIcon: string = 'night-day';
+
+  mode$: Observable<ThemeModeType>;
+  menuMode$: Observable<ThemeModeType>;
+
+
   private subscription: Subscription = new Subscription();
 
   constructor(
     public authService: AuthService,
     private notificationService: NotificationService,
-    private profileService: ProfileService
+    private profileService: ProfileService,
+    public themeSwitcher: ThemeModeService,
+    
   ) {}
 
   ngOnInit(): void {
     this.user = this.authService.user;
-    
-    // Suscribirse al contador de notificaciones no leídas
+
+    /* ==== Notificaciones ==== */
     this.subscription.add(
       this.notificationService.unreadCount$.subscribe((count: number) => {
         this.unreadCount = count;
       })
     );
 
-    // Cargar el contador inicial
     this.notificationService.getUnreadCount().subscribe();
 
-    // ⭐ NUEVO: Suscribirse a cambios del usuario en ProfileService
+    /* ==== Perfil ==== */
     this.subscription.add(
       this.profileService.currentUser$.subscribe((updatedUser) => {
         if (updatedUser) {
-          console.log('🔄 Navbar detectó cambio de usuario:', updatedUser);
           this.user = updatedUser;
         }
       })
     );
 
-    // ⭐ NUEVO: También suscribirse a cambios en AuthService si tiene BehaviorSubject
+    /* ==== AuthService ==== */
     if (this.authService.currentUserSubject) {
       this.subscription.add(
         this.authService.currentUserSubject.subscribe((updatedUser) => {
           if (updatedUser) {
-            console.log('🔄 Navbar detectó cambio de usuario desde AuthService:', updatedUser);
             this.user = updatedUser;
           }
         })
       );
     }
+
+    this.mode$ = this.themeSwitcher.mode.asObservable();
+    this.menuMode$ = this.themeSwitcher.menuMode.asObservable();
+
+
   }
 
-  /**
-   * ✅ Obtener la URL del avatar del usuario
-   */
+  /* ==== Alternar tema ==== */
+  toggleTheme(): void {
+  // Detectar tema actual desde el <html>
+  const html = document.documentElement;
+  const current = html.getAttribute('data-bs-theme');
+
+  let newMode = 'light';
+
+  if (current === 'light') {
+    newMode = 'dark';
+  } else {
+    newMode = 'light';
+  }
+
+  // Cambiar el modo en Metronic
+  this.themeSwitcher.updateMode(newMode as any);
+
+  // Actualizar icono manualmente
+  this.currentThemeIcon = newMode === 'dark' ? 'moon' : 'sun';
+}
+
+
+  /* ==== Avatar ==== */
   getUserAvatar(): string {
     if (this.user?.avatar) {
       const avatarValue = this.user.avatar;
-      
-      // Si ya es solo el nombre del archivo (ejemplo: "3.png")
+
       if (avatarValue.match(/^\d+\.png$/)) {
         return `assets/media/avatars/${avatarValue}`;
       }
-      
-      // Si contiene la ruta completa, usarla tal cual (retrocompatibilidad)
+
       if (avatarValue.includes('http') || avatarValue.includes('storage')) {
         return avatarValue;
       }
-      
-      // Si no coincide, intentar construir la ruta
+
       return `assets/media/avatars/${avatarValue}`;
     }
-    
-    // Avatar por defecto
+
     return 'assets/media/avatars/1.png';
   }
 
   ngOnDestroy(): void {
-    this.subscription.unsubscribe();
+      this.subscription.unsubscribe();
+    }
+
+
+    setTheme(mode: 'light' | 'dark' | 'system'): void {
+    this.themeSwitcher.updateMode(mode as any);
+
+    // Actualizar icono
+    if (mode === 'light') {
+      this.currentThemeIcon = 'sun';
+    } else if (mode === 'dark') {
+      this.currentThemeIcon = 'moon';
+    } else {
+      // si el sistema está en modo oscuro
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      this.currentThemeIcon = prefersDark ? 'moon' : 'sun';
+    }
   }
+
+  switchTheme(mode: ThemeModeType): void {
+    this.themeSwitcher.switchMode(mode);
+  }
+
 }

@@ -1,0 +1,153 @@
+/* ---------------------------------------------------------
+   🔒 FIX GLOBAL PARA ICONOS DE NAVBAR
+   Evita que los botones se deformen con hover o menú abierto
+--------------------------------------------------------- */
+
+/* ======== 1. BOTONES GENÉRICOS (Notificaciones, Tema, etc.) ======== */
+.app-navbar-item .btn.btn-icon {
+  width: 35px !important;
+  height: 35px !important;
+
+  min-width: 35px !important;
+  min-height: 35px !important;
+
+  max-width: 35px !important;
+  max-height: 35px !important;
+
+  padding: 0 !important;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 992px) {
+  .app-navbar-item .btn.btn-icon {
+    width: 40px !important;
+    height: 40px !important;
+
+    min-width: 40px !important;
+    min-height: 40px !important;
+
+    max-width: 40px !important;
+    max-height: 40px !important;
+  }
+}
+
+/* Cuando KT Menu agrega la clase .show */
+.app-navbar-item .btn.btn-icon.show {
+  width: inherit !important;
+  height: inherit !important;
+}
+
+/* Evitar padding dinámico en hover/active/show */
+.app-navbar-item .btn.btn-icon,
+.app-navbar-item .btn.btn-icon:hover,
+.app-navbar-item .btn.btn-icon:active,
+.app-navbar-item .btn.btn-icon.show {
+  padding: 0 !important;
+}
+
+
+/* ======== 2. TAMAÑO UNIFORME PARA ICONOS ======== */
+.app-navbar-item app-keenicon {
+  font-size: 20px !important;
+  line-height: 1 !important;
+}
+
+
+
+/* ---------------------------------------------------------
+   🎨 FIX ESPECÍFICO PARA EL THEME MODE SWITCHER
+   (El componente genera su propio botón interno)
+--------------------------------------------------------- */
+.app-navbar-item app-theme-mode-switcher .btn {
+  width: 35px !important;
+  height: 35px !important;
+
+  min-width: 35px !important;
+  min-height: 35px !important;
+
+  max-width: 35px !important;
+  max-height: 35px !important;
+
+  padding: 0 !important;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 992px) {
+  .app-navbar-item app-theme-mode-switcher .btn {
+    width: 40px !important;
+    height: 40px !important;
+
+    min-width: 40px !important;
+    min-height: 40px !important;
+
+    max-width: 40px !important;
+    max-height: 40px !important;
+  }
+}
+
+
+
+/* ---------------------------------------------------------
+   👤 FIX ESPECÍFICO PARA EL USER MENU (Avatar)
+--------------------------------------------------------- */
+.app-navbar-item .symbol {
+  width: 35px !important;
+  height: 35px !important;
+
+  min-width: 35px !important;
+  min-height: 35px !important;
+
+  max-width: 35px !important;
+  max-height: 35px !important;
+
+  padding: 0 !important;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+}
+
+@media (min-width: 992px) {
+  .app-navbar-item .symbol {
+    width: 40px !important;
+    height: 40px !important;
+
+    min-width: 40px !important;
+    min-height: 40px !important;
+
+    max-width: 40px !important;
+    max-height: 40px !important;
+  }
+}
+
+/* Estado de menú abierto */
+.app-navbar-item .symbol.show {
+  width: inherit !important;
+  height: inherit !important;
+}
+
+/* Evitar padding dinámico del hover o show */
+.app-navbar-item .symbol:hover,
+.app-navbar-item .symbol.show {
+  padding: 0 !important;
+}
+
+
+
+/* ---------------------------------------------------------
+   🧩 FIX EXTRA PARA IMÁGENES DE AVATAR
+--------------------------------------------------------- */
+.app-navbar-item .symbol img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  border-radius: 50%;
+}

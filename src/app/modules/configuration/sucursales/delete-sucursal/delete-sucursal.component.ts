@@ -28,13 +28,17 @@ export class DeleteSucursalComponent {
   }
 
   delete() {
+    // ✅ CERRAR EL MODAL INMEDIATAMENTE AL HACER CLICK
+    this.modal.close();
 
+    // Enviar la petición al backend
     this.sucursalesService.deleteSucursal(this.SUCURSAL_SELECTED.id)
       .subscribe({
         next: (resp: any) => {
           console.log(resp);
 
           if (resp.message == 403) {
+            // ❌ Error: Hay usuarios relacionados
             Swal.fire({
               icon: 'error',
               title: 'Validación',
@@ -44,7 +48,9 @@ export class DeleteSucursalComponent {
               toast: true,
               position: 'top-end'
             });
+            
           } else {
+            // ✅ Éxito: Sucursal eliminada correctamente
             Swal.fire({
               icon: 'success',
               title: 'Sucursal eliminada',
@@ -55,12 +61,13 @@ export class DeleteSucursalComponent {
               position: 'top-end'
             });
 
+            // Emitir el evento para actualizar la lista
             this.SucursalD.emit(resp.message);
-            this.modal.close();
           }
         },
 
         error: (err) => {
+          // ❌ Error de servidor o de red
           console.error(err);
           Swal.fire({
             icon: 'error',

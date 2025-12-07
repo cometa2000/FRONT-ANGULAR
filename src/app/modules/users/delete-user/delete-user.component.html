@@ -23,15 +23,43 @@
     <div class="modal-body scroll-y mx-5 mx-xl-15 my-7">
         <!--begin::Form-->
         <form id="kt_modal_add_user_form" class="form" action="#">
-            <p>
-                ¿ESTAS SEGURO DE ELIMINAR ESTE USUARIO?
-            </p>
-            <div class="text-center pt-15">
-                <button type="reset" class="btn btn-light me-3" (click)="modal.dismiss()">Cerrar</button>
-                <button type="button" (click)="delete()" class="btn btn-danger" data-kt-users-modal-action="submit">
-                    <span class="indicator-label">ELIMINAR</span>
-
-                    <span class="spinner-border spinner-border-sm align-middle ms-2" *ngIf="isLoading | async"></span>
+            <div class="text-center mb-5">
+                <div class="mb-5">
+                    <i class="ki-duotone ki-information-5 fs-5x text-danger">
+                        <span class="path1"></span>
+                        <span class="path2"></span>
+                        <span class="path3"></span>
+                    </i>
+                </div>
+                <h3 class="text-gray-800 fw-bold mb-3">¿Estás seguro de eliminar este usuario?</h3>
+                <p class="text-gray-600 fw-semibold fs-5 mb-0">
+                    Esta acción no se puede deshacer
+                </p>
+            </div>
+            
+            <div class="text-center pt-10">
+                <button 
+                    type="reset" 
+                    class="btn btn-light me-3" 
+                    (click)="modal.dismiss()"
+                    [disabled]="isLoading | async"
+                >
+                    Cancelar
+                </button>
+                <button 
+                    type="button" 
+                    (click)="delete()" 
+                    class="btn btn-danger" 
+                    data-kt-users-modal-action="submit"
+                    [disabled]="isLoading | async"
+                >
+                    <span class="indicator-label" *ngIf="!(isLoading | async)">
+                        Sí, eliminar
+                    </span>
+                    <span class="indicator-progress" *ngIf="isLoading | async">
+                        <span class="spinner-border spinner-border-sm align-middle me-2"></span>
+                        Eliminando...
+                    </span>
                 </button>
             </div>
         </form>

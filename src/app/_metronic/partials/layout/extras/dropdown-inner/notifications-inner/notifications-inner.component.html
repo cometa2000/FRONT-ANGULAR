@@ -283,7 +283,8 @@
             <span class="symbol-label bg-light-secondary">
               <app-keenicon 
                 [name]="notification.icon" 
-                class="fs-2 text-secondary"
+                class="fs-2"
+                [ngClass]="'text-' + notification.color"
               ></app-keenicon>
             </span>
           </div>
