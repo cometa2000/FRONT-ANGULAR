@@ -146,3 +146,55 @@
     }
   }
 }
+
+
+/* ===============================
+   LINK DE IMAGEN DEL GRUPO
+   =============================== */
+.grupo-image-link {
+  display: block;              /* 🔑 evita desborde inline */
+  width: 100%;
+  max-height: 230px;
+  overflow: hidden;            /* 🔑 corta lo que sobresale */
+  border-radius: 10px;
+}
+
+/* ===============================
+   IMAGEN DEL GRUPO
+   =============================== */
+.grupo-thumbnail {
+  width: 100%;
+  height: 230px;               /* altura controlada */
+  object-fit: cover;           /* 🔑 no se deforma */
+  display: block;              /* elimina espacio fantasma */
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Hover elegante */
+.grupo-image-link:hover .grupo-thumbnail {
+  transform: scale(1.03);
+}
+
+
+/* ===============================
+   ALTURA UNIFICADA DE CARDS
+   =============================== */
+.grupo-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  // min-height: 420px;   
+}
+
+
+@media (max-width: 768px) {
+  .grupo-thumbnail {
+    height: 110px;
+  }
+}
+
+@media (max-width: 576px) {
+  .grupo-thumbnail {
+    height: 95px;
+  }
+}

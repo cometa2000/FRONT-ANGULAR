@@ -81,6 +81,10 @@ export class EditTareaComponent implements OnInit {
   newComment = '';
   timeline: any[] = [];
 
+  // ✅ NUEVO: Propiedades para edición de comentarios
+  editingCommentId: number | null = null;
+  editingCommentContent: string = '';
+
   // Propiedades para edición de fechas
   editingFechas = false;
   startDate: string = '';
@@ -1254,10 +1258,154 @@ export class EditTareaComponent implements OnInit {
     });
   }
 
+  /**
+   * ✅ NUEVO: Verificar si un comentario pertenece al usuario actual
+   */
+  isOwnComment(comment: any): boolean {
+    if (!comment || !comment.user || !comment.user.id) {
+      return false;
+    }
+    
+    // Obtener el ID del usuario autenticado
+    const currentUserId = this.tareaService.authservice.user?.id;
+    
+    if (!currentUserId) {
+      return false;
+    }
+    
+    return comment.user.id === currentUserId;
+  }
 
+  /**
+   * ✅ NUEVO: Verificar si un comentario está en modo de edición
+   */
+  isEditingComment(commentId: number): boolean {
+    return this.editingCommentId === commentId;
+  }
+
+  /**
+   * ✅ NUEVO: Iniciar edición de un comentario
+   * Activa el modo de edición inline para el comentario seleccionado
+   */
   editComment(commentId: number): void {
-    // Implementar edición de comentarios
-    console.log('✏️ Editando comentario:', commentId);
+    console.log('✏️ Iniciando edición de comentario:', commentId);
+    
+    // Buscar el comentario en el timeline
+    const comment = this.timeline.find(item => item.id === commentId && item.type === 'comentario');
+    
+    if (!comment) {
+      console.error('❌ Comentario no encontrado en el timeline');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo encontrar el comentario',
+        timer: 2000,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false
+      });
+      return;
+    }
+    
+    // Verificar que sea el propietario
+    if (!this.isOwnComment(comment)) {
+      console.warn('⚠️ Intento de editar comentario ajeno');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Permiso denegado',
+        text: 'Solo puedes editar tus propios comentarios',
+        timer: 2000,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false
+      });
+      return;
+    }
+    
+    // Activar modo de edición
+    this.editingCommentId = commentId;
+    this.editingCommentContent = comment.content;
+    
+    console.log('📝 Modo de edición activado para comentario:', commentId);
+  }
+
+  /**
+   * ✅ NUEVO: Guardar los cambios de un comentario editado
+   */
+  saveCommentEdit(commentId: number): void {
+    console.log('💾 Guardando edición de comentario:', commentId);
+    
+    // Validar contenido
+    if (!this.editingCommentContent || !this.editingCommentContent.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Contenido vacío',
+        text: 'El comentario no puede estar vacío',
+        timer: 2000,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false
+      });
+      return;
+    }
+    
+    // Llamar al servicio para actualizar
+    this.tareaService.updateComment(this.tareaId, commentId, this.editingCommentContent.trim()).subscribe({
+      next: (resp: any) => {
+        console.log('✅ Comentario actualizado:', resp);
+        
+        if (resp.message === 200 && resp.comentario) {
+          // Actualizar el comentario en el timeline local
+          const commentIndex = this.timeline.findIndex(item => item.id === commentId);
+          if (commentIndex !== -1) {
+            this.timeline[commentIndex] = {
+              ...this.timeline[commentIndex],
+              content: resp.comentario.content,
+              updated_at: resp.comentario.updated_at,
+              is_edited: resp.comentario.is_edited || true
+            };
+          }
+          
+          // Desactivar modo de edición
+          this.cancelCommentEdit();
+          
+          // Mostrar mensaje de éxito
+          Swal.fire({
+            icon: 'success',
+            title: 'Comentario actualizado',
+            timer: 1500,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false
+          });
+          
+          // Recargar timeline para asegurar sincronización
+          this.loadTimeline();
+        }
+      },
+      error: (error: any) => {
+        console.error('❌ Error al actualizar comentario:', error);
+        
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error?.userMessage || 'No se pudo actualizar el comentario',
+          timer: 3500,
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false
+        });
+      }
+    });
+  }
+
+  /**
+   * ✅ NUEVO: Cancelar edición de comentario
+   */
+  cancelCommentEdit(): void {
+    console.log('🚫 Cancelando edición de comentario');
+    this.editingCommentId = null;
+    this.editingCommentContent = '';
   }
 
   deleteComment(commentId: number): void {

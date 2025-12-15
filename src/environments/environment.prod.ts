@@ -7,7 +7,17 @@ export const environment = {
   appVersion: 'v8.1.8',
   USERDATA_KEY: 'authf649fc9a5f55',
   isMockEnabled: false,
-  apiUrl: 'api',
+
+  // URL REAL DEL BACKEND (API Laravel)
+  apiUrl: 'https://api-crm.preubasbbm.com/api',
+
+  // URLs adicionales (si tu proyecto las usa)
+  URL_BACKEND: 'https://api-crm.preubasbbm.com',
+  URL_SERVICIOS: 'https://api-crm.preubasbbm.com/api',
+
+  // URL DEL FRONTEND (Angular)
+  URL_FRONTED: 'https://crmbbm.preubasbbm.com',
+
   appThemeName: 'Metronic',
   appPurchaseUrl: 'https://1.envato.market/EA4JP',
   appHTMLIntegration: 'https://preview.keenthemes.com/metronic8/demo1/documentation/base/helpers/flex-layouts.html',
@@ -15,6 +25,7 @@ export const environment = {
   appPreviewAngularUrl: 'https://preview.keenthemes.com/metronic8/angular/demo1',
   appPreviewDocsUrl: 'https://preview.keenthemes.com/metronic8/angular/docs',
   appPreviewChangelogUrl: 'https://preview.keenthemes.com/metronic8/angular/docs/changelog',
+
   appDemos: {
     'demo1': {
       'title': 'Demo 1',
@@ -156,9 +167,6 @@ export const environment = {
       'thumbnail': './assets/media/demos/demo20.png'
     },
   },
-  URL_BACKEND: 'http://api.dominio.com/',
-  URL_SERVICIOS: 'http://api.dominio.com/api',
-  URL_FRONTED: 'http://admin.dominio.com',
 };
 
 /*

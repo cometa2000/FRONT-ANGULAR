@@ -190,7 +190,8 @@
             </p>
 
             <div *ngIf="editingDescription && hasWriteAccess">
-              <textarea [(ngModel)]="tarea.description" rows="4"></textarea>
+              <textarea [(ngModel)]="tarea.description" class="form-textarea" rows="4" placeholder="Añade una descripción más detallada..."></textarea>
+
               <div class="action-row">
                 <button class="btn-blue" (click)="saveDescription()">Guardar</button>
                 <button class="btn-light" (click)="cancelEditDescription()">Cancelar</button>
@@ -199,106 +200,24 @@
           </div>
         </div>
 
-        <!-- ADJUNTOS -->
-        <div class="section" *ngIf="adjuntos.enlaces.length > 0 || adjuntos.archivos.length > 0">
+        <!-- FECHAS -->
+        <div class="section">
           <div class="section-header">
-            <i class="fa-solid fa-paperclip"></i>
-            <h3>Adjuntos</h3>
-            <!-- ✅ Solo mostrar botón agregar si tiene permisos -->
-            <button *ngIf="hasWriteAccess" class="link-btn" (click)="abrirModalAdjuntar()">
-              <i class="fa-solid fa-plus"></i> Agregar
-            </button>
-          </div>
-
-          <div class="section-body">
-
-            <!-- ENLACES -->
-            <div *ngIf="adjuntos.enlaces.length > 0" class="adjuntos-group">
-              <div class="adjuntos-group-title">
-                <i class="fa-solid fa-link"></i>
-                <span>Enlaces</span>
-              </div>
-
-              <div class="adjuntos-list">
-                <div *ngFor="let enlace of adjuntos.enlaces; let i = index" class="adjunto-item enlace-item">
-                  <div class="adjunto-icon"><i class="fa-solid fa-link"></i></div>
-
-                  <div class="adjunto-info">
-                    <div class="adjunto-nombre" (click)="abrirEnlace(enlace.url)" style="cursor:pointer;">{{ enlace.nombre }}</div>
-                    <a [href]="enlace.url" target="_blank" class="adjunto-url">{{ enlace.url }}</a>
-                  </div>
-
-                  <div class="adjunto-acciones">
-                    <button class="btn-icon" (click)="abrirEnlace(enlace.url)"><i class="fa-solid fa-external-link-alt"></i></button>
-                    <!-- ✅ Solo mostrar botón eliminar si tiene permisos -->
-                    <button *ngIf="hasWriteAccess" class="btn-icon delete" (click)="eliminarEnlace(i)"><i class="fa-solid fa-trash"></i></button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- ARCHIVOS -->
-            <div *ngIf="adjuntos.archivos.length > 0" class="adjuntos-group">
-              <div class="adjuntos-group-title">
-                <i class="fa-solid fa-file"></i>
-                <span>Archivos</span>
-              </div>
-
-              <div class="adjuntos-list">
-                <div *ngFor="let archivo of adjuntos.archivos; let i = index" class="adjunto-item archivo-item">
-
-                  <div class="adjunto-icon">
-                    <i class="fa-solid" [ngClass]="obtenerIconoArchivo(archivo.tipo)"></i>
-                  </div>
-
-                  <div class="adjunto-info">
-                    <div class="adjunto-nombre">{{ archivo.nombre }}</div>
-                    <span class="adjunto-tiempo">{{ tiempoRelativo(archivo.tiempo_subida) }}</span>
-                  </div>
-
-                  <div class="adjunto-acciones">
-                    <button 
-                      class="btn-icon" 
-                      *ngIf="esArchivoVisualizable(archivo)"
-                      (click)="visualizarArchivo(archivo)"
-                      title="Visualizar archivo">
-                      <i class="fa-solid fa-eye"></i>
-                    </button>
-                    <button 
-                      class="btn-icon" 
-                      (click)="descargarArchivo(archivo)"
-                      title="Descargar archivo">
-                      <i class="fa-solid fa-download"></i>
-                    </button>
-                    <!-- ✅ Solo mostrar botón eliminar si tiene permisos -->
-                    <button 
-                      *ngIf="hasWriteAccess"
-                      class="btn-icon delete" 
-                      (click)="eliminarArchivo(i)"
-                      title="Eliminar archivo">
-                      <i class="fa-solid fa-trash"></i>
-                    </button>
-                  </div>
-
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- VENCIMIENTO -->
-        <div class="section" *ngIf="tarea.due_date || tarea.start_date">
-          <div class="section-header">
-            <i class="fa-regular fa-clock"></i>
-            <h3>Vencimiento</h3>
-            <!-- ✅ Solo mostrar botones editar/eliminar si tiene permisos -->
-            <button *ngIf="hasWriteAccess && !editingFechas" class="link-btn" (click)="toggleEditFechas()"><i class="fa-solid fa-pencil"></i> Editar</button>
-            <button *ngIf="hasWriteAccess" class="link-btn" (click)="deleteFechas()"><i class="fa-solid fa-trash"></i> Eliminar fechas</button>
+            <i class="fa-regular fa-calendar"></i>
+            <h3>Fechas</h3>
+            <!-- ✅ Solo mostrar botón editar si tiene permisos -->
+            <button *ngIf="hasWriteAccess && !editingFechas" class="link-btn" (click)="toggleEditFechas()">Editar</button>
           </div>
 
           <div class="section-body">
             <div *ngIf="!editingFechas">
-              <div class="vencimiento-info"
+              <div class="info-row" *ngIf="tarea.start_date">
+                <i class="fa-regular fa-calendar-check"></i>
+                <span>Inicio: {{ tarea.start_date | date: 'dd MMM, HH:mm' }}</span>
+              </div>
+
+              <div class="info-row" 
+                   *ngIf="tarea.due_date"
                    [ngClass]="{'overdue': tarea.is_overdue, 'due-soon': tarea.is_due_soon && !tarea.is_overdue}">
                 <i class="fa-regular fa-calendar"></i>
                 <span>{{ tarea.due_date | date: 'dd MMM, HH:mm' }}</span>
@@ -416,26 +335,90 @@
         </div>
 
         <div class="activity-feed" *ngIf="timeline.length > 0; else noActivity">
-          <div *ngFor="let item of timeline" class="activity-item">
+          <div *ngFor="let item of timeline" 
+               class="activity-item"
+               [class.comment-item]="item.type === 'comentario'"
+               [class.own-comment]="item.type === 'comentario' && isOwnComment(item)"
+               [class.editing-mode]="isEditingComment(item.id)">
 
             <div class="avatar">
               <img [src]="getUserAvatar(item.user)" (error)="onAvatarError($event)">
             </div>
 
             <div class="activity-content">
-              <p>
+              <p class="activity-header">
                 <strong>{{ item.user?.name || 'Usuario' }}</strong>
-                <span *ngIf="item.type === 'comentario'"> comentó:</span>
+                <span *ngIf="item.type === 'comentario'"> comentó: </span>
                 <span *ngIf="item.type === 'actividad'"> {{ item.description }}</span>
+                <span *ngIf="item.is_edited" class="edited-badge" title="Editado">
+                  <i class="fa-solid fa-pen-to-square"></i> editado
+                </span>
               </p>
 
-              <p *ngIf="item.type === 'comentario'" class="comment-text">{{ item.content }}</p>
-              <small class="time">{{ item.created_at | date: 'dd MMM yyyy, HH:mm' }}</small>
+              <!-- ✅ MODO NORMAL: Mostrar contenido del comentario -->
+              <p *ngIf="item.type === 'comentario' && !isEditingComment(item.id)" 
+                 class="comment-text">
+                {{ item.content }}
+              </p>
 
-              <!-- ✅ Solo mostrar acciones de comentario si tiene permisos -->
-              <div *ngIf="hasWriteAccess && item.type === 'comentario'" class="item-actions">
-                <button (click)="editComment(item.id)">Editar</button>
-                <button (click)="deleteComment(item.id)">Eliminar</button>
+              <!-- ✅ MODO EDICIÓN: Mostrar textarea para editar -->
+              <div *ngIf="item.type === 'comentario' && isEditingComment(item.id)" 
+                   class="comment-edit-box">
+                <textarea 
+                  [(ngModel)]="editingCommentContent" 
+                  placeholder="Edita tu comentario..."
+                  rows="3"
+                  class="comment-edit-textarea"
+                  (keydown.escape)="cancelCommentEdit()"
+                  (keydown.ctrl.enter)="saveCommentEdit(item.id)"
+                  (keydown.meta.enter)="saveCommentEdit(item.id)">
+                </textarea>
+                
+                <div class="comment-edit-actions">
+                  <button 
+                    class="btn-blue btn-sm" 
+                    (click)="saveCommentEdit(item.id)"
+                    [disabled]="!editingCommentContent.trim()">
+                    <i class="fa-solid fa-check me-1"></i>
+                    Guardar
+                  </button>
+                  <button 
+                    class="btn-light btn-sm" 
+                    (click)="cancelCommentEdit()">
+                    <i class="fa-solid fa-xmark me-1"></i>
+                    Cancelar
+                  </button>
+                  <small class="text-muted ms-2">
+                    <i class="fa-solid fa-keyboard"></i>
+                    Ctrl+Enter para guardar, Esc para cancelar
+                  </small>
+                </div>
+              </div>
+
+              <small class="time">
+                {{ item.created_at | date: 'dd MMM yyyy, HH:mm' }}
+                <span *ngIf="item.is_edited && item.updated_at !== item.created_at">
+                  · Editado: {{ item.updated_at | date: 'dd MMM yyyy, HH:mm' }}
+                </span>
+              </small>
+
+              <!-- ✅ NUEVO: Botones de acción solo para comentarios propios y con permisos -->
+              <div *ngIf="item.type === 'comentario' && isOwnComment(item) && !isEditingComment(item.id)" 
+                   class="comment-actions">
+                <button 
+                  class="action-btn edit-btn" 
+                  (click)="editComment(item.id)" 
+                  title="Editar comentario">
+                  <i class="fa-solid fa-pen"></i>
+                  <span>Editar</span>
+                </button>
+                <button 
+                  class="action-btn delete-btn" 
+                  (click)="deleteComment(item.id)" 
+                  title="Eliminar comentario">
+                  <i class="fa-solid fa-trash"></i>
+                  <span>Eliminar</span>
+                </button>
               </div>
 
             </div>

@@ -13,6 +13,10 @@ import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/dr
 import { ToastrService } from 'ngx-toastr';
 import Swal from 'sweetalert2';
 
+// 🆕 Importar componentes de grupo
+import { ShareGrupoComponent } from '../../grupos/share-grupo/share-grupo.component';
+import { PermisosGrupoModalComponent } from '../../grupos/permisos-grupo-modal/permisos-grupo-modal.component';
+
 @Component({
   selector: 'app-tablero-tareas',
   templateUrl: './tablero-tareas.component.html',
@@ -27,12 +31,20 @@ export class TableroTareasComponent implements OnInit {
   users: any = [];
 
   openMenuId: number | null = null;
+  
+  // 🆕 Control del menú de configuración del grupo
+  grupoMenuOpen: boolean = false;
 
   // ✅ CAMBIO: Inicializar como false por seguridad hasta verificar permisos
   hasWriteAccess: boolean = false;
   isOwner: boolean = false; 
   // ✅ NUEVO: Flag para saber si ya se cargaron los permisos
   permissionsLoaded: boolean = false;
+
+  // 🆕 Variables para el modal de miembros
+  selectedGrupo: any = null;
+  miembrosGrupo: any[] = [];
+  loadingMiembros: boolean = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -117,6 +129,191 @@ export class TableroTareasComponent implements OnInit {
     });
   }
 
+  // 🆕 Toggle del menú de configuración del grupo
+  toggleGrupoMenu(event: MouseEvent) {
+    event.stopPropagation();
+    this.grupoMenuOpen = !this.grupoMenuOpen;
+  }
+
+  // 🆕 Cerrar menú de grupo y ejecutar acción
+  closeGrupoMenuAnd(action: string) {
+    this.grupoMenuOpen = false;
+    
+    switch (action) {
+      case 'verMiembros':
+        this.verMiembros();
+        break;
+      case 'shareGrupo':
+        this.shareGrupo();
+        break;
+      case 'configPermisos':
+        this.openPermissionsModal();
+        break;
+    }
+  }
+
+  // 🆕 Ver miembros del grupo
+  verMiembros() {
+    if (!this.GRUPO_SELECTED) {
+      this.toastr.warning('No se ha cargado el grupo', 'Advertencia');
+      return;
+    }
+
+    console.log('🔍 Ver miembros del grupo:', this.GRUPO_SELECTED.id);
+    
+    // Establecer el grupo seleccionado
+    this.selectedGrupo = { ...this.GRUPO_SELECTED };
+    
+    // Limpiar miembros anteriores
+    this.miembrosGrupo = [];
+    
+    // Mostrar loading
+    this.loadingMiembros = true;
+    
+    // Abrir el modal ANTES de cargar los datos
+    this.openMiembrosModal();
+    
+    // Cargar los miembros del grupo desde el backend
+    this.grupoService.getSharedUsers(this.GRUPO_SELECTED.id).subscribe({
+      next: (resp: any) => {
+        console.log('✅ Respuesta de miembros:', resp);
+        
+        if (resp.message === 200) {
+          this.miembrosGrupo = resp.shared_users || [];
+          this.selectedGrupo.shared_with = resp.shared_users || [];
+          
+          console.log('👥 Miembros cargados:', this.miembrosGrupo);
+        } else {
+          console.warn('⚠️ Respuesta inesperada del servidor:', resp);
+          this.toastr.warning('No se pudieron cargar los miembros', 'Advertencia');
+        }
+        
+        this.loadingMiembros = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar miembros:', error);
+        this.loadingMiembros = false;
+        this.cdr.detectChanges();
+        this.toastr.error('No se pudieron cargar los miembros del grupo', 'Error');
+        this.closeMiembrosModal();
+      }
+    });
+  }
+
+  // 🆕 Abrir modal de miembros
+  openMiembrosModal() {
+    const modalElement = document.getElementById('miembrosModal');
+    
+    if (!modalElement) {
+      console.error('❌ Modal element not found');
+      return;
+    }
+    
+    if (typeof (window as any).bootstrap !== 'undefined') {
+      const modal = new (window as any).bootstrap.Modal(modalElement);
+      modal.show();
+      console.log('✅ Modal abierto con Bootstrap 5');
+    } else {
+      modalElement.classList.add('show');
+      modalElement.style.display = 'block';
+      document.body.classList.add('modal-open');
+      
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop fade show';
+      backdrop.id = 'miembros-backdrop';
+      document.body.appendChild(backdrop);
+      
+      console.log('✅ Modal abierto manualmente');
+    }
+  }
+
+  // 🆕 Cerrar modal de miembros
+  closeMiembrosModal() {
+    const modalElement = document.getElementById('miembrosModal');
+    const backdrop = document.getElementById('miembros-backdrop');
+    
+    if (modalElement) {
+      if (typeof (window as any).bootstrap !== 'undefined') {
+        const modalInstance = (window as any).bootstrap.Modal.getInstance(modalElement);
+        if (modalInstance) {
+          modalInstance.hide();
+        }
+      } else {
+        modalElement.classList.remove('show');
+        modalElement.style.display = 'none';
+        document.body.classList.remove('modal-open');
+      }
+    }
+    
+    if (backdrop) {
+      backdrop.remove();
+    }
+    
+    setTimeout(() => {
+      this.selectedGrupo = null;
+      this.miembrosGrupo = [];
+      this.loadingMiembros = false;
+    }, 300);
+    
+    console.log('✅ Modal cerrado');
+  }
+
+  // 🆕 Abrir modal de compartir desde el tablero
+  shareGrupo() {
+    if (!this.GRUPO_SELECTED) {
+      this.toastr.warning('No se ha cargado el grupo', 'Advertencia');
+      return;
+    }
+
+    // Verificar que es el propietario
+    if (!this.isOwner) {
+      this.toastr.warning('Solo el propietario puede compartir el grupo', 'Permiso denegado');
+      return;
+    }
+
+    const modalRef = this.modalService.open(ShareGrupoComponent, { 
+      centered: true, 
+      size: 'md' 
+    });
+    
+    modalRef.componentInstance.GRUPO_SELECTED = this.GRUPO_SELECTED;
+    
+    modalRef.componentInstance.GrupoShared.subscribe(() => {
+      // Recargar los datos del grupo para actualizar la información de compartidos
+      this.loadGrupoData();
+      this.toastr.success('Grupo compartido correctamente', 'Éxito');
+    });
+  }
+
+  // 🆕 Abrir modal de permisos desde el tablero
+  openPermissionsModal() {
+    if (!this.GRUPO_SELECTED) {
+      this.toastr.warning('No se ha cargado el grupo', 'Advertencia');
+      return;
+    }
+
+    // Verificar que es el propietario
+    if (!this.isOwner) {
+      this.toastr.warning('Solo el propietario puede gestionar permisos', 'Permiso denegado');
+      return;
+    }
+
+    const modalRef = this.modalService.open(PermisosGrupoModalComponent, {
+      centered: true,
+      size: 'md'
+    });
+    
+    modalRef.componentInstance.GRUPO_SELECTED = this.GRUPO_SELECTED;
+    
+    modalRef.componentInstance.PermisosChanged.subscribe((grupoActualizado: any) => {
+      // Actualizar el grupo con la nueva información de permisos
+      this.GRUPO_SELECTED = { ...this.GRUPO_SELECTED, ...grupoActualizado };
+      this.toastr.success('Permisos actualizados correctamente', 'Éxito');
+      this.cdr.detectChanges();
+    });
+  }
+
   toggleMenu(id: number, event: MouseEvent) {
     event.stopPropagation();
     this.openMenuId = this.openMenuId === id ? null : id;
@@ -125,8 +322,15 @@ export class TableroTareasComponent implements OnInit {
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
+    
+    // Cerrar menú de lista
     if (!target.closest('.menu-dropdown') && !target.closest('.btn-icon')) {
       this.openMenuId = null;
+    }
+    
+    // 🆕 Cerrar menú de grupo
+    if (!target.closest('.menu-dropdown') && !target.closest('.btn-light-primary')) {
+      this.grupoMenuOpen = false;
     }
   }
 
@@ -249,285 +453,191 @@ export class TableroTareasComponent implements OnInit {
             showConfirmButton: false
           });
         },
-        error: (error) => {
+        error: (err) => {
+          console.error('Error al mover tarea:', err);
           Swal.fire({
             icon: 'error',
             title: 'Error',
             text: 'No se pudo mover la tarea',
             toast: true,
             position: 'top-end',
-            timer: 2500,
-            showConfirmButton: false
+            timer: 2500
           });
-
-          console.error('Error al mover tarea:', error);
-
-          movedTask.lista_id = oldListId;
-
-          transferArrayItem(
-            event.container.data,
-            event.previousContainer.data,
-            event.currentIndex,
-            event.previousIndex
-          );
+          this.listListas();
         }
       });
     }
-
-    this.cdr.detectChanges();
   }
 
-
-  // ✅ MEJORADO: Verificar permisos antes de crear lista
   createLista() {
     if (!this.hasWriteAccess) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Permiso denegado',
-        text: 'No tienes permisos para crear listas',
-        toast: true,
-        position: 'top-end',
-        timer: 2500,
-        showConfirmButton: false
-      });
+      this.toastr.warning('No tienes permisos para crear listas', 'Permiso denegado');
       return;
     }
 
-    const modalRef = this.modalService.open(CreateListaComponent, { centered: true, size: 'md' });
+    const modalRef = this.modalService.open(CreateListaComponent, { 
+      centered: true, 
+      size: 'md' 
+    });
+    
     modalRef.componentInstance.grupo_id = this.grupo_id;
-
+    
     modalRef.componentInstance.ListaC.subscribe((lista: any) => {
-      lista.tareas = [];
-      lista.orden = this.LISTAS.length;
       this.LISTAS.push(lista);
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Lista creada',
-        toast: true,
-        position: 'top-end',
-        timer: 2000,
-        showConfirmButton: false
-      });
-
-      this.cdr.detectChanges();
-      modalRef.close();
+      this.toastr.success('Lista creada correctamente', 'Éxito');
     });
   }
 
-
-
-  // ✅ MEJORADO: Verificar permisos antes de crear tarea
-  createTarea(listaId: number) {
+  editLista(lista: any) {
     if (!this.hasWriteAccess) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Permiso denegado',
-        text: 'No tienes permisos para crear tareas',
-        toast: true,
-        position: 'top-end',
-        timer: 2500,
-        showConfirmButton: false
-      });
+      this.toastr.warning('No tienes permisos para editar listas', 'Permiso denegado');
       return;
     }
 
-    const modalRef = this.modalService.open(CreateTareaComponent, { centered: true, size: 'md' });
-    modalRef.componentInstance.lista_id = listaId;
+    const modalRef = this.modalService.open(EditListaComponent, { 
+      centered: true, 
+      size: 'md' 
+    });
+    
+    modalRef.componentInstance.LISTA_SELECTED = lista;
+    
+    modalRef.componentInstance.ListaE.subscribe((listaEditada: any) => {
+      const index = this.LISTAS.findIndex((l: any) => l.id === lista.id);
+      if (index !== -1) {
+        this.LISTAS[index] = listaEditada;
+      }
+      this.toastr.success('Lista actualizada correctamente', 'Éxito');
+    });
+  }
+
+  deleteLista(lista: any) {
+    if (!this.hasWriteAccess) {
+      this.toastr.warning('No tienes permisos para eliminar listas', 'Permiso denegado');
+      return;
+    }
+
+    const modalRef = this.modalService.open(DelteListaComponent, { 
+      centered: true, 
+      size: 'md' 
+    });
+    
+    modalRef.componentInstance.LISTA_SELECTED = lista;
+    
+    modalRef.componentInstance.ListaD.subscribe(() => {
+      this.LISTAS = this.LISTAS.filter((l: any) => l.id !== lista.id);
+      this.toastr.success('Lista eliminada correctamente', 'Éxito');
+    });
+  }
+
+  createTarea(lista_id: number) {
+    if (!this.hasWriteAccess) {
+      this.toastr.warning('No tienes permisos para crear tareas', 'Permiso denegado');
+      return;
+    }
+
+    const modalRef = this.modalService.open(CreateTareaComponent, { 
+      centered: true, 
+      size: 'xl' 
+    });
+    
+    modalRef.componentInstance.lista_id = lista_id;
     modalRef.componentInstance.grupo_id = this.grupo_id;
     modalRef.componentInstance.users = this.users;
     modalRef.componentInstance.sucursales = this.sucursales;
-
+    
     modalRef.componentInstance.TareaC.subscribe((tarea: any) => {
-      const targetList = this.LISTAS.find(l => l.id === listaId);
-      if (targetList) {
-        tarea.expanded = false;
-        targetList.tareas.push(tarea);
-
-        Swal.fire({
-          icon: 'success',
-          title: 'Tarea creada',
-          toast: true,
-          position: 'top-end',
-          timer: 2000,
-          showConfirmButton: false
-        });
-
-        this.cdr.detectChanges();
+      const lista = this.LISTAS.find((l: any) => l.id === lista_id);
+      if (lista) {
+        if (!lista.tareas) {
+          lista.tareas = [];
+        }
+        lista.tareas.push(tarea);
       }
+      this.toastr.success('Tarea creada correctamente', 'Éxito');
     });
   }
 
-
-  // ✅ MEJORADO: Pasar permisos al modal de edición
-  editTarea(TAREA: any) {
-    const modalRef = this.modalService.open(EditTareaComponent, { centered: true, size: 'xl' });
-    modalRef.componentInstance.TAREA_SELECTED = TAREA;
+  editTarea(tarea: any) {
+    const modalRef = this.modalService.open(EditTareaComponent, { 
+      centered: true, 
+      size: 'xl' 
+    });
+    
+    modalRef.componentInstance.TAREA_SELECTED = tarea;
     modalRef.componentInstance.users = this.users;
     modalRef.componentInstance.sucursales = this.sucursales;
     modalRef.componentInstance.grupo_id = this.grupo_id;
     modalRef.componentInstance.hasWriteAccess = this.hasWriteAccess;
-    modalRef.componentInstance.isOwner = this.isOwner;
-
+    
     modalRef.componentInstance.TareaE.subscribe((tareaEditada: any) => {
-      this.LISTAS.forEach(lista => {
-        const index = lista.tareas.findIndex((t: any) => t.id === tareaEditada.id);
+      for (const lista of this.LISTAS) {
+        const index = lista.tareas.findIndex((t: any) => t.id === tarea.id);
         if (index !== -1) {
-          lista.tareas[index] = { ...lista.tareas[index], ...tareaEditada };
+          lista.tareas[index] = tareaEditada;
+          break;
         }
-      });
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Tarea actualizada',
-        toast: true,
-        position: 'top-end',
-        timer: 2000,
-        showConfirmButton: false
-      });
-
-      this.cdr.detectChanges();
-    });
-  }
-
-
-  // ✅ MEJORADO: Verificar permisos antes de editar lista
-  editLista(LISTA: any) {
-    if (!this.hasWriteAccess) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Permiso denegado',
-        text: 'No tienes permisos para editar listas',
-        toast: true,
-        position: 'top-end',
-        timer: 2500,
-        showConfirmButton: false
-      });
-      return;
-    }
-
-    const modalRef = this.modalService.open(EditListaComponent, { centered: true, size: 'md' });
-    modalRef.componentInstance.LISTA_SELECTED = LISTA;
-
-    modalRef.componentInstance.ListaE.subscribe((listaEditada: any) => {
-      const index = this.LISTAS.findIndex(l => l.id === listaEditada.id);
-      if (index !== -1) {
-        this.LISTAS[index] = { ...this.LISTAS[index], ...listaEditada };
       }
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Lista actualizada',
-        toast: true,
-        position: 'top-end',
-        timer: 2000,
-        showConfirmButton: false
-      });
-
-      this.cdr.detectChanges();
+      this.toastr.success('Tarea actualizada correctamente', 'Éxito');
     });
   }
 
-
-  // ✅ MEJORADO: Verificar permisos antes de eliminar tarea
-  deleteTarea(TAREA: any, event?: MouseEvent) {
-    if (event) event.stopPropagation();
-
+  deleteTarea(tarea: any, event: MouseEvent) {
+    event.stopPropagation();
+    
     if (!this.hasWriteAccess) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Permiso denegado',
-        text: 'No tienes permisos para eliminar tareas',
-        toast: true,
-        position: 'top-end',
-        timer: 2500,
-        showConfirmButton: false
-      });
+      this.toastr.warning('No tienes permisos para eliminar tareas', 'Permiso denegado');
       return;
     }
 
-    const modalRef = this.modalService.open(DeleteTareaComponent, { centered: true, size: 'md' });
-    modalRef.componentInstance.TAREA_SELECTED = TAREA;
-
+    const modalRef = this.modalService.open(DeleteTareaComponent, { 
+      centered: true, 
+      size: 'md' 
+    });
+    
+    modalRef.componentInstance.TAREA_SELECTED = tarea;
+    
     modalRef.componentInstance.TareaD.subscribe(() => {
-      this.LISTAS.forEach(list => {
-        list.tareas = list.tareas.filter((t: any) => t.id !== TAREA.id);
-      });
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Tarea eliminada',
-        toast: true,
-        position: 'top-end',
-        timer: 2000,
-        showConfirmButton: false
-      });
-
-      this.cdr.detectChanges();
+      for (const lista of this.LISTAS) {
+        const index = lista.tareas.findIndex((t: any) => t.id === tarea.id);
+        if (index !== -1) {
+          lista.tareas.splice(index, 1);
+          break;
+        }
+      }
+      this.toastr.success('Tarea eliminada correctamente', 'Éxito');
     });
   }
-
-
-  // ✅ MEJORADO: Verificar permisos antes de eliminar lista
-  deleteLista(LISTA: any) {
-    if (!this.hasWriteAccess) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Permiso denegado',
-        text: 'No tienes permisos para eliminar listas',
-        toast: true,
-        position: 'top-end',
-        timer: 2500,
-        showConfirmButton: false
-      });
-      return;
-    }
-
-    const modalRef = this.modalService.open(DelteListaComponent, { centered: true, size: 'md' });
-    modalRef.componentInstance.LISTA_SELECTED = LISTA;
-
-    modalRef.componentInstance.ListaD.subscribe(() => {
-      this.LISTAS = this.LISTAS.filter((l: any) => l.id !== LISTA.id);
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Lista eliminada',
-        toast: true,
-        position: 'top-end',
-        timer: 2000,
-        showConfirmButton: false
-      });
-
-      this.cdr.detectChanges();
-    });
-  }
-
 
   listListas() {
     this.tareaService.listListas(this.grupo_id).subscribe({
       next: (resp: any) => {
-        console.log('📋 ===== RESPUESTA DE listListas =====');
-        console.log('📋 Listas recibidas:', resp.listas?.length || 0);
+        console.log('📋 Listas cargadas del servidor:', resp);
         
-        if (resp.listas && resp.listas[0]?.tareas && resp.listas[0].tareas[0]) {
-          const primeraLista = resp.listas[0];
-          const primeraTarea = primeraLista.tareas[0];
+        if (resp.listas && resp.listas.length > 0) {
+          const primeraTarea = resp.listas[0]?.tareas?.[0];
+          console.log('🔍 DEBUG - Primera tarea para analizar estructura:', primeraTarea);
           
-          console.log('🔍 Estructura de primera tarea:', {
-            id: primeraTarea.id,
-            name: primeraTarea.name,
-            status: primeraTarea.status,
-            priority: primeraTarea.priority,
-            tiene_etiquetas: !!primeraTarea.etiquetas,
-            num_etiquetas: primeraTarea.etiquetas?.length || 0,
-            tiene_adjuntos: !!primeraTarea.adjuntos,
-            estructura_adjuntos: primeraTarea.adjuntos,
-            tiene_checklists: !!primeraTarea.checklists,
-            num_checklists: primeraTarea.checklists?.length || 0,
-            tiene_comentarios: primeraTarea.comentarios !== undefined,
-            num_comentarios: primeraTarea.comentarios?.length || primeraTarea.comentarios_count || 0,
-            tiene_user: !!primeraTarea.user,
-            user_data: primeraTarea.user
+          console.log('📊 Estructura de la primera tarea:', {
+            id: primeraTarea?.id,
+            name: primeraTarea?.name,
+            tiene_assigned_members: !!primeraTarea?.assigned_members,
+            assigned_members: primeraTarea?.assigned_members,
+            tipo_assigned_members: typeof primeraTarea?.assigned_members,
+            es_array: Array.isArray(primeraTarea?.assigned_members),
+            length: primeraTarea?.assigned_members?.length,
+            primer_miembro: primeraTarea?.assigned_members?.[0],
+            status: primeraTarea?.status,
+            priority: primeraTarea?.priority,
+            tiene_etiquetas: !!primeraTarea?.etiquetas,
+            num_etiquetas: primeraTarea?.etiquetas?.length || 0,
+            tiene_adjuntos: !!primeraTarea?.adjuntos,
+            estructura_adjuntos: primeraTarea?.adjuntos,
+            tiene_checklists: !!primeraTarea?.checklists,
+            num_checklists: primeraTarea?.checklists?.length || 0,
+            tiene_comentarios: primeraTarea?.comentarios !== undefined,
+            num_comentarios: primeraTarea?.comentarios?.length || primeraTarea?.comentarios_count || 0,
+            tiene_user: !!primeraTarea?.user,
+            user_data: primeraTarea?.user
           });
         }
         
@@ -703,6 +813,7 @@ export class TableroTareasComponent implements OnInit {
 
   /**
    * 🎨 Obtener la ruta correcta del avatar de un miembro
+   * Funciona tanto para miembros de tareas como para el modal de miembros
    */
   public getMemberAvatar(member: any): string {
     console.log('🎨 getMemberAvatar llamado con:', {
@@ -763,6 +874,19 @@ export class TableroTareasComponent implements OnInit {
     const url = `assets/media/avatars/${avatarValue}`;
     console.log('   → Caso: general. URL:', url);
     return url;
+  }
+
+  /**
+   * 🎨 Obtener la ruta correcta del avatar del propietario del grupo
+   */
+  getUserAvatar(): string {
+    const userToCheck = this.selectedGrupo?.user;
+    
+    if (userToCheck?.avatar) {
+      return this.getAvatarUrl(userToCheck.avatar);
+    }
+    
+    return 'assets/media/avatars/blank.png';
   }
 
 }

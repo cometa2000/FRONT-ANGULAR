@@ -906,3 +906,309 @@
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
 }
+
+// ============================================
+// 🆕 MENÚ DE CONFIGURACIÓN DEL GRUPO
+// ============================================
+.btn-light-primary {
+  background-color: rgba(0, 123, 255, 0.1);
+  color: #007bff;
+  border: 1px solid rgba(0, 123, 255, 0.2);
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: rgba(0, 123, 255, 0.2);
+    border-color: rgba(0, 123, 255, 0.3);
+    color: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+  }
+  
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 123, 255, 0.2);
+  }
+}
+
+// Estilos para el hover de los botones del menú
+.hover-light {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.04) !important;
+    transform: translateX(2px);
+  }
+}
+
+// Contenedor de gap para los botones
+.gap-2 {
+  gap: 0.5rem !important;
+}
+
+// Fondo claro para información de propietario
+.bg-light-success {
+  background-color: rgba(76, 175, 80, 0.1);
+  
+  .text-success {
+    color: #28a745 !important;
+  }
+}
+
+// Mejoras visuales para el menú desplegable de configuración
+.menu-dropdown {
+  animation: fadeInDown 0.2s ease;
+  
+  hr {
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+  }
+  
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+    font-weight: 600;
+    
+    &.bg-warning {
+      background-color: #ffc107 !important;
+      color: #000;
+    }
+    
+    &.bg-success {
+      background-color: #28a745 !important;
+      color: #fff;
+    }
+  }
+  
+  // Iconos del menú
+  i {
+    width: 20px;
+    display: inline-block;
+    text-align: center;
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ============================================
+// 🆕 MODAL DE MIEMBROS DEL GRUPO
+// ============================================
+
+/* CONTADOR DE MIEMBROS */
+.miembros-counter {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+
+  .counter-text {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: white;
+    font-weight: 600;
+    font-size: 1.1rem;
+
+    i {
+      font-size: 1.5rem;
+    }
+
+    .counter-number {
+      font-weight: 700;
+      font-size: 1.3rem;
+    }
+  }
+}
+
+/* LISTA DE MIEMBROS */
+.miembros-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+/* CARD DEL MIEMBRO */
+.miembro-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: #cbd5e0;
+  }
+
+  /* AVATAR */
+  .miembro-avatar {
+    width: 64px !important;
+    height: 64px !important;
+    min-width: 64px !important;
+    min-height: 64px !important;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #e2e8f0;
+    background-color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    transition: all 0.25s ease;
+  }
+
+  /* Hover del avatar */
+  &:hover .miembro-avatar {
+    border-color: #667eea;
+    box-shadow: 0 4px 14px rgba(102, 126, 234, 0.35);
+    transform: scale(1.08);
+  }
+
+  /* INFORMACIÓN DEL MIEMBRO */
+  .miembro-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .miembro-nombre {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2d3748;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .badge-owner {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+    color: #744210;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    box-shadow: 0 2px 6px rgba(253, 160, 133, 0.4);
+  }
+
+  .miembro-email,
+  .miembro-phone {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.875rem;
+    color: #718096;
+
+    i {
+      font-size: 0.9rem;
+      min-width: 16px;
+    }
+  }
+}
+
+/* ESTADO VACÍO */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+
+  .empty-icon {
+    font-size: 4rem;
+    color: #cbd5e0;
+    margin-bottom: 1rem;
+  }
+
+  .empty-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-text {
+    font-size: 0.95rem;
+    color: #718096;
+  }
+}
+
+/* ANIMACIÓN DE ENTRADA */
+@keyframes fadeInUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.miembro-card {
+  animation: fadeInUp 0.3s ease forwards;
+
+  @for $i from 1 through 10 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 0.05}s;
+    }
+  }
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .miembro-card {
+    padding: 0.875rem 1rem;
+
+    .miembro-avatar {
+      width: 58px !important;
+      height: 58px !important;
+    }
+
+    .miembro-nombre { 
+      font-size: 0.95rem; 
+    }
+    
+    .miembro-email,
+    .miembro-phone { 
+      font-size: 0.8rem; 
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .miembro-card {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.75rem;
+
+    .miembro-avatar {
+      width: 72px !important;
+      height: 72px !important;
+    }
+
+    .miembro-info { 
+      width: 100%; 
+    }
+  }
+}
+
+
+.header-wrapper {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 1rem; 
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}

@@ -9,8 +9,8 @@
         <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-5 g-xl-9">
             
             <!-- Botón para crear nuevo grupo -->
-            <div class="col-md-4">
-                <div class="card h-md-100">
+            <div class="col-xxl-4">
+                <div class="card card-xxl-stretch mb-xl-3 position-relative grupo-card">
                     <div class="card-body d-flex flex-center">
                         <button type="button" class="btn btn-clear d-flex flex-column flex-center" data-action="create" (click)="createGrupo()">
                             <img src="assets/media/illustrations/sketchy-1/17.png" alt="" class="mw-100 mh-150px mb-7" />
@@ -25,7 +25,7 @@
             <!-- Lista de grupos -->
             <ng-container *ngFor="let GRUPO of GRUPOS; let i = index">
                 <div class="col-xxl-4">
-                    <div class="card card-xxl-stretch mb-xl-3 position-relative">
+                    <div class="card card-xxl-stretch mb-xl-3 position-relative grupo-card">
                         
                         <!-- ⭐ Estrella de favorito con espacio -->
                         <div 
@@ -151,7 +151,10 @@
                         </div>
                         
                         
-                        <img [src]="'assets/media/fondos/' + (GRUPO.image || 'fondo1.png')" alt="" class="mw-40 mh-110px grupo-thumbnail" />
+                        <a [routerLink]="['/tasks/tareas/tablero', GRUPO.id]" class="grupo-image-link">
+                          <img [src]="'assets/media/fondos/' + (GRUPO.image || 'fondo1.png')" alt="Imagen del grupo {{ GRUPO.name }}" class="grupo-thumbnail"/>
+                        </a>
+
                         
                         <!-- ✅ Info de usuarios compartidos (solo para el propietario) -->
                         <div 
