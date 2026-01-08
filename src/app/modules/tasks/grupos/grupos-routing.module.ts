@@ -5,15 +5,19 @@ import { ListGrupoComponent } from './list-grupo/list-grupo.component';
 
 const routes: Routes = [
   {
-      path:'',
-      component: GruposComponent,
-      children:[
-        {
-          path: 'list',
-          component: ListGrupoComponent
-        }
-      ]
-    }
+    path: '',
+    component: GruposComponent,
+    children: [
+      {
+        path: '', // ✅ Ruta por defecto (captura /tasks/grupos/:workspaceId)
+        component: ListGrupoComponent
+      },
+      {
+        path: 'list', // ✅ Ruta alternativa (retrocompatibilidad)
+        component: ListGrupoComponent
+      }
+    ]
+  }
 ];
 
 @NgModule({

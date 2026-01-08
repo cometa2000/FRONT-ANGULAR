@@ -46,6 +46,9 @@ export class TableroTareasComponent implements OnInit {
   miembrosGrupo: any[] = [];
   loadingMiembros: boolean = false;
 
+  fromRoute: string = 'list-workspace'; // Por defecto list-workspace
+  workspaceId?: number;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -56,23 +59,33 @@ export class TableroTareasComponent implements OnInit {
     private toastr: ToastrService
   ) {}
 
+
   ngOnInit(): void {
     this.isLoading$ = this.tareaService.isLoading$;
+
+    // ✅ NUEVO: Capturar queryParams para detectar origen
+    this.route.queryParams.subscribe(queryParams => {
+      this.fromRoute = queryParams['from'] || 'list-workspace';
+      this.workspaceId = queryParams['workspaceId'] ? +queryParams['workspaceId'] : undefined;
+      
+      console.log('🔍 Tablero: Origen detectado:', this.fromRoute);
+      if (this.workspaceId) {
+        console.log('📌 Tablero: Workspace ID:', this.workspaceId);
+      }
+    });
 
     this.route.params.subscribe(params => {
       this.grupo_id = +params['grupo_id'];
       
       if (this.grupo_id) {
-        // ✅ CAMBIO: Verificar permisos PRIMERO antes de cargar nada
         this.checkWritePermissions(() => {
-          // Solo después de verificar permisos, cargar los datos
           this.loadGrupoData();
           this.listListas();
           this.configAll();
         });
       } else {
         this.toastr.warning('No se proporcionó un grupo válido', 'Advertencia');
-        this.router.navigate(['/tasks/grupos/list']);
+        this.router.navigate(['/tasks/workspaces/list']);
       }
     });
   }
@@ -119,12 +132,29 @@ export class TableroTareasComponent implements OnInit {
   }
 
   loadGrupoData() {
-    this.grupoService.listGrupos(1, '').subscribe((resp: any) => {
-      this.GRUPO_SELECTED = resp.grupos.find((g: any) => g.id === this.grupo_id);
-      
-      if (!this.GRUPO_SELECTED) {
+    console.log('📋 Cargando información del grupo:', this.grupo_id);
+    
+    // ✅ Usar el método getGrupo específico en lugar de listGrupos
+    this.grupoService.getGrupo(this.grupo_id).subscribe({
+      next: (resp: any) => {
+        console.log('✅ Respuesta del grupo:', resp);
+        
+        if (resp.message === 200 && resp.grupo) {
+          this.GRUPO_SELECTED = resp.grupo;
+          console.log('🎯 Grupo cargado:', this.GRUPO_SELECTED);
+          
+          // ✅ Forzar detección de cambios para quitar el mensaje "Cargando grupo..."
+          this.cdr.detectChanges();
+        } else {
+          console.error('❌ Respuesta no exitosa:', resp);
+          this.toastr.error('Error al cargar el grupo', 'Error');
+          this.router.navigate(['/tasks/workspaces/list']);
+        }
+      },
+      error: (err: any) => {
+        console.error('❌ Error al cargar grupo:', err);
         this.toastr.error('El grupo no existe o no tienes acceso', 'Error');
-        this.router.navigate(['/tasks/grupos/list']);
+        this.router.navigate(['/tasks/workspaces/list']);
       }
     });
   }
@@ -734,7 +764,17 @@ export class TableroTareasComponent implements OnInit {
   }
 
   volverAGrupos() {
-    this.router.navigate(['/tasks/grupos/list']);
+    console.log('🔙 Volviendo desde:', this.fromRoute);
+    
+    if (this.fromRoute === 'list-grupo' && this.workspaceId) {
+      // Volver a la vista de grupos del workspace específico
+      console.log('➡️ Navegando a /tasks/grupos/' + this.workspaceId);
+      this.router.navigate(['/tasks/grupos', this.workspaceId]);
+    } else {
+      // Volver a la vista general (list-workspace)
+      console.log('➡️ Navegando a /tasks/workspaces/list');
+      this.router.navigate(['/tasks/workspaces/list']);
+    }
   }
 
   tieneIndicadores(tarea: any): boolean {

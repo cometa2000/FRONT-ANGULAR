@@ -1,16 +1,15 @@
 /* ========================================
-   📋 ESTILOS PARA LIST-GRUPO
-   ✅ PROBLEMA 1 y 2 SOLUCIONADOS
+   📤 ESTILOS PARA GRUPOS COMPARTIDOS
    ======================================== */
 
-.grupos-grid-modern {
+.grupos-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
   padding: 1rem 0;
 }
 
-.grupo-card-modern {
+.grupo-card-shared {
   position: relative;
   height: 220px;
   border-radius: 12px;
@@ -103,18 +102,11 @@
   }
 }
 
-/* ✅ SOLUCIÓN PROBLEMA 1: Menú con position: fixed */
-.grupo-options-modern {
+.grupo-options {
   position: relative;
   
   .menu {
     display: none;
-    position: fixed; // ✅ CLAVE: fixed para capa más alta
-    background: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    min-width: 200px;
-    z-index: 9999; // ✅ z-index máximo
     
     &.show {
       display: block;
@@ -122,63 +114,20 @@
   }
 }
 
-/* ✅ SOLUCIÓN PROBLEMA 2: Estilos de paginación */
-.pagination {
-  .page-item {
-    margin: 0 2px;
-    
-    &.active .page-link {
-      background-color: #3b82f6;
-      border-color: #3b82f6;
-      color: white;
-    }
-    
-    &.disabled .page-link {
-      opacity: 0.5;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-    
-    .page-link {
-      border-radius: 6px;
-      padding: 0.5rem 0.75rem;
-      color: #5e6278;
-      border: 1px solid #e4e6ef;
-      transition: all 0.2s ease;
-      
-      &:hover:not(.disabled) {
-        background-color: #f5f8fa;
-        border-color: #cbd4db;
-      }
-      
-      i {
-        line-height: 1;
-      }
-    }
-  }
-}
-
 /* 📱 Responsive */
 @media (max-width: 768px) {
-  .grupos-grid-modern {
+  .grupos-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
   
-  .grupo-card-modern {
+  .grupo-card-shared {
     height: 200px;
-  }
-  
-  .pagination {
-    .page-item .page-link {
-      padding: 0.375rem 0.625rem;
-      font-size: 0.875rem;
-    }
   }
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
-  .grupos-grid-modern {
+  .grupos-grid {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
 }
@@ -195,17 +144,12 @@
   }
 }
 
-.grupo-card-modern {
+.grupo-card-shared {
   animation: fadeIn 0.3s ease;
 }
 
 /* 🔧 Badges personalizados */
 .badge {
-  &.badge-light-primary {
-    background-color: rgba(59, 130, 246, 0.15);
-    color: #3b82f6;
-  }
-  
   &.badge-light-warning {
     background-color: rgba(255, 159, 67, 0.15);
     color: #ff9f43;

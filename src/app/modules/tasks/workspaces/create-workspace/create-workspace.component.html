@@ -1,0 +1,141 @@
+<!-- ========================================
+     ➕ MODAL: CREAR ESPACIO DE TRABAJO
+     ======================================== -->
+<div class="modal-content">
+  
+  <!-- Header -->
+  <div class="modal-header">
+    <h2 class="modal-title">Nuevo Espacio de Trabajo</h2>
+    <button 
+      type="button" 
+      class="btn btn-icon btn-sm btn-light-primary" 
+      (click)="close()"
+    >
+      <i class="ki-duotone ki-cross fs-1">
+        <span class="path1"></span>
+        <span class="path2"></span>
+      </i>
+    </button>
+  </div>
+
+  <!-- Body -->
+  <div class="modal-body">
+    <form [formGroup]="workspaceForm">
+      
+      <!-- Nombre del espacio -->
+      <div class="mb-5">
+        <label class="form-label required">Nombre del Espacio</label>
+        <input 
+          type="text" 
+          class="form-control form-control-solid" 
+          formControlName="name"
+          placeholder="Ej: Marketing 2025, Desarrollo Interno..."
+          [class.is-invalid]="isInvalidField('name')"
+        />
+        <div class="invalid-feedback" *ngIf="isInvalidField('name')">
+          El nombre es requerido (máx. 100 caracteres)
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      <div class="mb-5">
+        <label class="form-label">Descripción</label>
+        <textarea 
+          class="form-control form-control-solid" 
+          formControlName="description"
+          rows="3"
+          placeholder="Describe el propósito de este espacio de trabajo..."
+          [class.is-invalid]="isInvalidField('description')"
+        ></textarea>
+        <div class="invalid-feedback" *ngIf="isInvalidField('description')">
+          Máximo 500 caracteres
+        </div>
+        <div class="form-text">
+          Opcional: Ayuda a identificar el propósito del espacio
+        </div>
+      </div>
+
+      <!-- Selector de color -->
+      <div class="mb-5">
+        <label class="form-label">Color del Espacio</label>
+        <div class="d-flex flex-wrap gap-3 mt-2">
+          <div 
+            *ngFor="let color of availableColors"
+            class="color-option"
+            [class.active]="selectedColor === color.value"
+            [style.background-color]="color.value"
+            (click)="selectColor(color.value)"
+            [title]="color.name"
+          >
+            <i 
+              *ngIf="selectedColor === color.value"
+              class="ki-duotone ki-check fs-2 text-white"
+            >
+              <span class="path1"></span>
+              <span class="path2"></span>
+            </i>
+          </div>
+        </div>
+        <div class="form-text mt-2">
+          Selecciona un color para identificar visualmente este espacio
+        </div>
+      </div>
+
+      <!-- Preview del workspace -->
+      <div class="workspace-preview p-4 rounded bg-light">
+        <div class="d-flex align-items-center gap-3">
+          <div 
+            class="workspace-icon-preview"
+            [style.background-color]="selectedColor"
+          >
+            <i class="ki-duotone ki-folder fs-2x text-white">
+              <span class="path1"></span>
+              <span class="path2"></span>
+            </i>
+          </div>
+          <div>
+            <h5 class="mb-1">
+              {{ workspaceForm.get('name')?.value || 'Nombre del espacio' }}
+            </h5>
+            <p class="text-muted mb-0 fs-7">
+              {{ workspaceForm.get('description')?.value || 'Sin descripción' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Footer -->
+  <div class="modal-footer">
+    <button 
+      type="button" 
+      class="btn btn-light" 
+      (click)="close()"
+    >
+      Cancelar
+    </button>
+    
+    <button 
+      type="button" 
+      class="btn btn-primary"
+      (click)="save()"
+      [disabled]="workspaceForm.invalid || (isLoading$ | async)"
+    >
+      <span *ngIf="!(isLoading$ | async)">
+        <i class="ki-duotone ki-check fs-2 me-1">
+          <span class="path1"></span>
+          <span class="path2"></span>
+        </i>
+        Crear Espacio
+      </span>
+      
+      <span *ngIf="isLoading$ | async">
+        <span class="spinner-border spinner-border-sm me-2"></span>
+        Creando...
+      </span>
+    </button>
+  </div>
+
+</div>

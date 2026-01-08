@@ -1,54 +1,200 @@
-
-
+/* =====================================
+   ESTILOS BASE (DESKTOP – SIN CAMBIOS)
+   ===================================== */
 
 .error-line {
-
-  height: 12px; 
-  width: 500px; 
-  border: none; 
+  height: 12px;
+  width: 500px;
+  max-width: 100%; /* 🔑 RESPONSIVE */
   border-radius: 10px;
-
   background: #ff3b3b;
+  border: none;
+  margin: 0 auto;
 }
 
-  /* Caja del error */
-  .error-box {
-    text-align: center;
-    padding: 15px 10px;
-    background: #ffe5e5;
-    border-radius: 12px;
-    border: 2px solid #ff5b5b;
-    margin-bottom: 20px;
-  }
+.error-box {
+  text-align: center;
+  padding: 15px 10px;
+  background: #ffe5e5;
+  border-radius: 12px;
+  border: 2px solid #ff5b5b;
+  margin-bottom: 20px;
+}
 
-  .error-message {
-    margin-top: 10px;
-    font-weight: 600;
-    color: #b40000;
-    font-size: 1rem;
-  }
+.error-message {
+  margin-top: 10px;
+  font-weight: 600;
+  color: #b40000;
+  font-size: 1rem;
+}
 
-  /* Icono de error */
-  .field-wrapper {
-    position: relative;
-  }
-  .icon-error {
-    position: absolute;
-    right: 10px;
-    top: 42px;
-    font-size: 1.2rem;
-    color: red;
-  }
+/* =====================================
+   INPUTS VALIDACIÓN
+   ===================================== */
 
-
-  /* Animación */
-  .animate-fade {
-    animation: fadeIn 0.35s ease-out;
-  }
-
-  .is-invalid {
-  border: 2px solid #ff4d4d !important;
+.is-invalid {
+  border: 3px solid #dc3545 !important;
   border-radius: 8px;
   box-shadow: 0 0 8px rgba(255, 77, 77, 0.6);
   transition: all 0.2s ease-in-out;
+}
+
+.is-valid {
+  border: 3px solid #28a745 !important;
+  border-radius: 8px;
+}
+
+/* =====================================
+   ICONO DE ERROR (❌)
+   ===================================== */
+
+.field-wrapper {
+  position: relative;
+}
+
+.icon-error {
+  position: absolute;
+  right: 10px;
+  top: 42px;
+  font-size: 1.2rem;
+  color: red;
+}
+
+/* =====================================
+   ANIMACIONES
+   ===================================== */
+
+.animate-fade {
+  animation: fadeIn 0.35s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =====================================
+   FORMULARIO
+   ===================================== */
+
+form.form {
+  width: 100%;
+}
+
+.form-control {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* =====================================
+   BOTÓN SUBMIT (DESKTOP IGUAL)
+   ===================================== */
+
+#kt_sign_in_submit {
+  border: none;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+/* =====================================
+   TABLET (≤ 991px)
+   ===================================== */
+
+@media (max-width: 991px) {
+
+  .error-line {
+    width: 100%;
+    height: 10px;
+  }
+
+  .error-box {
+    padding: 14px;
+  }
+
+  .error-message {
+    font-size: 0.95rem;
+  }
+
+  form.form {
+    padding: 0 12px;
+  }
+
+  .form-control {
+    font-size: 0.95rem;
+    padding: 0.55rem 0.85rem;
+  }
+
+  #kt_sign_in_submit {
+    padding: 0.6rem 1.3rem;
+  }
+}
+
+/* =====================================
+   MÓVIL (≤ 575px)
+   ===================================== */
+
+@media (max-width: 575px) {
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .error-line {
+    height: 8px;
+  }
+
+  .error-box {
+    padding: 12px 10px;
+    border-radius: 10px;
+  }
+
+  .error-message {
+    font-size: 0.9rem;
+  }
+
+  .form-control {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .icon-error,
+  div[style*="position: absolute"] {
+    top: 36px !important;
+    font-size: 1rem !important;
+  }
+
+  #kt_sign_in_submit {
+    font-size: 0.95rem;
+    padding: 0.55rem 1rem;
+  }
+
+  /* Evita overflow por scale en hover */
+  #kt_sign_in_submit:hover {
+    transform: scale(1.03);
+  }
+}
+
+/* =====================================
+   EXTRA – PANTALLAS MUY PEQUEÑAS (≤ 360px)
+   ===================================== */
+
+@media (max-width: 360px) {
+
+  h1 {
+    font-size: 1.35rem;
+  }
+
+  .error-message {
+    font-size: 0.85rem;
+  }
+
+  #kt_sign_in_submit {
+    font-size: 0.9rem;
+  }
 }

@@ -1,0 +1,160 @@
+
+<!-- ========================================
+     🗑️ MODAL: ELIMINAR ESPACIO DE TRABAJO
+     ======================================== -->
+<div class="modal-content">
+  
+  <!-- Header -->
+  <div class="modal-header bg-danger">
+    <h2 class="modal-title text-white">
+      <i class="ki-duotone ki-warning fs-2 me-2">
+        <span class="path1"></span>
+        <span class="path2"></span>
+        <span class="path3"></span>
+      </i>
+      Eliminar Espacio de Trabajo
+    </h2>
+    <button 
+      type="button" 
+      class="btn btn-icon btn-sm btn-light" 
+      (click)="close()"
+    >
+      <i class="ki-duotone ki-cross fs-1">
+        <span class="path1"></span>
+        <span class="path2"></span>
+      </i>
+    </button>
+  </div>
+
+  <!-- Body -->
+  <div class="modal-body">
+    
+    <!-- Información del workspace -->
+    <div class="alert alert-danger d-flex align-items-center mb-5">
+      <i class="ki-duotone ki-information fs-2x text-danger me-4">
+        <span class="path1"></span>
+        <span class="path2"></span>
+        <span class="path3"></span>
+      </i>
+      <div class="d-flex flex-column">
+        <h4 class="mb-1 text-danger">¡Acción permanente!</h4>
+        <span>Esta acción no se puede deshacer</span>
+      </div>
+    </div>
+
+    <!-- Detalles del workspace a eliminar -->
+    <div class="mb-5">
+      <p class="text-gray-800 fs-5 mb-3">
+        Estás a punto de eliminar el espacio de trabajo:
+      </p>
+      
+      <div class="card bg-light-danger border border-danger">
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-3">
+            <div 
+              class="workspace-icon-delete"
+              [style.background-color]="WORKSPACE_SELECTED?.color || '#ef4444'"
+            >
+              <i class="ki-duotone ki-folder fs-2x text-white">
+                <span class="path1"></span>
+                <span class="path2"></span>
+              </i>
+            </div>
+            <div>
+              <h4 class="mb-1">{{ WORKSPACE_SELECTED?.name }}</h4>
+              <p class="text-muted mb-0">
+                {{ WORKSPACE_SELECTED?.description || 'Sin descripción' }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advertencia sobre grupos -->
+    <div *ngIf="gruposCount > 0" class="alert alert-warning mb-5">
+      <i class="ki-duotone ki-warning fs-2x text-warning me-3">
+        <span class="path1"></span>
+        <span class="path2"></span>
+        <span class="path3"></span>
+      </i>
+      <div>
+        <h5 class="mb-1">Este espacio contiene {{ gruposCount }} grupo(s)</h5>
+        <p class="mb-0">
+          Los grupos se moverán automáticamente al espacio "General"
+        </p>
+      </div>
+    </div>
+
+    <!-- Campo de confirmación -->
+    <div class="mb-5">
+      <label class="form-label fw-bold text-gray-800 fs-6 required">
+        Confirma escribiendo: <code class="bg-light-danger text-danger px-2 py-1 rounded">eliminar</code>
+      </label>
+      <input 
+        type="text" 
+        class="form-control form-control-solid form-control-lg"
+        [(ngModel)]="confirmationText"
+        placeholder="Escribe: eliminar"
+        autocomplete="off"
+      />
+      <div class="form-text text-danger">
+        Esta acción eliminará permanentemente el espacio de trabajo
+      </div>
+    </div>
+
+    <!-- Lista de consecuencias -->
+    <div class="bg-light-warning p-4 rounded mb-3">
+      <h5 class="text-warning mb-3">
+        <i class="ki-duotone ki-information-5 fs-2 me-2">
+          <span class="path1"></span>
+          <span class="path2"></span>
+          <span class="path3"></span>
+        </i>
+        Consecuencias de esta acción:
+      </h5>
+      <ul class="mb-0 ps-4">
+        <li class="mb-2">El espacio de trabajo será eliminado permanentemente</li>
+        <li class="mb-2">Los grupos se moverán al espacio "General"</li>
+        <li class="mb-2">Las tareas y listas dentro de los grupos NO se eliminarán</li>
+        <li>Esta acción no se puede deshacer</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="modal-footer">
+    <button 
+      type="button" 
+      class="btn btn-light" 
+      (click)="close()"
+    >
+      Cancelar
+    </button>
+    
+    <button 
+      type="button" 
+      class="btn btn-danger"
+      (click)="delete()"
+      [disabled]="!canDelete || (isLoading$ | async)"
+    >
+      <span *ngIf="!(isLoading$ | async)">
+        <i class="ki-duotone ki-trash fs-2 me-1">
+          <span class="path1"></span>
+          <span class="path2"></span>
+          <span class="path3"></span>
+          <span class="path4"></span>
+          <span class="path5"></span>
+        </i>
+        Eliminar Permanentemente
+      </span>
+      
+      <span *ngIf="isLoading$ | async">
+        <span class="spinner-border spinner-border-sm me-2"></span>
+        Eliminando...
+      </span>
+    </button>
+  </div>
+
+</div>

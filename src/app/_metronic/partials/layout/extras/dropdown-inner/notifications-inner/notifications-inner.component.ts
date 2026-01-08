@@ -37,13 +37,13 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    console.log('🚀 Inicializando componente de notificaciones');
+    // console.log('🚀 Inicializando componente de notificaciones');
     
     // ✅ CRÍTICO: Suscribirse ANTES de cargar para capturar todos los eventos
     this.subscription.add(
       this.notificationService.notifications$.subscribe({
         next: (notifications: Notification[]) => {
-          console.log('📥 Notificaciones recibidas en componente:', notifications.length);
+          // console.log('📥 Notificaciones recibidas en componente:', notifications.length);
           this.notifications = notifications;
           this.updateNotificationLists();
           this.cdr.detectChanges();
@@ -60,7 +60,7 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.notificationService.unreadCount$.subscribe({
         next: (count: number) => {
-          console.log('📊 Contador actualizado:', count);
+          // console.log('📊 Contador actualizado:', count);
           this.unreadCount = count;
           this.cdr.detectChanges();
         },
@@ -82,18 +82,18 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
    * ✅ Cargar notificaciones con detección de cambios forzada
    */
   loadNotifications(): void {
-    console.log('⏳ Iniciando carga de notificaciones...');
+    // console.log('⏳ Iniciando carga de notificaciones...');
     this.isLoading = true;
     this.error = '';
     this.cdr.detectChanges();
     
     this.notificationService.getAllNotifications(20).subscribe({
       next: (response: any) => {
-        console.log('✅ Respuesta recibida en componente:', response);
+        // console.log('✅ Respuesta recibida en componente:', response);
         this.isLoading = false;
         
         if (response.success) {
-          console.log('✅ Notificaciones cargadas exitosamente:', response.total);
+          // console.log('✅ Notificaciones cargadas exitosamente:', response.total);
         } else {
           this.error = response.error || response.message || 'Error al cargar las notificaciones';
           console.warn('⚠️ Respuesta sin éxito:', this.error);
@@ -118,12 +118,12 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
     this.unreadNotifications = [...this.notifications.filter(n => !n.is_read)];
     this.readNotifications = [...this.notifications.filter(n => n.is_read)];
     
-    console.log('📊 Listas actualizadas:', {
-      total: this.notifications.length,
-      unread: this.unreadNotifications.length,
-      read: this.readNotifications.length,
-      tab: this.activeTabId
-    });
+    // console.log('📊 Listas actualizadas:', {
+    //   total: this.notifications.length,
+    //   unread: this.unreadNotifications.length,
+    //   read: this.readNotifications.length,
+    //   tab: this.activeTabId
+    // });
     
     // ✅ Forzar detección de cambios
     this.cdr.detectChanges();
@@ -133,7 +133,7 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
    * Cambiar tab activo y actualizar listas
    */
   setActiveTabId(tabId: NotificationsTabsType): void {
-    console.log('🔄 Cambiando a tab:', tabId);
+    // console.log('🔄 Cambiando a tab:', tabId);
     this.activeTabId = tabId;
     // ✅ Actualizar listas al cambiar de tab
     this.updateNotificationLists();
@@ -148,12 +148,12 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
     }
     
     if (!notification.is_read) {
-      console.log('📖 Marcando notificación como leída:', notification.id);
+      // console.log('📖 Marcando notificación como leída:', notification.id);
       
       this.notificationService.markAsRead(notification.id).subscribe({
         next: (response: any) => {
           if (response.success) {
-            console.log('✅ Notificación marcada como leída exitosamente:', notification.id);
+            // console.log('✅ Notificación marcada como leída exitosamente:', notification.id);
             // Las listas se actualizarán automáticamente vía la suscripción
             // Pero forzamos la detección por si acaso
             this.cdr.detectChanges();
@@ -168,7 +168,7 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
         }
       });
     } else {
-      console.log('ℹ️ Notificación ya estaba marcada como leída:', notification.id);
+      // console.log('ℹ️ Notificación ya estaba marcada como leída:', notification.id);
     }
   }
 
@@ -177,16 +177,16 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
    */
   markAllAsRead(): void {
     if (this.unreadCount === 0) {
-      console.log('ℹ️ No hay notificaciones sin leer');
+      // console.log('ℹ️ No hay notificaciones sin leer');
       return;
     }
     
-    console.log('📖 Marcando todas las notificaciones como leídas...');
+    // console.log('📖 Marcando todas las notificaciones como leídas...');
     
     this.notificationService.markAllAsRead().subscribe({
       next: (response: any) => {
         if (response.success) {
-          console.log('✅ Todas las notificaciones marcadas como leídas exitosamente');
+          // console.log('✅ Todas las notificaciones marcadas como leídas exitosamente');
           // Las listas se actualizarán automáticamente vía la suscripción
           this.cdr.detectChanges();
         } else {
@@ -211,7 +211,7 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
       this.notificationService.deleteNotification(notificationId).subscribe({
         next: (response: any) => {
           if (response.success) {
-            console.log('✅ Notificación eliminada');
+            // console.log('✅ Notificación eliminada');
             this.cdr.detectChanges();
           }
         },
@@ -232,7 +232,7 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
       this.notificationService.deleteAllRead().subscribe({
         next: (response: any) => {
           if (response.success) {
-            console.log('✅ Notificaciones leídas eliminadas');
+            // console.log('✅ Notificaciones leídas eliminadas');
             this.cdr.detectChanges();
           }
         },
@@ -262,7 +262,7 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
    * Refrescar notificaciones
    */
   refresh(): void {
-    console.log('🔄 Refrescando notificaciones manualmente...');
+    // console.log('🔄 Refrescando notificaciones manualmente...');
     this.loadNotifications();
   }
 
@@ -270,15 +270,15 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
    * Método de depuración para ver el estado actual
    */
   debugState(): void {
-    console.log('🔍 Estado actual del componente:', {
-      isLoading: this.isLoading,
-      error: this.error,
-      totalNotifications: this.notifications.length,
-      unreadNotifications: this.unreadNotifications.length,
-      readNotifications: this.readNotifications.length,
-      unreadCount: this.unreadCount,
-      activeTab: this.activeTabId
-    });
+    // console.log('🔍 Estado actual del componente:', {
+    //   isLoading: this.isLoading,
+    //   error: this.error,
+    //   totalNotifications: this.notifications.length,
+    //   unreadNotifications: this.unreadNotifications.length,
+    //   readNotifications: this.readNotifications.length,
+    //   unreadCount: this.unreadCount,
+    //   activeTab: this.activeTabId
+    // });
   }
 
   /**
@@ -314,12 +314,12 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
     }
 
     // Avatar por defecto
-    return 'assets/media/avatars/blank.png';
+    return 'assets/media/avatars/1.png';
   }
 
   getAvatar(path: string | null | undefined): string {
     if (!path) {
-      return 'assets/media/avatars/blank.png';
+      return 'assets/media/avatars/1.png';
     }
 
     // Si es como "3.png"

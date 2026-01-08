@@ -33,7 +33,7 @@ export class UserInnerComponent implements OnInit, OnDestroy {
     // ⭐ NUEVO: Suscribirse al usuario actual
     const userSub = this.user$.subscribe((user) => {
       if (user) {
-        console.log('🔄 UserInner detectó cambio de usuario:', user);
+        // console.log('🔄 UserInner detectó cambio de usuario:', user);
         this.user = user;
       }
     });
@@ -42,7 +42,7 @@ export class UserInnerComponent implements OnInit, OnDestroy {
     // ⭐ NUEVO: También suscribirse a cambios en ProfileService
     const profileUserSub = this.profileService.currentUser$.subscribe((updatedUser) => {
       if (updatedUser) {
-        console.log('🔄 UserInner detectó cambio de usuario desde ProfileService:', updatedUser);
+        // console.log('🔄 UserInner detectó cambio de usuario desde ProfileService:', updatedUser);
         this.user = updatedUser;
       }
     });

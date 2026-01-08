@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import { GrupoService } from '../service/grupo.service';
@@ -13,6 +13,9 @@ import Swal from 'sweetalert2';
 })
 export class CreateGrupoComponent {
   @Output() GrupoC: EventEmitter<any> = new EventEmitter();
+  @Input() WORKSPACE_ID: number | null = null; // ✅ Recibir workspace_id
+  @Input() WORKSPACE_NAME: string = ''; // ✅ Recibir nombre del workspace
+  
   name: string = '';
   selectedBackground: string = 'assets/media/fondos/fondo1.png';
   selectedBackgroundName: string = 'fondo1.png';
@@ -28,7 +31,7 @@ export class CreateGrupoComponent {
     { url: 'assets/media/fondos/fondo7.png', name: 'fondo7.png' },
   ];
   
-  // ✅ CORRECCIÓN: Usar el Observable del servicio
+  // ✅ Observable del servicio
   isLoading$: Observable<boolean>;
 
   constructor(
@@ -38,6 +41,11 @@ export class CreateGrupoComponent {
   ) {
     // ✅ Asignar el Observable del servicio
     this.isLoading$ = this.grupoService.isLoading$;
+  }
+
+  ngOnInit() {
+    console.log('🆕 Create Grupo - Workspace ID:', this.WORKSPACE_ID);
+    console.log('🆕 Create Grupo - Workspace Name:', this.WORKSPACE_NAME);
   }
 
   /**
@@ -65,10 +73,19 @@ export class CreateGrupoComponent {
       return;
     }
 
-    const data = { 
+    // ✅ Incluir workspace_id en los datos
+    const data: any = { 
       name: this.name,
       image: this.selectedBackgroundName
     };
+
+    // ✅ Agregar workspace_id si existe
+    if (this.WORKSPACE_ID) {
+      data.workspace_id = this.WORKSPACE_ID;
+      console.log('📤 Enviando grupo con workspace_id:', this.WORKSPACE_ID);
+    }
+
+    console.log('📤 Datos enviados:', data);
 
     this.grupoService.registerGrupo(data).subscribe({
       next: (resp: any) => {
@@ -85,10 +102,11 @@ export class CreateGrupoComponent {
             position: 'top-end'
           });
         } else {
+          const workspaceInfo = this.WORKSPACE_NAME ? ` en ${this.WORKSPACE_NAME}` : '';
           Swal.fire({
             icon: 'success',
             title: 'Grupo creado',
-            text: 'El grupo se registró correctamente',
+            text: `El grupo se registró correctamente${workspaceInfo}`,
             timer: 3500,
             showConfirmButton: false,
             toast: true,

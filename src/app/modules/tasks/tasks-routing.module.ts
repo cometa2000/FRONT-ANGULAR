@@ -3,7 +3,11 @@ import { RouterModule, Routes } from '@angular/router';
 
 const routes: Routes = [
   {
-    path: 'grupos',
+    path: 'workspaces',
+    loadChildren: () => import('./workspaces/workspaces.module').then((m) => m.WorkspacesModule),
+  },
+  {
+    path: 'grupos/:workspaceId',
     loadChildren: () => import('./grupos/grupos.module').then((m) => m.GruposModule),
   },
   {

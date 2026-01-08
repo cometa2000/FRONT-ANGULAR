@@ -1,0 +1,319 @@
+// ========================================
+// 🎨 ESTILOS DE ESPACIOS DE TRABAJO
+// ========================================
+
+.workspaces-container {
+  padding: 0;
+}
+
+// ========================================
+// 📌 ENCABEZADO DEL WORKSPACE
+// ========================================
+.workspace-section {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #f1f1f4;
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+}
+
+.workspace-header {
+  position: relative;
+}
+
+.workspace-icon-preview {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+  transition: background-color 0.3s ease;
+
+  i {
+    line-height: 1;
+  }
+}
+
+.workspace-options, .grupo-options {
+  position: relative;
+  
+  .menu {
+    display: none;
+    position: fixed; // ✅ CLAVE
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    min-width: 200px;
+    z-index: 9999; // ✅ z-index máximo
+    
+    &.show {
+      display: block;
+    }
+  }
+}
+
+// ========================================
+// 📁 SCROLL HORIZONTAL DE GRUPOS
+// ========================================
+.grupos-horizontal-scroll {
+  width: 100%;
+  overflow: visible; // ✅ SOLUCIÓN PROBLEMA 2: Cambiar a visible
+  position: relative;
+}
+
+.grupos-scroll-container {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  overflow-y: visible; // ✅ SOLUCIÓN PROBLEMA 2: Cambiar a visible
+  padding: 10px 5px 20px 5px;
+  scroll-behavior: smooth;
+  
+  // Scrollbar personalizada
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f5f8fa;
+    border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #cbd4db;
+    border-radius: 10px;
+    transition: background 0.3s ease;
+
+    &:hover {
+      background: #a1aeb7;
+    }
+  }
+}
+
+// ========================================
+// 🎴 TARJETAS DE GRUPOS
+// ========================================
+.grupo-card {
+  min-width: 280px;
+  max-width: 280px;
+  height: 180px;
+  border-radius: 12px;
+  overflow: visible; // ✅ SOLUCIÓN PROBLEMA 2: Permitir que el menú se desborde
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+
+    .grupo-card-bg {
+      transform: scale(1.05);
+    }
+  }
+}
+
+.grupo-card-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.3s ease;
+  border-radius: 12px; // ✅ Agregar border-radius
+  overflow: hidden; // ✅ Solo el fondo tiene overflow hidden
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.3) 0%,
+      rgba(0, 0, 0, 0.6) 100%
+    );
+  }
+}
+
+.grupo-card-content {
+  position: relative;
+  z-index: 2;
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.grupo-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.grupo-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.grupo-options {
+  position: relative;
+
+  .menu {
+    display: none;
+    position: absolute;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    min-width: 200px;
+    z-index: 1050; // ✅ SOLUCIÓN PROBLEMA 2: Mayor z-index
+    top: 100%; // ✅ Posicionar debajo del botón
+    right: 0;
+    margin-top: 0.5rem;
+
+    &.show {
+      display: block;
+    }
+  }
+}
+
+// ========================================
+// ➕ TARJETA DE AGREGAR GRUPO
+// ========================================
+.grupo-card-add {
+  background: linear-gradient(135deg, #f5f8fa 0%, #e8ecef 100%);
+  border: 2px dashed #cbd4db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: none;
+  border-radius: 12px;
+  overflow: hidden; // ✅ Solo la tarjeta de agregar tiene overflow hidden
+
+  &:hover {
+    background: linear-gradient(135deg, #e8ecef 0%, #dce1e5 100%);
+    border-color: #a1aeb7;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.grupo-card-add-content {
+  text-align: center;
+  
+  i {
+    transition: transform 0.3s ease;
+  }
+
+  p {
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+}
+
+.grupo-card-add:hover {
+  .grupo-card-add-content i {
+    transform: scale(1.1);
+  }
+}
+
+// ========================================
+// 👥 AVATARES Y SÍMBOLOS
+// ========================================
+.symbol-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.symbol {
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+// ========================================
+// 📱 RESPONSIVE
+// ========================================
+@media (max-width: 768px) {
+  .workspace-section {
+    padding: 15px;
+  }
+
+  .workspace-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .grupo-card {
+    min-width: 240px;
+    max-width: 240px;
+    height: 160px;
+  }
+
+  .grupo-card-content {
+    padding: 15px;
+  }
+
+  .grupo-card-title {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .workspace-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 15px;
+  }
+
+  .workspace-options {
+    align-self: flex-end;
+  }
+
+  .grupo-card {
+    min-width: 220px;
+    max-width: 220px;
+  }
+}
+
+// ========================================
+// 🎨 UTILIDADES
+// ========================================
+.text-gray-600 {
+  color: #7e8299;
+}
+
+.text-gray-700 {
+  color: #5e6278;
+}
+
+.bg-light-primary {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.bg-light-success {
+  background-color: rgba(16, 185, 129, 0.1);
+}
+

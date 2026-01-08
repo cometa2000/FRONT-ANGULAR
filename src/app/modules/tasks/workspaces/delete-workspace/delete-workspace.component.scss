@@ -1,0 +1,27 @@
+// ========================================
+// 🎨 ESTILOS DEL MODAL DELETE WORKSPACE
+// ========================================
+
+.workspace-icon-delete {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.bg-light-danger {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.bg-light-warning {
+  background-color: rgba(245, 158, 11, 0.1);
+}
+
+code {
+  font-size: 0.95rem;
+  font-weight: 600;
+}

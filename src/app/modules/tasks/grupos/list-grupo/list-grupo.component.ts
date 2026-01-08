@@ -1,6 +1,8 @@
-import { Component, HostListener, ChangeDetectorRef } from '@angular/core';
+import { Component, HostListener, ChangeDetectorRef, OnInit, OnDestroy } from '@angular/core';
+import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { GrupoService } from '../service/grupo.service';
+import { WorkspaceService } from '../../workspaces/service/workspace.service';
 import { CreateGrupoComponent } from '../create-grupo/create-grupo.component';
 import { EditGrupoComponent } from '../edit-grupo/edit-grupo.component';
 import { DeleteGrupoComponent } from '../delete-grupo/delete-grupo.component';
@@ -8,28 +10,35 @@ import { ShareGrupoComponent } from '../share-grupo/share-grupo.component';
 import { ToastrService } from 'ngx-toastr';
 import { PermisosGrupoModalComponent } from '../permisos-grupo-modal/permisos-grupo-modal.component';
 import { AuthService } from 'src/app/modules/auth';
+import { Subject, takeUntil, filter } from 'rxjs';
 
 import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-list-grupo',
   templateUrl: './list-grupo.component.html',
   styleUrls: ['./list-grupo.component.scss']
 })
-export class ListGrupoComponent {
+export class ListGrupoComponent implements OnInit, OnDestroy {
   search: string = '';
   GRUPOS: any = [];
   isLoading$: any;
 
+  // ✅ SOLUCIÓN PROBLEMA 2: Paginación
   totalPages: number = 0;
   currentPage: number = 1;
+  itemsPerPage: number = 12; // ✅ 12 grupos por página
+  totalItems: number = 0;
+  paginatedGrupos: any[] = [];
+
+  // ✅ FIX ERROR 1: Exponer Math para usar en template
+  Math = Math;
 
   openMenuId: number | null = null;
   
-  // Control de tooltip
   activeTooltip: number | null = null;
   showAllUsers: { [key: number]: boolean } = {};
 
-  // Variables para el modal de miembros
   selectedGrupo: any = null;
   miembrosGrupo: any[] = [];
   loadingMiembros: boolean = false;
@@ -37,9 +46,18 @@ export class ListGrupoComponent {
   currentUser: any = null;
   user: any = null;
 
+  workspaceId!: number;
+  workspace: any = null;
+  loadingWorkspace: boolean = false;
+
+  private destroy$ = new Subject<void>();
+
   constructor(
     public modalService: NgbModal,
     public grupoService: GrupoService,
+    private workspaceService: WorkspaceService,
+    private route: ActivatedRoute,
+    private router: Router,
     private toast: ToastrService,
     private cdr: ChangeDetectorRef,
     public authService: AuthService 
@@ -47,57 +65,230 @@ export class ListGrupoComponent {
 
   ngOnInit(): void {
     this.isLoading$ = this.grupoService.isLoading$;
-    this.listGrupos();
-  }
+    
+    this.route.params.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(params => {
+      const newWorkspaceId = +params['workspaceId'];
+      
+      console.log('🔍 List-Grupo: Params detectados, workspaceId:', newWorkspaceId);
+      
+      if (newWorkspaceId && newWorkspaceId !== this.workspaceId) {
+        this.workspaceId = newWorkspaceId;
+        console.log('📌 List-Grupo: Workspace ID actualizado:', this.workspaceId);
+        
+        this.loadWorkspaceInfo();
+        this.listGruposByWorkspace();
+      } else if (newWorkspaceId) {
+        this.workspaceId = newWorkspaceId;
+        console.log('🔄 List-Grupo: Mismo workspace, recargando...');
+        this.loadWorkspaceInfo();
+        this.listGruposByWorkspace();
+      }
+    });
 
-  listGrupos(page = 1) {
-    this.grupoService.listGrupos(page, this.search).subscribe((resp: any) => {
-      console.log('Grupos cargados:', resp);
-      this.GRUPOS = resp.grupos;
-      this.totalPages = resp.total;
-      this.currentPage = page;
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd),
+      takeUntil(this.destroy$)
+    ).subscribe((event: any) => {
+      console.log('🔀 List-Grupo: Navegación detectada:', event.url);
+      
+      const match = event.url.match(/\/tasks\/grupos\/(\d+)/);
+      if (match) {
+        const workspaceIdFromUrl = +match[1];
+        console.log('📍 List-Grupo: Workspace ID desde URL:', workspaceIdFromUrl);
+        
+        if (workspaceIdFromUrl && workspaceIdFromUrl !== this.workspaceId) {
+          this.workspaceId = workspaceIdFromUrl;
+          console.log('♻️ List-Grupo: Cargando nuevo workspace');
+          this.loadWorkspaceInfo();
+          this.listGruposByWorkspace();
+        }
+      }
     });
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  loadWorkspaceInfo() {
+    this.loadingWorkspace = true;
+    console.log('📂 List-Grupo: Cargando info workspace:', this.workspaceId);
+    
+    this.workspaceService.getWorkspace(this.workspaceId).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (resp: any) => {
+        console.log('✅ List-Grupo: Workspace cargado:', resp);
+        if (resp.message === 200) {
+          this.workspace = resp.workspace;
+          console.log('📋 Workspace:', this.workspace.name);
+        }
+        this.loadingWorkspace = false;
+      },
+      error: (error) => {
+        console.error('❌ List-Grupo: Error al cargar workspace:', error);
+        this.toast.error('Error al cargar el espacio de trabajo', 'Error');
+        this.loadingWorkspace = false;
+      }
+    });
+  }
+
+  /**
+   * ✅ SOLUCIÓN PROBLEMA 2: Listar grupos con paginación
+   */
+  listGruposByWorkspace() {
+    console.log('📋 List-Grupo: Cargando grupos del workspace:', this.workspaceId);
+    
+    this.workspaceService.getWorkspaceGroups(this.workspaceId, this.search).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (resp: any) => {
+        console.log('✅ List-Grupo: Grupos recibidos:', resp);
+        if (resp.message === 200) {
+          this.GRUPOS = resp.grupos || [];
+          this.totalItems = this.GRUPOS.length;
+          this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
+          
+          console.log(`📊 Total grupos: ${this.GRUPOS.length}`);
+          console.log(`📄 Total páginas: ${this.totalPages}`);
+          
+          // ✅ Aplicar paginación
+          this.updatePaginatedGrupos();
+        }
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('❌ List-Grupo: Error al cargar grupos:', error);
+        this.toast.error('Error al cargar los grupos', 'Error');
+      }
+    });
+  }
+
+  /**
+   * ✅ SOLUCIÓN PROBLEMA 2: Actualizar grupos paginados
+   */
+  updatePaginatedGrupos() {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    this.paginatedGrupos = this.GRUPOS.slice(startIndex, endIndex);
+    
+    console.log(`📄 Página ${this.currentPage}: Mostrando grupos ${startIndex + 1}-${Math.min(endIndex, this.totalItems)} de ${this.totalItems}`);
+  }
+
+  /**
+   * ✅ SOLUCIÓN PROBLEMA 2: Cambiar página
+   */
+  goToPage(page: number) {
+    if (page < 1 || page > this.totalPages) return;
+    
+    this.currentPage = page;
+    this.updatePaginatedGrupos();
+    
+    // Scroll al inicio
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /**
+   * ✅ SOLUCIÓN PROBLEMA 2: Obtener array de páginas
+   */
+  getPages(): number[] {
+    const pages: number[] = [];
+    const maxPages = 5;
+    
+    let startPage = Math.max(1, this.currentPage - Math.floor(maxPages / 2));
+    let endPage = Math.min(this.totalPages, startPage + maxPages - 1);
+    
+    if (endPage - startPage < maxPages - 1) {
+      startPage = Math.max(1, endPage - maxPages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
+  }
+
   loadPage($event: any) {
-    this.listGrupos($event);
+    this.goToPage($event);
   }
 
   createGrupo() {
     const modalRef = this.modalService.open(CreateGrupoComponent, { centered: true, size: 'md' });
+    
+    modalRef.componentInstance.WORKSPACE_ID = this.workspaceId;
+    modalRef.componentInstance.WORKSPACE_NAME = this.workspace?.name;
+    
     modalRef.componentInstance.GrupoC.subscribe((grupo: any) => {
       this.GRUPOS.unshift(grupo);
+      this.totalItems = this.GRUPOS.length;
+      this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
+      this.updatePaginatedGrupos();
     });
   }
 
-  editGrupo(grupo: any) {
+  /**
+   * ✅ SOLUCIÓN PROBLEMA 3: Detener propagación en todas las acciones
+   */
+  editGrupo(grupo: any, event?: MouseEvent) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
     const modalRef = this.modalService.open(EditGrupoComponent, { centered: true, size: 'md' });
     modalRef.componentInstance.GRUPO_SELECTED = grupo;
     modalRef.componentInstance.GrupoE.subscribe((grupoEditado: any) => {
       const index = this.GRUPOS.findIndex((g: any) => g.id === grupo.id);
-      if (index !== -1) this.GRUPOS[index] = grupoEditado;
+      if (index !== -1) {
+        this.GRUPOS[index] = grupoEditado;
+        this.updatePaginatedGrupos();
+      }
     });
   }
 
-  deleteGrupo(grupo: any) {
+  deleteGrupo(grupo: any, event?: MouseEvent) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
     const modalRef = this.modalService.open(DeleteGrupoComponent, { centered: true, size: 'md' });
     modalRef.componentInstance.GRUPO_SELECTED = grupo;
     modalRef.componentInstance.GrupoD.subscribe(() => {
       this.GRUPOS = this.GRUPOS.filter((g: any) => g.id !== grupo.id);
+      this.totalItems = this.GRUPOS.length;
+      this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
+      
+      if (this.paginatedGrupos.length === 0 && this.currentPage > 1) {
+        this.currentPage--;
+      }
+      
+      this.updatePaginatedGrupos();
     });
   }
 
-  shareGrupo(grupo: any) {
+  shareGrupo(grupo: any, event?: MouseEvent) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
     const modalRef = this.modalService.open(ShareGrupoComponent, { centered: true, size: 'md' });
     modalRef.componentInstance.GRUPO_SELECTED = grupo;
     modalRef.componentInstance.GrupoShared.subscribe(() => {
-      this.listGrupos(this.currentPage);
+      this.listGruposByWorkspace();
     });
   }
 
-  // ⭐ Marcar/Desmarcar grupo
   marcarGrupo(grupo: any, event?: MouseEvent) {
-    if (event) event.stopPropagation();
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     
     this.grupoService.toggleStar(grupo.id).subscribe({
       next: (resp: any) => {
@@ -106,11 +297,11 @@ export class ListGrupoComponent {
           const message = grupo.is_starred ? 'Grupo marcado' : 'Marca removida';
           this.toast.success(message, 'Éxito');
           
-          // Reordenar lista para mostrar primero los marcados
           this.GRUPOS.sort((a: any, b: any) => {
             if (a.is_starred === b.is_starred) return 0;
             return a.is_starred ? -1 : 1;
           });
+          this.updatePaginatedGrupos();
         }
       },
       error: (error) => {
@@ -120,214 +311,27 @@ export class ListGrupoComponent {
     });
   }
 
-  // 👥 Ver miembros del grupo - ✅ VERSIÓN CORREGIDA
-  verMiembros(grupo: any, event?: MouseEvent) {
-    // Evitar que se propague el evento (para que no abra el link del grupo)
+  /**
+   * ✅ SOLUCIÓN PROBLEMAS 3 y 4: Navegar al tablero pasando origen
+   */
+  goToTablero(grupoId: number, event?: MouseEvent) {
+    if (event && (event.target as HTMLElement).closest('.grupo-options-modern')) {
+      return;
+    }
+    
+    console.log('🔗 Navegando al tablero del grupo:', grupoId, 'desde list-grupo');
+    // ✅ SOLUCIÓN PROBLEMA 4: Pasar queryParams con el origen
+    this.router.navigate(['/tasks/tareas/tablero', grupoId], {
+      queryParams: { from: 'list-grupo', workspaceId: this.workspaceId }
+    });
+  }
+
+  configPermisos(grupo: any, event?: MouseEvent) {
     if (event) {
       event.preventDefault();
       event.stopPropagation();
     }
     
-    console.log('🔍 Ver miembros del grupo:', grupo.id);
-    console.log('📋 Grupo completo:', grupo);
-    
-    // ✅ PASO 1: Establecer el grupo seleccionado (copia completa del objeto)
-    this.selectedGrupo = { ...grupo }; // ← Hacer copia para evitar mutación
-    
-    // ✅ PASO 2: Limpiar miembros anteriores
-    this.miembrosGrupo = [];
-    
-    // ✅ PASO 3: Mostrar loading
-    this.loadingMiembros = true;
-    
-    // ✅ PASO 4: Abrir el modal ANTES de cargar los datos (con loading visible)
-    this.openMiembrosModal();
-    
-    // ✅ PASO 5: Cargar los miembros del grupo desde el backend
-    this.grupoService.getSharedUsers(grupo.id).subscribe({
-      next: (resp: any) => {
-        console.log('✅ Respuesta de miembros:', resp);
-        
-        if (resp.message === 200) {
-          // ✅ Asignar los miembros compartidos
-          this.miembrosGrupo = resp.shared_users || [];
-          
-          // ✅ Actualizar selectedGrupo con la info de shared_with
-          this.selectedGrupo.shared_with = resp.shared_users || [];
-          
-          console.log('👥 Miembros cargados:', this.miembrosGrupo);
-          console.log('📊 Total de miembros:', this.miembrosGrupo.length);
-          console.log('📋 selectedGrupo actualizado:', this.selectedGrupo);
-        } else {
-          console.warn('⚠️ Respuesta inesperada del servidor:', resp);
-          this.toast.warning('No se pudieron cargar los miembros', 'Advertencia');
-        }
-        
-        // ✅ CRÍTICO: Desactivar loading
-        this.loadingMiembros = false;
-        
-        // ✅ SOLUCIÓN: Forzar detección de cambios
-        this.cdr.detectChanges();
-        
-        console.log('✅ Vista actualizada, loading:', this.loadingMiembros);
-      },
-      error: (error) => {
-        console.error('❌ Error al cargar miembros:', error);
-        console.error('Detalles del error:', {
-          status: error.status,
-          statusText: error.statusText,
-          message: error.message,
-          error: error.error
-        });
-        
-        this.loadingMiembros = false;
-        this.cdr.detectChanges(); // ✅ También forzar en error
-        this.toast.error('No se pudieron cargar los miembros del grupo', 'Error');
-        
-        // ✅ Cerrar el modal si hay error
-        this.closeMiembrosModal();
-      }
-    });
-  }
-
-  // ✅ Método mejorado para abrir el modal de miembros
-  openMiembrosModal() {
-    const modalElement = document.getElementById('miembrosModal');
-    
-    if (!modalElement) {
-      console.error('❌ Modal element not found');
-      return;
-    }
-    
-    // Verificar si Bootstrap está disponible
-    if (typeof (window as any).bootstrap !== 'undefined') {
-      // Usar Bootstrap 5 nativo
-      const modal = new (window as any).bootstrap.Modal(modalElement);
-      modal.show();
-      
-      console.log('✅ Modal abierto con Bootstrap 5');
-    } else {
-      // Alternativa: agregar clase show manualmente
-      modalElement.classList.add('show');
-      modalElement.style.display = 'block';
-      document.body.classList.add('modal-open');
-      
-      // Crear backdrop
-      const backdrop = document.createElement('div');
-      backdrop.className = 'modal-backdrop fade show';
-      backdrop.id = 'miembros-backdrop';
-      document.body.appendChild(backdrop);
-      
-      console.log('✅ Modal abierto manualmente');
-    }
-  }
-
-  // ✅ Cerrar modal manualmente
-  closeMiembrosModal() {
-    const modalElement = document.getElementById('miembrosModal');
-    const backdrop = document.getElementById('miembros-backdrop');
-    
-    if (modalElement) {
-      // Si Bootstrap está disponible, usarlo
-      if (typeof (window as any).bootstrap !== 'undefined') {
-        const modalInstance = (window as any).bootstrap.Modal.getInstance(modalElement);
-        if (modalInstance) {
-          modalInstance.hide();
-        }
-      } else {
-        // Cerrar manualmente
-        modalElement.classList.remove('show');
-        modalElement.style.display = 'none';
-        document.body.classList.remove('modal-open');
-      }
-    }
-    
-    if (backdrop) {
-      backdrop.remove();
-    }
-    
-    // ✅ Limpiar datos al cerrar
-    setTimeout(() => {
-      this.selectedGrupo = null;
-      this.miembrosGrupo = [];
-      this.loadingMiembros = false;
-    }, 300);
-    
-    console.log('✅ Modal cerrado');
-  }
-
-  // 🔄 Abrir modal de compartir desde el modal de miembros
-  openShareModal() {
-    // ✅ OPCIÓN 1: Buscar el grupo actualizado desde la lista GRUPOS
-    const grupoActualizado = this.GRUPOS.find((g: any) => g.id === this.selectedGrupo.id);
-    
-    // Cerrar el modal de miembros primero
-    this.closeMiembrosModal();
-    
-    if (grupoActualizado) {
-      console.log('✅ Grupo encontrado en GRUPOS, abriendo modal de compartir');
-      
-      // Abrir el modal de compartir con el grupo de la lista
-      setTimeout(() => {
-        this.shareGrupo(grupoActualizado);
-      }, 300);
-    } else {
-      console.warn('⚠️ Grupo no encontrado en GRUPOS, cargando desde servidor...');
-      
-      // ✅ OPCIÓN 2 (FALLBACK): Si no está en la lista, usar el selectedGrupo directamente
-      // Esto puede pasar si el usuario cambió de página en la lista
-      setTimeout(() => {
-        this.shareGrupo(this.selectedGrupo);
-      }, 300);
-    }
-  }
-
-  // ⚙️ Toggle del menú de opciones
-  toggleMenu(id: number, event: MouseEvent) {
-    event.stopPropagation();
-    this.openMenuId = this.openMenuId === id ? null : id;
-  }
-
-  // 🚫 Cerrar menú al hacer clic fuera
-  @HostListener('document:click', ['$event'])
-  closeMenu(event: MouseEvent) {
-    this.openMenuId = null;
-  }
-
-  // Mostrar tooltip
-  showTooltip(grupoId: number) {
-    this.activeTooltip = grupoId;
-  }
-
-  // Ocultar tooltip
-  hideTooltip(grupoId: number) {
-    this.activeTooltip = null;
-  }
-
-  // Método auxiliar para cerrar menú y ejecutar acción
-  closeMenuAnd(action: string, grupo: any) {
-    this.openMenuId = null;
-    switch (action) {
-      case 'marcarGrupo':
-        this.marcarGrupo(grupo);
-        break;
-      case 'shareGrupo':
-        this.shareGrupo(grupo);
-        break;
-      case 'configPermisos':
-        this.openPermissionsModal(grupo);
-        break;
-      case 'editGrupo':
-        this.editGrupo(grupo);
-        break;
-      case 'deleteGrupo':
-        this.deleteGrupo(grupo);
-        break;
-    }
-  }
-
-  openPermissionsModal(grupo: any) {
-    // Solo el propietario puede acceder a los permisos
     if (!grupo.is_owner) {
       this.toast.warning('Solo el creador del grupo puede gestionar permisos');
       return;
@@ -339,64 +343,154 @@ export class ListGrupoComponent {
     });
     
     modalRef.componentInstance.GRUPO_SELECTED = grupo;
-    
-    modalRef.componentInstance.PermisosChanged.subscribe((grupoActualizado: any) => {
-      // Actualizar el grupo en la lista si es necesario
-      const index = this.GRUPOS.findIndex((g: any) => g.id === grupoActualizado.id);  // ✅ CAMBIAR A GRUPOS
-      if (index !== -1) {
-        this.GRUPOS[index] = { ...this.GRUPOS[index], ...grupoActualizado };  // ✅ CAMBIAR A GRUPOS
-      }
-      this.toast.success('Permisos actualizados correctamente');
+    modalRef.componentInstance.PermisosChanged.subscribe(() => {
+      this.listGruposByWorkspace();
     });
   }
 
   /**
-   * 🎨 Obtener la ruta correcta del avatar del propietario del grupo
+   * ✅ SOLUCIÓN PROBLEMA 1: Toggle menú con posicionamiento dinámico
    */
-  getUserAvatar(): string {
-    // Obtener el usuario del grupo seleccionado (propietario)
-    const userToCheck = this.selectedGrupo?.user;
+  toggleMenu(id: number, event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
     
-    if (userToCheck?.avatar) {
-      return this.getAvatarUrl(userToCheck.avatar);
+    this.openMenuId = this.openMenuId === id ? null : id;
+
+    if (this.openMenuId === id) {
+      setTimeout(() => this.positionMenu(event), 0);
     }
-    
-    // Avatar por defecto
-    return 'assets/media/avatars/blank.png';
   }
 
   /**
-   * 🎨 Obtener la ruta correcta del avatar de un miembro
+   * ✅ SOLUCIÓN PROBLEMA 1: Posicionar menú dinámicamente con position: fixed
    */
-  getMemberAvatar(member: any): string {
-    if (member?.avatar) {
-      return this.getAvatarUrl(member.avatar);
-    }
+  private positionMenu(event: MouseEvent) {
+    const button = event.target as HTMLElement;
+    const buttonRect = button.getBoundingClientRect();
+    const menu = button.closest('.grupo-options-modern')?.querySelector('.menu.show') as HTMLElement;
     
-    // Avatar por defecto
-    return 'assets/media/avatars/blank.png';
+    if (menu) {
+      menu.style.top = `${buttonRect.bottom + 5}px`;
+      menu.style.left = `${buttonRect.right - 200}px`;
+    }
+  }
+
+  closeMenu() {
+    this.openMenuId = null;
+  }
+
+  @HostListener('document:click', ['$event'])
+  closeMenuOnClickOutside() {
+    this.openMenuId = null;
   }
 
   /**
-   * 🔧 Helper genérico para construir la URL del avatar
-   * Maneja los formatos: "1.png", "2.png", URLs completas, y rutas storage
+   * ✅ SOLUCIÓN PROBLEMA 3: Pasar evento a todas las acciones
    */
-  private getAvatarUrl(avatarValue: string): string {
-    if (!avatarValue) {
+  closeMenuAnd(action: string, grupo: any, event?: MouseEvent) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    this.closeMenu();
+    
+    setTimeout(() => {
+      switch (action) {
+        case 'marcarGrupo':
+          this.marcarGrupo(grupo, event);
+          break;
+        case 'shareGrupo':
+          this.shareGrupo(grupo, event);
+          break;
+        case 'configPermisos':
+          this.configPermisos(grupo, event);
+          break;
+        case 'editGrupo':
+          this.editGrupo(grupo, event);
+          break;
+        case 'deleteGrupo':
+          this.deleteGrupo(grupo, event);
+          break;
+      }
+    }, 100);
+  }
+
+  getGrupoImageUrl(imagen: string): string {
+    if (!imagen) {
+      return 'assets/media/fondos/fondo1.png';
+    }
+    
+    if (!imagen.includes('/') && !imagen.includes('http')) {
+      return `assets/media/fondos/${imagen}`;
+    }
+    
+    return imagen;
+  }
+
+  getAvatarUrl(avatar: string): string {
+    if (!avatar) {
       return 'assets/media/avatars/blank.png';
     }
     
-    // Si ya es solo el nombre del archivo (ejemplo: "3.png")
-    if (avatarValue.match(/^\d+\.png$/)) {
-      return `assets/media/avatars/${avatarValue}`;
+    if (avatar.match(/^\d+\.png$/)) {
+      return `assets/media/avatars/${avatar}`;
     }
     
-    // Si contiene la ruta completa, usarla tal cual (retrocompatibilidad)
-    if (avatarValue.includes('http') || avatarValue.includes('storage')) {
-      return avatarValue;
+    if (avatar.includes('http') || avatar.includes('storage')) {
+      return avatar;
     }
     
-    // Si no coincide con ningún patrón, intentar construir la ruta
-    return `assets/media/avatars/${avatarValue}`;
+    return `assets/media/avatars/${avatar}`;
+  }
+
+  openMiembrosModal() {}
+
+  closeMiembrosModal() {
+    this.selectedGrupo = null;
+    this.miembrosGrupo = [];
+  }
+
+  verMiembros(grupo: any, event?: MouseEvent) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    this.selectedGrupo = { ...grupo };
+    this.miembrosGrupo = [];
+    this.loadingMiembros = true;
+    this.openMiembrosModal();
+    
+    this.grupoService.getSharedUsers(grupo.id).subscribe({
+      next: (resp: any) => {
+        if (resp.message === 200) {
+          this.miembrosGrupo = resp.shared_users || [];
+          this.selectedGrupo.shared_with = resp.shared_users || [];
+        }
+        this.loadingMiembros = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar miembros:', error);
+        this.loadingMiembros = false;
+        this.cdr.detectChanges();
+        this.toast.error('No se pudieron cargar los miembros del grupo', 'Error');
+        this.closeMiembrosModal();
+      }
+    });
+  }
+
+  showTooltip(grupoId: number) {
+    this.activeTooltip = grupoId;
+  }
+
+  hideTooltip() {
+    this.activeTooltip = null;
+  }
+
+  toggleShowAllUsers(grupoId: number) {
+    this.showAllUsers[grupoId] = !this.showAllUsers[grupoId];
   }
 }

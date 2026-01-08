@@ -38,6 +38,16 @@ export class GrupoService {
     );
   }
 
+  // ✅ NUEVO: Obtener un grupo específico por ID
+  getGrupo(grupoId: number) {
+    this.isLoadingSubject.next(true);
+    let headers = new HttpHeaders({'Authorization': 'Bearer ' + this.authservice.token});
+    let URL = URL_SERVICIOS + `/grupos/${grupoId}`;
+    return this.http.get(URL, {headers: headers}).pipe(
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
   updateGrupo(ID_GRUPO:string,data:any) {
     this.isLoadingSubject.next(true);
     let headers = new HttpHeaders({'Authorization': 'Bearer '+ this.authservice.token});
