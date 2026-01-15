@@ -1,0 +1,61 @@
+// Estilos para el calendario
+:host ::ng-deep {
+    .fc {
+        // Estilos generales del calendario
+        .fc-toolbar-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        // Botones del calendario
+        .fc-button {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            text-transform: capitalize;
+            
+            &:hover {
+                opacity: 0.8;
+            }
+        }
+
+        // Días de la semana
+        .fc-col-header-cell {
+            padding: 0.75rem;
+            font-weight: 600;
+            background-color: #f5f8fa;
+        }
+
+        // Celdas de días
+        .fc-daygrid-day {
+            cursor: pointer;
+            
+            &:hover {
+                background-color: #f5f8fa;
+            }
+        }
+
+        // Número del día
+        .fc-daygrid-day-number {
+            padding: 0.5rem;
+            font-weight: 500;
+        }
+
+        // Eventos
+        .fc-event {
+            cursor: pointer;
+            padding: 2px 4px;
+            margin: 2px 0;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            
+            &:hover {
+                opacity: 0.85;
+            }
+        }
+
+        // Día actual
+        .fc-day-today {
+            background-color: rgba(55, 136, 216, 0.1) !important;
+        }
+    }
+}

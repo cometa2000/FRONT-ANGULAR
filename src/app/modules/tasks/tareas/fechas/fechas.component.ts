@@ -47,14 +47,14 @@ export class FechasComponent implements OnInit {
           this.currentDueDate = resp.tarea.due_date || '';
           this.hasDates = !!(this.currentStartDate || this.currentDueDate);
 
-          // Para abrir modal con lo actual
-          this.startDate = this.currentStartDate || '';
-          this.dueDate = this.currentDueDate || '';
+          // Para el formulario, usar formato correcto para inputs
+          this.startDate = this.convertToInputFormat(this.currentStartDate);
+          this.dueDate = this.convertToInputFormat(this.currentDueDate);
 
           // enableDates en función de si hay fechas cargadas
           this.enableDates = this.hasDates;
           
-          // 🆕 Cargar estado de notificaciones
+          // Cargar estado de notificaciones
           this.currentNotificationsEnabled = resp.tarea.notifications_enabled || false;
           this.currentNotificationDaysBefore = resp.tarea.notification_days_before || 1;
           this.enableNotifications = this.currentNotificationsEnabled;
@@ -62,8 +62,10 @@ export class FechasComponent implements OnInit {
           
           console.log('📅 Fechas y notificaciones cargadas:', {
             hasDates: this.hasDates,
-            start_date: this.currentStartDate,
-            due_date: this.currentDueDate,
+            start_date_raw: this.currentStartDate,
+            start_date_formatted: this.startDate,
+            due_date_raw: this.currentDueDate,
+            due_date_formatted: this.dueDate,
             notifications_enabled: this.currentNotificationsEnabled,
             notification_days_before: this.currentNotificationDaysBefore
           });
@@ -77,12 +79,27 @@ export class FechasComponent implements OnInit {
 
   openModal(): void {
     this.showModal = true;
-    // Sincronizamos el formulario con el estado actual
-    this.startDate = this.currentStartDate || new Date().toISOString().split('T')[0];
-    this.dueDate = this.currentDueDate || '';
-    this.enableDates = !!(this.currentStartDate || this.currentDueDate);
     
-    // 🆕 Sincronizar notificaciones
+    // Si ya hay fechas, cargar las actuales en formato correcto para inputs
+    if (this.hasDates) {
+      this.startDate = this.convertToInputFormat(this.currentStartDate);
+      this.dueDate = this.convertToInputFormat(this.currentDueDate);
+      this.enableDates = true;
+      
+      console.log('📅 Fechas convertidas para inputs:', {
+        currentStartDate: this.currentStartDate,
+        startDate: this.startDate,
+        currentDueDate: this.currentDueDate,
+        dueDate: this.dueDate
+      });
+    } else {
+      // Si no hay fechas, asignar fecha actual como inicio
+      this.startDate = new Date().toISOString().split('T')[0];
+      this.dueDate = '';
+      this.enableDates = true;
+    }
+    
+    // Sincronizar notificaciones
     this.enableNotifications = this.currentNotificationsEnabled;
     this.notificationDaysBefore = this.currentNotificationDaysBefore || 1;
   }
@@ -96,6 +113,35 @@ export class FechasComponent implements OnInit {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
     return d.toLocaleDateString();
+  }
+
+  /**
+   * Convertir fecha a formato YYYY-MM-DD para inputs type="date"
+   */
+  private convertToInputFormat(dateStr: string): string {
+    if (!dateStr) return '';
+    
+    try {
+      // Crear objeto Date desde la cadena
+      const date = new Date(dateStr);
+      
+      // Verificar si es una fecha válida
+      if (isNaN(date.getTime())) {
+        console.warn('Fecha inválida:', dateStr);
+        return '';
+      }
+      
+      // Obtener año, mes y día
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      
+      // Retornar en formato YYYY-MM-DD
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      console.error('Error al convertir fecha:', error);
+      return '';
+    }
   }
 
   isOverdue(): boolean {

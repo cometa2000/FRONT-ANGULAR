@@ -1925,3 +1925,265 @@ $elegant-border: #e2e8f0;
     opacity: 0;
   }
 }
+
+/* ========================================
+   🆕 ESTILOS PARA SECCIÓN DE ADJUNTOS
+   ======================================== */
+
+.adjuntos-group {
+  margin-bottom: 1.5rem;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.adjuntos-group-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #344563;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e3e6ef;
+  
+  i {
+    color: #7e8299;
+    font-size: 1rem;
+  }
+}
+
+.adjuntos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.adjunto-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem;
+  background: #f9fafb;
+  border: 1px solid #e3e6ef;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #f5f8fa;
+    border-color: #d1d5db;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+}
+
+.adjunto-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid #e3e6ef;
+  border-radius: 6px;
+  font-size: 1.25rem;
+  
+  i {
+    color: #7e8299;
+  }
+}
+
+// Iconos específicos por tipo
+.enlace-item .adjunto-icon i {
+  color: #0079BF;
+}
+
+.archivo-item .adjunto-icon {
+  .fa-file-image { color: #51E898; }
+  .fa-file-pdf { color: #EB5A46; }
+  .fa-file-word { color: #0079BF; }
+  .fa-file-excel { color: #61BD4F; }
+  .fa-file-powerpoint { color: #FF9F1A; }
+  .fa-file-alt { color: #7e8299; }
+  .fa-file-csv { color: #61BD4F; }
+}
+
+.adjunto-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.adjunto-nombre {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #344563;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.25rem;
+  
+  &:hover {
+    color: #0079BF;
+  }
+}
+
+.adjunto-url {
+  font-size: 0.8rem;
+  color: #7e8299;
+  text-decoration: none;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  
+  &:hover {
+    color: #0079BF;
+    text-decoration: underline;
+  }
+}
+
+.adjunto-tiempo {
+  font-size: 0.8rem;
+  color: #7e8299;
+}
+
+.adjunto-acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: #7e8299;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: #e3e6ef;
+      color: #344563;
+    }
+    
+    &.delete:hover {
+      background: #fee;
+      color: #d32f2f;
+    }
+    
+    i {
+      font-size: 0.875rem;
+    }
+  }
+}
+
+/* ========================================
+   🆕 INFO ROW PARA FECHAS
+   ======================================== */
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+  color: #344563;
+  
+  i {
+    color: #7e8299;
+    width: 18px;
+  }
+  
+  &.overdue {
+    color: #d32f2f;
+    font-weight: 600;
+    
+    i {
+      color: #d32f2f;
+    }
+  }
+  
+  &.due-soon {
+    color: #FF9F1A;
+    font-weight: 600;
+    
+    i {
+      color: #FF9F1A;
+    }
+  }
+}
+
+/* ========================================
+   🆕 BADGE PARA CONTADORES
+   ======================================== */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 12px;
+  
+  &.badge-primary {
+    background: #0079BF;
+    color: #ffffff;
+  }
+  
+  &.badge-secondary {
+    background: #e3e6ef;
+    color: #7e8299;
+  }
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  
+  h3 {
+    flex: 1;
+    margin: 0;
+  }
+}
+
+.section-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.btn-action-icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid #e3e6ef;
+  border-radius: 6px;
+  color: #7e8299;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #f5f8fa;
+    border-color: #0079BF;
+    color: #0079BF;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  &.btn-danger:hover {
+    background: #fee;
+    border-color: #d32f2f;
+    color: #d32f2f;
+  }
+}

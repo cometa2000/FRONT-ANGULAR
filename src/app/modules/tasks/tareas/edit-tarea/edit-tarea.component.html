@@ -45,13 +45,13 @@
         <!-- ✅ ACCIONES LATERALES - Solo mostrar si tiene permisos -->
         <div class="tarea-actions" *ngIf="hasWriteAccess">
           <div class="mb-3">
-               <app-etiquetas [tareaId]="tarea.id" (etiquetasChanged)="loadTarea()"></app-etiquetas>
+               <app-etiquetas [tareaId]="tarea.id" (etiquetasChanged)="onEtiquetasChanged()"></app-etiquetas>
           </div>
           <div class="mb-3">
-               <app-fechas [tareaId]="tarea.id" (fechasChanged)="loadTarea()"></app-fechas>
+               <app-fechas [tareaId]="tarea.id" (fechasActualizadas)="onFechasActualizadas($event)"></app-fechas>
           </div>
           <div class="mb-3">
-               <app-checklists [tareaId]="tarea.id" (checklistsChanged)="loadTarea()"></app-checklists>
+               <app-checklists [tareaId]="tarea.id" (checklistsChanged)="onChecklistsChanged()"></app-checklists>
           </div>
           <div class="mb-3">
               <button class="btn-light" (click)="abrirModalAdjuntar()">
@@ -76,7 +76,7 @@
       <div class="scroll-sections">
 
         
-        <!-- SECCIÓN DE MIEMBROS ASIGNADOS -->
+        <!-- 🆕 SECCIÓN DE MIEMBROS ASIGNADOS - Solo mostrar si hay miembros -->
         <div class="trello-section" *ngIf="miembrosAsignados.length > 0">
           <div class="section-header">
             
@@ -114,19 +114,10 @@
                 </div>
               </div>
             </div>
-
-            <div class="empty-state" *ngIf="miembrosAsignados.length === 0">
-              <i class="fa-solid fa-users fa-3x mb-3 text-muted"></i>
-              <p class="text-muted">No hay miembros asignados a esta tarea</p>
-              <!-- ✅ Solo mostrar botón si tiene permisos -->
-              <button *ngIf="hasWriteAccess" class="btn btn-outline-primary btn-sm" (click)="abrirModalMiembros()">
-                <i class="fa-solid fa-user-plus me-2"></i>Asignar Miembros
-              </button>
-            </div>
           </div>
         </div>
 
-        <!-- ETIQUETAS -->
+        <!-- 🆕 ETIQUETAS - Solo mostrar si hay etiquetas -->
         <div class="section" *ngIf="tarea.etiquetas && tarea.etiquetas.length > 0">
           <div class="section-header">
             <i class="fa-solid fa-tag"></i>
@@ -160,6 +151,44 @@
             </div>
           </div>
         </div>
+
+        <!-- 🆕 FECHAS - Solo mostrar si hay fechas -->
+        <div class="section mt-5" *ngIf="hasFechas()">
+          <div class="section-header">
+            <i class="fa-regular fa-calendar"></i>
+            <h3>Fechas</h3>
+            
+            <!-- 🆕 Botones de acción para editar y eliminar - Solo si tiene permisos -->
+            <div class="section-actions" *ngIf="hasWriteAccess">
+              <button class="btn-action-icon" (click)="abrirModalEditarFechas()" title="Editar fechas">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button class="btn-action-icon btn-danger" (click)="eliminarFechas()" title="Eliminar fechas">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="section-body">
+            <div class="info-row" *ngIf="tarea.start_date">
+              <i class="fa-regular fa-calendar-check"></i>
+              <span>Inicio: {{ tarea.start_date | date: 'dd MMM yyyy' }}</span>
+            </div>
+
+            <div class="info-row" 
+                *ngIf="tarea.due_date"
+                [ngClass]="{'overdue': tarea.is_overdue, 'due-soon': tarea.is_due_soon && !tarea.is_overdue}">
+              <i class="fa-regular fa-calendar"></i>
+              <span>Vencimiento: {{ tarea.due_date | date: 'dd MMM yyyy' }}</span>
+            </div>
+
+            <!-- 🆕 Mostrar info de notificaciones si están habilitadas -->
+            <div class="info-row" *ngIf="tarea.notifications_enabled">
+              <i class="fa-regular fa-bell"></i>
+              <span>Notificaciones: {{ tarea.notification_days_before }} día(s) antes</span>
+            </div>
+          </div>
+        </div>
         
         <!-- DESCRIPCIÓN -->
         <div class="section" >
@@ -189,8 +218,8 @@
               Sin descripción
             </p>
 
-            <div *ngIf="editingDescription && hasWriteAccess">
-              <textarea [(ngModel)]="tarea.description" class="form-textarea" rows="4" placeholder="Añade una descripción más detallada..."></textarea>
+            <div *ngIf="editingDescription && hasWriteAccess" class="edit-area">
+              <textarea [(ngModel)]="tarea.description" placeholder="Añadir una descripción más detallada..." rows="4"></textarea>
 
               <div class="action-row">
                 <button class="btn-blue" (click)="saveDescription()">Guardar</button>
@@ -200,88 +229,122 @@
           </div>
         </div>
 
-        <!-- FECHAS -->
-        <div class="section">
+        <!-- 🆕 ADJUNTOS - Solo mostrar si hay adjuntos -->
+        <div class="section" *ngIf="tieneAdjuntos()">
           <div class="section-header">
-            <i class="fa-regular fa-calendar"></i>
-            <h3>Fechas</h3>
-            <!-- ✅ Solo mostrar botón editar si tiene permisos -->
-            <button *ngIf="hasWriteAccess && !editingFechas" class="link-btn" (click)="toggleEditFechas()">Editar</button>
+            <i class="fa-solid fa-paperclip"></i>
+            <h3>Adjuntos</h3>
+            <span class="badge badge-secondary">
+              {{ adjuntos.archivos.length + adjuntos.enlaces.length }}
+            </span>
           </div>
 
           <div class="section-body">
-            <div *ngIf="!editingFechas">
-              <div class="info-row" *ngIf="tarea.start_date">
-                <i class="fa-regular fa-calendar-check"></i>
-                <span>Inicio: {{ tarea.start_date | date: 'dd MMM, HH:mm' }}</span>
+            <!-- ENLACES -->
+            <div *ngIf="adjuntos.enlaces.length > 0" class="adjuntos-group">
+              <div class="adjuntos-group-title">
+                <i class="fa-solid fa-link"></i>
+                <span>Enlaces ({{ adjuntos.enlaces.length }})</span>
               </div>
-
-              <div class="info-row" 
-                   *ngIf="tarea.due_date"
-                   [ngClass]="{'overdue': tarea.is_overdue, 'due-soon': tarea.is_due_soon && !tarea.is_overdue}">
-                <i class="fa-regular fa-calendar"></i>
-                <span>{{ tarea.due_date | date: 'dd MMM, HH:mm' }}</span>
+              <div class="adjuntos-list">
+                <div *ngFor="let enlace of adjuntos.enlaces; let i = index" class="adjunto-item enlace-item">
+                  <div class="adjunto-icon"><i class="fa-solid fa-link"></i></div>
+                  <div class="adjunto-info">
+                    <div class="adjunto-nombre" (click)="abrirEnlace(enlace.url)" style="cursor:pointer;">{{ enlace.nombre }}</div>
+                    <a [href]="enlace.url" target="_blank" class="adjunto-url">{{ enlace.url }}</a>
+                  </div>
+                  <div class="adjunto-acciones">
+                    <button class="btn-icon" (click)="abrirEnlace(enlace.url)" title="Abrir enlace">
+                      <i class="fa-solid fa-external-link-alt"></i>
+                    </button>
+                    <!-- ✅ Solo mostrar botón eliminar si tiene permisos -->
+                    <button *ngIf="hasWriteAccess && enlace.id" class="btn-icon delete" (click)="eliminarEnlace(enlace.id)" title="Eliminar enlace">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div *ngIf="editingFechas && hasWriteAccess">
-              <div class="date-form">
-                <div class="form-group">
-                  <label>Fecha de inicio</label>
-                  <input type="datetime-local" [(ngModel)]="startDate" class="date-input">
-                </div>
-
-                <div class="form-group">
-                  <label>Fecha de vencimiento</label>
-                  <input type="datetime-local" [(ngModel)]="dueDate" class="date-input">
-                </div>
+            <!-- ARCHIVOS -->
+            <div *ngIf="adjuntos.archivos.length > 0" class="adjuntos-group">
+              <div class="adjuntos-group-title">
+                <i class="fa-solid fa-file"></i>
+                <span>Archivos ({{ adjuntos.archivos.length }})</span>
               </div>
-
-              <div class="action-row">
-                <button class="btn-blue" (click)="saveFechas()">Guardar</button>
-                <button class="btn-light" (click)="cancelEditFechas()">Cancelar</button>
+              <div class="adjuntos-list">
+                <div *ngFor="let archivo of adjuntos.archivos; let i = index" class="adjunto-item archivo-item">
+                  <div class="adjunto-icon">
+                    <i class="fa-solid" [ngClass]="obtenerIconoArchivo(archivo.tipo)"></i>
+                  </div>
+                  <div class="adjunto-info">
+                    <div class="adjunto-nombre">{{ archivo.nombre }}</div>
+                    <span class="adjunto-tiempo">{{ tiempoRelativo(archivo.tiempo_subida) }}</span>
+                  </div>
+                  <div class="adjunto-acciones">
+                    <button 
+                      class="btn-icon" 
+                      *ngIf="esArchivoVisualizable(archivo)"
+                      (click)="visualizarArchivo(archivo)"
+                      title="Visualizar archivo">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                    <button 
+                      class="btn-icon" 
+                      (click)="descargarArchivo(archivo)"
+                      title="Descargar archivo">
+                      <i class="fa-solid fa-download"></i>
+                    </button>
+                    <!-- ✅ Solo mostrar botón eliminar si tiene permisos -->
+                    <button 
+                      *ngIf="hasWriteAccess && archivo.id"
+                      class="btn-icon delete" 
+                      (click)="eliminarArchivo(archivo.id)"
+                      title="Eliminar archivo">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        
-
-        <!-- CHECKLISTS -->
+        <!-- 🆕 CHECKLISTS - Solo mostrar si hay checklists -->
         <div class="section" *ngIf="tarea.checklists && tarea.checklists.length > 0">
           <div class="section-header">
-            <i class="fa-solid fa-list-check"></i>
+            <i class="fa-solid fa-check-square"></i>
             <h3>Checklists</h3>
           </div>
 
           <div class="section-body">
-
-            <div *ngFor="let checklist of tarea.checklists" class="checklist-container">
-
+            <div *ngFor="let checklist of tarea.checklists" class="checklist-block">
+              
               <div class="checklist-header">
-                <h4><i class="fa-regular fa-square-check"></i> {{ checklist.name }}</h4>
-                <!-- ✅ Solo mostrar botón eliminar si tiene permisos -->
-                <button *ngIf="hasWriteAccess" class="delete-checklist-btn" (click)="deleteChecklist(checklist.id)">Eliminar</button>
+                <h4>{{ checklist.name }}</h4>
+
+                <!-- ✅ Solo mostrar acciones si tiene permisos -->
+                <div class="checklist-actions" *ngIf="hasWriteAccess">
+                  <button (click)="deleteChecklist(checklist.id)">Eliminar</button>
+                </div>
               </div>
 
-              <div class="checklist-progress" *ngIf="checklist.items.length > 0">
-                <span>{{ getChecklistProgress(checklist) }}%</span>
+              <div class="progress-bar-wrapper" *ngIf="checklist.items && checklist.items.length > 0">
                 <div class="progress-bar">
-                  <div class="progress-fill"
-                       [ngClass]="{'completed': getChecklistProgress(checklist) === 100}"
-                       [style.width.%]="getChecklistProgress(checklist)">
-                  </div>
+                  <div class="progress-fill" [style.width.%]="checklist.progress || 0"></div>
                 </div>
+                <span class="progress-text">{{ checklist.progress || 0 }}%</span>
               </div>
 
               <div class="checklist-items">
                 <div *ngFor="let item of checklist.items" class="checklist-item">
 
-                  <!-- ✅ Deshabilitar checkbox si no tiene permisos -->
-                  <input type="checkbox"
-                         [checked]="item.completed"
-                         [disabled]="!hasWriteAccess"
-                         (change)="toggleChecklistItem(checklist.id, item.id)">
+                  <!-- ✅ Checkbox solo editable si tiene permisos -->
+                  <input 
+                    type="checkbox" 
+                    [checked]="item.completed" 
+                    [disabled]="!hasWriteAccess"
+                    (change)="toggleChecklistItem(checklist.id, item)">
 
                   <div class="item-content">
                     <span class="item-name" [ngClass]="{'completed': item.completed}">{{ item.name }}</span>

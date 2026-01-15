@@ -132,7 +132,7 @@
                 class="btn btn-sm btn-icon btn-light btn-active-light-primary"
                 (click)="toggleWorkspaceMenu(workspace.id, $event)"
               >
-                <i class="ki-duotone ki-dots-vertical fs-2">
+                <i class="fa-solid fa-ellipsis-vertical fs-2">
                   <span class="path1"></span>
                   <span class="path2"></span>
                   <span class="path3"></span>
@@ -204,11 +204,7 @@
                       (click)="toggleGrupoMenu(grupo.id, $event)"
                       style="background: rgba(255,255,255,0.2);"
                     >
-                      <i class="ki-duotone ki-dots-vertical fs-3 text-white">
-                        <span class="path1"></span>
-                        <span class="path2"></span>
-                        <span class="path3"></span>
-                      </i>
+                      <i class="fa-solid fa-ellipsis-vertical" style="color: #ffffff;"></i>
                     </button>
 
                     <!-- Menú desplegable del grupo -->
@@ -229,7 +225,7 @@
                       
                       <div class="menu-item px-3" *ngIf="grupo.is_owner">
                         <a class="menu-link px-3" (click)="shareGrupo(grupo, $event)">
-                          <i class="ki-duotone ki-share fs-5 me-2">
+                          <i class="fa-solid fa-share-nodes fs-5 me-2">
                             <span class="path1"></span>
                             <span class="path2"></span>
                           </i>

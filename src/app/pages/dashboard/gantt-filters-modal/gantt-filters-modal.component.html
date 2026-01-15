@@ -1,0 +1,244 @@
+<!-- ========================================
+     🔧 MODAL DE FILTROS DEL GANTT
+     ======================================== -->
+<div class="modal-content">
+  
+  <!-- Header -->
+  <div class="modal-header">
+    <h2 class="modal-title">
+      <i class="ki-duotone ki-filter fs-2 me-2">
+        <span class="path1"></span>
+        <span class="path2"></span>
+      </i>
+      Configurar Filtros del Gantt
+    </h2>
+    <button 
+      type="button" 
+      class="btn btn-sm btn-icon btn-active-light-primary" 
+      (click)="closeModal()"
+    >
+      <i class="ki-duotone ki-cross fs-2">
+        <span class="path1"></span>
+        <span class="path2"></span>
+      </i>
+    </button>
+  </div>
+
+  <!-- Body -->
+  <div class="modal-body">
+    
+    <!-- 📅 Sección: Rango de Fechas -->
+    <div class="mb-8">
+      <h4 class="mb-4">
+        <i class="ki-duotone ki-calendar-8 fs-3 me-2 text-primary">
+          <span class="path1"></span>
+          <span class="path2"></span>
+          <span class="path3"></span>
+          <span class="path4"></span>
+          <span class="path5"></span>
+          <span class="path6"></span>
+        </i>
+        Rango de Fechas
+      </h4>
+
+      <!-- Botones de periodos predefinidos -->
+      <div class="mb-4">
+        <label class="form-label text-muted fs-7">Periodos rápidos:</label>
+        <div class="btn-group w-100" role="group">
+          <button 
+            type="button" 
+            class="btn btn-sm btn-light"
+            (click)="setPresetPeriod('week')"
+          >
+            Semana
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-sm btn-light"
+            (click)="setPresetPeriod('month')"
+          >
+            Mes
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-sm btn-light"
+            (click)="setPresetPeriod('quarter')"
+          >
+            Trimestre
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-sm btn-light"
+            (click)="setPresetPeriod('year')"
+          >
+            Año
+          </button>
+        </div>
+      </div>
+
+      <!-- Selectores de fecha -->
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label required">Fecha Inicial</label>
+          <input 
+            type="date" 
+            class="form-control" 
+            [(ngModel)]="filters.start_date"
+          />
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label required">Fecha Final</label>
+          <input 
+            type="date" 
+            class="form-control" 
+            [(ngModel)]="filters.end_date"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="separator my-6"></div>
+
+    <!-- 🎯 Sección: Tipo de Filtro -->
+    <div class="mb-8">
+      <h4 class="mb-4">
+        <i class="ki-duotone ki-abstract-26 fs-3 me-2 text-primary">
+          <span class="path1"></span>
+          <span class="path2"></span>
+        </i>
+        Origen de Tareas
+      </h4>
+
+      <!-- Selector de tipo de filtro -->
+      <div class="mb-4">
+        <label class="form-label required">Tipo de filtro</label>
+        <select 
+          class="form-select" 
+          [(ngModel)]="filters.filter_type"
+          (change)="onFilterTypeChange()"
+        >
+          <option value="all">📋 Todas mis tareas</option>
+          <option value="workspace">🏢 Tareas de un Workspace</option>
+          <option value="grupo">📁 Tareas de un Grupo</option>
+          <option value="shared">👥 Solo tareas compartidas conmigo</option>
+        </select>
+      </div>
+
+      <!-- Selector de Workspace (condicional) -->
+      <div *ngIf="filters.filter_type === 'workspace'" class="mb-4">
+        <label class="form-label required">Seleccionar Workspace</label>
+        <select 
+          class="form-select" 
+          [(ngModel)]="filters.filter_id"
+          (change)="onWorkspaceChange(filters.filter_id!)"
+        >
+          <option [ngValue]="undefined" disabled>-- Selecciona un workspace --</option>
+          <option 
+            *ngFor="let workspace of workspaces" 
+            [ngValue]="workspace.id"
+          >
+            {{ workspace.name }} ({{ workspace.grupos_count }} grupos)
+          </option>
+        </select>
+
+        <!-- Info adicional -->
+        <div class="form-text">
+          Mostrará todas las tareas de los grupos dentro del workspace seleccionado
+        </div>
+      </div>
+
+      <!-- Selector de Grupo (condicional) -->
+      <div *ngIf="filters.filter_type === 'grupo'" class="mb-4">
+        <label class="form-label required">Seleccionar Grupo</label>
+        <select 
+          class="form-select" 
+          [(ngModel)]="filters.filter_id"
+        >
+          <option [ngValue]="undefined" disabled>-- Selecciona un grupo --</option>
+          <optgroup *ngFor="let workspace of workspaces" [label]="workspace.name">
+            <option 
+              *ngFor="let grupo of filteredGrupos | filter: {workspace_id: workspace.id}" 
+              [ngValue]="grupo.id"
+            >
+              {{ grupo.name }}
+              <span *ngIf="!grupo.is_owner"> (Compartido)</span>
+            </option>
+          </optgroup>
+        </select>
+
+        <!-- Info adicional -->
+        <div class="form-text">
+          Mostrará solo las tareas del grupo seleccionado
+        </div>
+      </div>
+
+      <!-- Info para "compartidas" -->
+      <div *ngIf="filters.filter_type === 'shared'" class="alert alert-info d-flex align-items-center">
+        <i class="ki-duotone ki-information-5 fs-2x me-3">
+          <span class="path1"></span>
+          <span class="path2"></span>
+          <span class="path3"></span>
+        </i>
+        <div>
+          <div class="fw-bold">Tareas Compartidas</div>
+          <div class="text-muted fs-7">
+            Mostrará solo las tareas de grupos que otros usuarios han compartido contigo
+          </div>
+        </div>
+      </div>
+
+      <!-- Info para "todas" -->
+      <div *ngIf="filters.filter_type === 'all'" class="alert alert-primary d-flex align-items-center">
+        <i class="ki-duotone ki-abstract-26 fs-2x me-3">
+          <span class="path1"></span>
+          <span class="path2"></span>
+        </i>
+        <div>
+          <div class="fw-bold">Todas las Tareas</div>
+          <div class="text-muted fs-7">
+            Mostrará todas las tareas a las que tienes acceso: propias, compartidas y asignadas
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="modal-footer">
+    <button 
+      type="button" 
+      class="btn btn-light"
+      (click)="resetFilters()"
+      [disabled]="isLoading$ | async"
+    >
+      <i class="ki-duotone ki-arrows-circle fs-5 me-1">
+        <span class="path1"></span>
+        <span class="path2"></span>
+      </i>
+      Resetear
+    </button>
+
+    <button 
+      type="button" 
+      class="btn btn-light"
+      (click)="closeModal()"
+    >
+      Cancelar
+    </button>
+
+    <button 
+      type="button" 
+      class="btn btn-primary"
+      (click)="applyFilters()"
+      [disabled]="isLoading$ | async"
+    >
+      <i class="ki-duotone ki-check fs-5 me-1">
+        <span class="path1"></span>
+        <span class="path2"></span>
+      </i>
+      Aplicar Filtros
+    </button>
+  </div>
+</div>

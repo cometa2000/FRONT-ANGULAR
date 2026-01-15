@@ -1,121 +1,86 @@
-// ========================================
-// 🎨 ESTILOS DE ESPACIOS DE TRABAJO
-// ========================================
+/* ========================================
+   🏢 LIST-WORKSPACE COMPONENT STYLES
+   ✅ SOLUCIÓN: overflow-y visible + z-index alto
+   ======================================== */
 
 .workspaces-container {
   padding: 0;
 }
 
-// ========================================
-// 📌 ENCABEZADO DEL WORKSPACE
-// ========================================
 .workspace-section {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 20px;
-  border: 1px solid #f1f1f4;
-  transition: all 0.3s ease;
-
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  }
+  margin-bottom: 3rem;
+  overflow: visible; /* ✅ Permitir desbordamiento */
 }
 
 .workspace-header {
-  position: relative;
+  padding: 1rem 0;
 }
 
 .workspace-icon-preview {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
-  transition: background-color 0.3s ease;
-
-  i {
-    line-height: 1;
-  }
 }
 
-.workspace-options, .grupo-options {
+/* ✅ SOLUCIÓN PROBLEMA 2: overflow-y visible para NO crear scroll vertical */
+.grupos-horizontal-scroll {
   position: relative;
+  margin: 0 -1rem;
+  padding: 0 1rem;
+  overflow-x: auto;         /* ✅ Scroll horizontal SÍ */
+  overflow-y: visible;      /* ✅ CRÍTICO: NO scroll vertical */
+  padding-bottom: 10rem;    /* ✅ Espacio GIGANTE para menús largos */
+  padding-top: 0.5rem;
+  min-height: 280px;
+  margin-bottom: -8rem;     /* ✅ Compensar padding-bottom */
   
-  .menu {
-    display: none;
-    position: fixed; // ✅ CLAVE
-    background: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    min-width: 200px;
-    z-index: 9999; // ✅ z-index máximo
+  /* Scrollbar styling */
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #cbd4db;
+    border-radius: 4px;
     
-    &.show {
-      display: block;
+    &:hover {
+      background: #a1a5b7;
     }
   }
-}
-
-// ========================================
-// 📁 SCROLL HORIZONTAL DE GRUPOS
-// ========================================
-.grupos-horizontal-scroll {
-  width: 100%;
-  overflow: visible; // ✅ SOLUCIÓN PROBLEMA 2: Cambiar a visible
-  position: relative;
 }
 
 .grupos-scroll-container {
   display: flex;
-  gap: 20px;
-  overflow-x: auto;
-  overflow-y: visible; // ✅ SOLUCIÓN PROBLEMA 2: Cambiar a visible
-  padding: 10px 5px 20px 5px;
-  scroll-behavior: smooth;
-  
-  // Scrollbar personalizada
-  &::-webkit-scrollbar {
-    height: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: #f5f8fa;
-    border-radius: 10px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #cbd4db;
-    border-radius: 10px;
-    transition: background 0.3s ease;
-
-    &:hover {
-      background: #a1aeb7;
-    }
-  }
+  gap: 1.5rem;
+  padding: 0.5rem 0;
+  padding-bottom: 1.5rem;
 }
 
-// ========================================
-// 🎴 TARJETAS DE GRUPOS
-// ========================================
+/* 🎴 Tarjeta de Grupo */
 .grupo-card {
+  position: relative; /* ✅ Contexto para absolute */
+  width: 280px;
   min-width: 280px;
-  max-width: 280px;
-  height: 180px;
+  height: 220px;
   border-radius: 12px;
-  overflow: visible; // ✅ SOLUCIÓN PROBLEMA 2: Permitir que el menú se desborde
+  overflow: visible; /* ✅ CRÍTICO */
   cursor: pointer;
-  position: relative;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  flex-shrink: 0;
-
+  
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    
     .grupo-card-bg {
       transform: scale(1.05);
     }
@@ -126,37 +91,41 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  right: 0;
+  bottom: 0;
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 12px;
   transition: transform 0.3s ease;
-  border-radius: 12px; // ✅ Agregar border-radius
-  overflow: hidden; // ✅ Solo el fondo tiene overflow hidden
   
   &::after {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    right: 0;
+    bottom: 0;
     background: linear-gradient(
-      180deg,
+      to bottom,
       rgba(0, 0, 0, 0.3) 0%,
-      rgba(0, 0, 0, 0.6) 100%
+      rgba(0, 0, 0, 0.5) 50%,
+      rgba(0, 0, 0, 0.7) 100%
     );
+    border-radius: 12px;
   }
 }
 
 .grupo-card-content {
   position: relative;
   z-index: 2;
-  padding: 20px;
   height: 100%;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  border-radius: 12px;
+  overflow: visible; /* ✅ CRÍTICO */
 }
 
 .grupo-card-title {
@@ -164,59 +133,143 @@
   font-weight: 600;
   line-height: 1.3;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  word-break: break-word;
 }
 
 .grupo-card-footer {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-}
-
-.grupo-options {
-  position: relative;
-
-  .menu {
-    display: none;
-    position: absolute;
-    background: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-    min-width: 200px;
-    z-index: 1050; // ✅ SOLUCIÓN PROBLEMA 2: Mayor z-index
-    top: 100%; // ✅ Posicionar debajo del botón
-    right: 0;
-    margin-top: 0.5rem;
-
-    &.show {
-      display: block;
+  align-items: center;
+  
+  .symbol-group {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    
+    .symbol {
+      margin-left: -8px;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      
+      &:first-child {
+        margin-left: 0;
+      }
     }
   }
 }
 
-// ========================================
-// ➕ TARJETA DE AGREGAR GRUPO
-// ========================================
+/* ✅ SOLUCIÓN: Menú del grupo con z-index EXTREMO */
+.grupo-options {
+  position: relative;
+  z-index: 20; /* ✅ Alto */
+  
+  .btn-icon {
+    position: relative;
+    z-index: 21;
+    pointer-events: auto;
+  }
+  
+  .menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25); /* ✅ Sombra fuerte */
+    min-width: 200px;
+    z-index: 99999; /* ✅ z-index EXTREMO */
+    pointer-events: auto;
+    
+    &.show {
+      display: block;
+    }
+    
+    /* ✅ Items clickeables */
+    .menu-item {
+      position: relative;
+      z-index: 100000;
+      pointer-events: auto;
+      
+      .menu-link {
+        pointer-events: auto;
+        cursor: pointer;
+        
+        &:hover {
+          background-color: #f5f8fa;
+        }
+      }
+    }
+  }
+}
+
+/* 🔧 Opciones del Workspace */
+.workspace-options {
+  position: relative;
+  z-index: 20;
+  
+  .btn-icon {
+    position: relative;
+    z-index: 21;
+    pointer-events: auto;
+  }
+  
+  .menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    min-width: 200px;
+    z-index: 99999;
+    pointer-events: auto;
+    
+    &.show {
+      display: block;
+    }
+    
+    .menu-item {
+      position: relative;
+      z-index: 100000;
+      pointer-events: auto;
+      
+      .menu-link {
+        pointer-events: auto;
+        cursor: pointer;
+        
+        &:hover {
+          background-color: #f5f8fa;
+        }
+      }
+    }
+  }
+}
+
+/* ➕ Tarjeta agregar grupo */
 .grupo-card-add {
-  background: linear-gradient(135deg, #f5f8fa 0%, #e8ecef 100%);
+  width: 280px;
+  min-width: 280px;
+  height: 220px;
+  border-radius: 12px;
   border: 2px dashed #cbd4db;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: none;
-  border-radius: 12px;
-  overflow: hidden; // ✅ Solo la tarjeta de agregar tiene overflow hidden
-
+  background: #f9f9f9;
+  
   &:hover {
-    background: linear-gradient(135deg, #e8ecef 0%, #dce1e5 100%);
-    border-color: #a1aeb7;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: #3b82f6;
+    background: #f0f7ff;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(59, 130, 246, 0.1);
+    
+    .grupo-card-add-content i {
+      color: #3b82f6;
+    }
   }
 }
 
@@ -224,96 +277,66 @@
   text-align: center;
   
   i {
-    transition: transform 0.3s ease;
-  }
-
-  p {
-    font-weight: 500;
-    font-size: 0.95rem;
+    transition: color 0.3s ease;
   }
 }
 
-.grupo-card-add:hover {
-  .grupo-card-add-content i {
-    transform: scale(1.1);
-  }
-}
-
-// ========================================
-// 👥 AVATARES Y SÍMBOLOS
-// ========================================
-.symbol-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.symbol {
-  border: 2px solid #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
-}
-
-// ========================================
-// 📱 RESPONSIVE
-// ========================================
+/* 📱 Responsive */
 @media (max-width: 768px) {
-  .workspace-section {
-    padding: 15px;
-  }
-
-  .workspace-icon {
-    width: 48px;
-    height: 48px;
-  }
-
-  .grupo-card {
+  .grupo-card,
+  .grupo-card-add {
+    width: 240px;
     min-width: 240px;
-    max-width: 240px;
-    height: 160px;
+    height: 200px;
   }
-
-  .grupo-card-content {
-    padding: 15px;
+  
+  .workspace-icon-preview {
+    width: 40px;
+    height: 40px;
   }
-
-  .grupo-card-title {
-    font-size: 1rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .workspace-header {
-    flex-direction: column;
-    align-items: flex-start !important;
-    gap: 15px;
-  }
-
-  .workspace-options {
-    align-self: flex-end;
-  }
-
-  .grupo-card {
-    min-width: 220px;
-    max-width: 220px;
+  
+  .grupos-horizontal-scroll {
+    min-height: 250px;
+    padding-bottom: 8rem;
+    margin-bottom: -6rem;
   }
 }
 
-// ========================================
-// 🎨 UTILIDADES
-// ========================================
-.text-gray-600 {
-  color: #7e8299;
+/* 🎨 Badges */
+.badge {
+  &.badge-light-primary {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+  }
+  
+  &.badge-light-success {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+  }
+  
+  &.badge-light-warning {
+    background-color: rgba(255, 159, 67, 0.15);
+    color: #ff9f43;
+  }
 }
 
-.text-gray-700 {
-  color: #5e6278;
+/* 🔥 Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.bg-light-primary {
-  background-color: rgba(59, 130, 246, 0.1);
+.grupo-card {
+  animation: fadeIn 0.3s ease;
 }
 
-.bg-light-success {
-  background-color: rgba(16, 185, 129, 0.1);
+/* ✅ CRÍTICO: card-body visible */
+.card-body {
+  overflow: visible;
 }
-

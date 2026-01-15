@@ -61,6 +61,8 @@ export class CreateListaComponent {
 
           this.ListaC.emit(resp.lista);
 
+          this.modal.close(resp.lista);
+
         } else {
 
           Swal.fire({

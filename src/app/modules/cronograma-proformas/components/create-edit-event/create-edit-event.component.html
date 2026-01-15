@@ -1,0 +1,155 @@
+<div class="modal-header">
+    <h5 class="modal-title">
+        <i class="ki-duotone ki-calendar-add fs-2 me-2">
+            <span class="path1"></span>
+            <span class="path2"></span>
+            <span class="path3"></span>
+        </i>
+        {{ isEdit ? 'Detalle del Evento' : 'Crear Nuevo Evento' }}
+    </h5>
+    <button type="button" class="btn-close" (click)="activeModal.dismiss()" [disabled]="isLoading"></button>
+</div>
+
+<div class="modal-body">
+    <form [formGroup]="eventForm">
+        <!-- Título -->
+        <div class="mb-5">
+            <label class="required form-label">Título del evento</label>
+            <input 
+                type="text" 
+                class="form-control" 
+                formControlName="title"
+                [class.is-invalid]="isFieldInvalid('title')"
+                placeholder="Ej: Reunión de equipo">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('title')">
+                {{ getFieldError('title') }}
+            </div>
+        </div>
+
+        <!-- Descripción -->
+        <div class="mb-5">
+            <label class="form-label">Descripción</label>
+            <textarea 
+                class="form-control" 
+                formControlName="description"
+                rows="3"
+                placeholder="Agrega una descripción del evento (opcional)"></textarea>
+        </div>
+
+        <!-- Fecha y hora de inicio -->
+        <div class="row mb-5">
+            <div class="col-md-6">
+                <label class="required form-label">Fecha y hora de inicio</label>
+                <input 
+                    type="datetime-local" 
+                    class="form-control" 
+                    formControlName="start_date"
+                    [class.is-invalid]="isFieldInvalid('start_date')">
+                <div class="invalid-feedback" *ngIf="isFieldInvalid('start_date')">
+                    {{ getFieldError('start_date') }}
+                </div>
+            </div>
+
+            <!-- Fecha y hora de fin -->
+            <div class="col-md-6">
+                <label class="form-label">Fecha y hora de fin (opcional)</label>
+                <input 
+                    type="datetime-local" 
+                    class="form-control" 
+                    formControlName="end_date">
+            </div>
+        </div>
+
+        <!-- Todo el día -->
+        <div class="mb-5">
+            <div class="form-check form-check-custom form-check-solid">
+                <input 
+                    class="form-check-input" 
+                    type="checkbox" 
+                    formControlName="all_day"
+                    id="allDayCheck">
+                <label class="form-check-label" for="allDayCheck">
+                    Evento de todo el día
+                </label>
+            </div>
+        </div>
+
+        <!-- Color del evento -->
+        <div class="mb-5">
+            <label class="form-label">Color del evento</label>
+            <div class="d-flex flex-wrap gap-3">
+                <div 
+                    *ngFor="let color of eventColors" 
+                    class="color-option"
+                    [class.selected]="eventForm.get('color')?.value === color.value"
+                    (click)="eventForm.patchValue({color: color.value})"
+                    [style.background-color]="color.value"
+                    [attr.title]="color.name">
+                </div>
+            </div>
+        </div>
+
+        <!-- Información adicional si es edición -->
+        <div *ngIf="isEdit && event" class="alert alert-info d-flex align-items-center">
+            <i class="ki-duotone ki-information-5 fs-2hx text-info me-4">
+                <span class="path1"></span>
+                <span class="path2"></span>
+                <span class="path3"></span>
+            </i>
+            <div class="d-flex flex-column">
+                <span>Creado por: <strong>{{ event.creator_name }}</strong></span>
+                <span class="text-muted">{{ event.created_at }}</span>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="modal-footer">
+    <button 
+        type="button" 
+        class="btn btn-light" 
+        (click)="activeModal.dismiss()"
+        [disabled]="isLoading">
+        Cerrar
+    </button>
+    
+    <button 
+        *ngIf="isEdit && canEdit" 
+        type="button" 
+        class="btn btn-danger" 
+        (click)="onDelete()"
+        [disabled]="isLoading">
+        <span class="indicator-label" *ngIf="!isLoading">
+            <i class="ki-duotone ki-trash fs-2">
+                <span class="path1"></span>
+                <span class="path2"></span>
+                <span class="path3"></span>
+                <span class="path4"></span>
+                <span class="path5"></span>
+            </i>
+            Eliminar
+        </span>
+        <span class="indicator-progress" *ngIf="isLoading">
+            Eliminando... <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+        </span>
+    </button>
+    
+    <button 
+        *ngIf="!isEdit || canEdit" 
+        type="button" 
+        class="btn btn-primary" 
+        (click)="onSubmit()"
+        [disabled]="isLoading">
+        <span class="indicator-label" *ngIf="!isLoading">
+            <i class="ki-duotone ki-check fs-2">
+                <span class="path1"></span>
+                <span class="path2"></span>
+            </i>
+            {{ isEdit ? 'Actualizar' : 'Crear' }} Evento
+        </span>
+        <span class="indicator-progress" *ngIf="isLoading">
+            {{ isEdit ? 'Actualizando' : 'Creando' }}... 
+            <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+        </span>
+    </button>
+</div>

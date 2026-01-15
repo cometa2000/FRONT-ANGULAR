@@ -1,0 +1,253 @@
+<!-- ========================================
+     📊 DIAGRAMA DE GANTT
+     ======================================== -->
+<div class="card">
+  <!-- 🎛️ Barra de controles -->
+  <div class="card-header border-0 pt-6">
+    <div class="card-title">
+      <div class="d-flex align-items-center gap-3">
+        <!-- Título -->
+        <h3 class="mb-0">
+          <i class="ki-duotone ki-chart-simple fs-2 me-2">
+            <span class="path1"></span>
+            <span class="path2"></span>
+            <span class="path3"></span>
+            <span class="path4"></span>
+          </i>
+          Diagrama de Gantt
+        </h3>
+
+        <!-- Badge del filtro actual -->
+        <span class="badge badge-light-primary fs-7">
+          {{ getCurrentFilterLabel() }}
+        </span>
+      </div>
+
+      <!-- Rango de fechas -->
+      <p class="text-muted mb-0 fs-7 mt-2">
+        <i class="ki-duotone ki-calendar fs-6 me-1">
+          <span class="path1"></span>
+          <span class="path2"></span>
+        </i>
+        {{ getFormattedDateRange() }}
+      </p>
+    </div>
+
+    <div class="card-toolbar">
+      <div class="d-flex align-items-center gap-2">
+        
+        <!-- Navegación de periodo -->
+        <div class="btn-group" role="group">
+          <button 
+            type="button" 
+            class="btn btn-sm btn-light"
+            (click)="previousPeriod()"
+            [disabled]="isLoading$ | async"
+          >
+            <i class="ki-duotone ki-left fs-5"></i>
+          </button>
+
+          <button 
+            type="button" 
+            class="btn btn-sm btn-light"
+            (click)="goToCurrentMonth()"
+            [disabled]="isLoading$ | async"
+          >
+            <i class="ki-duotone ki-calendar-8 fs-5 me-1">
+              <span class="path1"></span>
+              <span class="path2"></span>
+              <span class="path3"></span>
+              <span class="path4"></span>
+              <span class="path5"></span>
+              <span class="path6"></span>
+            </i>
+            Hoy
+          </button>
+
+          <button 
+            type="button" 
+            class="btn btn-sm btn-light"
+            (click)="nextPeriod()"
+            [disabled]="isLoading$ | async"
+          >
+            <i class="ki-duotone ki-right fs-5"></i>
+          </button>
+        </div>
+
+        <!-- Toggle vista día/semana -->
+        <div class="btn-group" role="group">
+          <button 
+            type="button" 
+            class="btn btn-sm"
+            [class.btn-primary]="currentView === 'day'"
+            [class.btn-light]="currentView !== 'day'"
+            (click)="toggleView('day')"
+            [disabled]="isLoading$ | async"
+          >
+            <i class="ki-duotone ki-calendar fs-5 me-1">
+              <span class="path1"></span>
+              <span class="path2"></span>
+            </i>
+            Día
+          </button>
+
+          <button 
+            type="button" 
+            class="btn btn-sm"
+            [class.btn-primary]="currentView === 'week'"
+            [class.btn-light]="currentView !== 'week'"
+            (click)="toggleView('week')"
+            [disabled]="isLoading$ | async"
+          >
+            <i class="ki-duotone ki-calendar-8 fs-5 me-1">
+              <span class="path1"></span>
+              <span class="path2"></span>
+              <span class="path3"></span>
+              <span class="path4"></span>
+              <span class="path5"></span>
+              <span class="path6"></span>
+            </i>
+            Semana
+          </button>
+        </div>
+
+        <!-- Botón de filtros -->
+        <button 
+          type="button" 
+          class="btn btn-sm btn-primary"
+          (click)="openFiltersModal()"
+          [disabled]="isLoading$ | async"
+        >
+          <i class="ki-duotone ki-filter fs-5 me-1">
+            <span class="path1"></span>
+            <span class="path2"></span>
+          </i>
+          Filtros
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📊 Gráfico de Gantt -->
+  <div class="card-body pt-3">
+    
+    <!-- ⏳ Estado de carga -->
+    <div *ngIf="isLoading$ | async" class="text-center py-20">
+      <div class="spinner-border text-primary mb-3" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="text-muted">Cargando diagrama de Gantt...</p>
+    </div>
+
+    <!-- 📊 Canvas del gráfico -->
+    <div *ngIf="!(isLoading$ | async) && ganttData.length > 0" 
+         class="gantt-chart-container"
+         [style.height.px]="Math.max(400, ganttData.length * 40)">
+      <canvas #ganttCanvas></canvas>
+    </div>
+
+    <!-- 📭 Sin datos -->
+    <div *ngIf="!(isLoading$ | async) && ganttData.length === 0" 
+         class="text-center py-20">
+      <i class="ki-duotone ki-information-5 fs-5x text-gray-300 mb-4">
+        <span class="path1"></span>
+        <span class="path2"></span>
+        <span class="path3"></span>
+      </i>
+      <h3 class="text-gray-700 mb-2">No hay tareas en este periodo</h3>
+      <p class="text-gray-500 mb-5">
+        Intenta ajustar el rango de fechas o los filtros para ver más tareas
+      </p>
+      <button 
+        class="btn btn-primary"
+        (click)="openFiltersModal()"
+      >
+        <i class="ki-duotone ki-filter fs-2 me-1">
+          <span class="path1"></span>
+          <span class="path2"></span>
+        </i>
+        Ajustar Filtros
+      </button>
+    </div>
+  </div>
+
+  <!-- 📈 Panel de estadísticas -->
+  <div *ngIf="!(isLoading$ | async) && ganttData.length > 0" class="card-footer">
+    <div class="row g-3">
+      
+      <!-- Total de tareas -->
+      <div class="col-6 col-md-3">
+        <div class="d-flex align-items-center">
+          <div class="symbol symbol-40px me-3">
+            <span class="symbol-label bg-light-primary">
+              <i class="ki-duotone ki-abstract-26 fs-2 text-primary">
+                <span class="path1"></span>
+                <span class="path2"></span>
+              </i>
+            </span>
+          </div>
+          <div>
+            <div class="fs-7 text-gray-600">Total</div>
+            <div class="fs-5 fw-bold text-gray-800">{{ stats.total_tasks || 0 }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Completadas -->
+      <div class="col-6 col-md-3">
+        <div class="d-flex align-items-center">
+          <div class="symbol symbol-40px me-3">
+            <span class="symbol-label bg-light-success">
+              <i class="ki-duotone ki-check-circle fs-2 text-success">
+                <span class="path1"></span>
+                <span class="path2"></span>
+              </i>
+            </span>
+          </div>
+          <div>
+            <div class="fs-7 text-gray-600">Completadas</div>
+            <div class="fs-5 fw-bold text-success">{{ stats.completed || 0 }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- En progreso -->
+      <div class="col-6 col-md-3">
+        <div class="d-flex align-items-center">
+          <div class="symbol symbol-40px me-3">
+            <span class="symbol-label bg-light-info">
+              <i class="ki-duotone ki-time fs-2 text-info">
+                <span class="path1"></span>
+                <span class="path2"></span>
+              </i>
+            </span>
+          </div>
+          <div>
+            <div class="fs-7 text-gray-600">En Progreso</div>
+            <div class="fs-5 fw-bold text-info">{{ stats.in_progress || 0 }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vencidas -->
+      <div class="col-6 col-md-3">
+        <div class="d-flex align-items-center">
+          <div class="symbol symbol-40px me-3">
+            <span class="symbol-label bg-light-danger">
+              <i class="ki-duotone ki-notification-bing fs-2 text-danger">
+                <span class="path1"></span>
+                <span class="path2"></span>
+                <span class="path3"></span>
+              </i>
+            </span>
+          </div>
+          <div>
+            <div class="fs-7 text-gray-600">Vencidas</div>
+            <div class="fs-5 fw-bold text-danger">{{ stats.overdue || 0 }}</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

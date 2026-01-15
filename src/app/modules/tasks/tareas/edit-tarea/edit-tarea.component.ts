@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, EventEmitter, Output, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnInit, EventEmitter, Output, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { TareaService } from '../service/tarea.service';
@@ -9,6 +9,7 @@ import { AdjuntarModalComponent, Enlace, Archivo } from '../adjuntar-modal/adjun
 import { AssignMembersTareaComponent } from '../assign-members-tarea/assign-members-tarea.component';
 import { GrupoService } from '../../grupos/service/grupo.service';
 import { ToastrService } from 'ngx-toastr';
+import { FechasComponent } from '../fechas/fechas.component';
 
 
 export interface Tarea {
@@ -23,6 +24,8 @@ export interface Tarea {
   priority?: string | null;
   start_date?: string | null;
   due_date?: string | null;
+  notifications_enabled?: boolean;           
+  notification_days_before?: number;         
   etiquetas?: any[];
   checklists?: any[];
   comentarios?: any[];
@@ -39,6 +42,8 @@ export interface Tarea {
     archivos: Archivo[];
   };
   assigned_members?: any[];  // 🆕 AGREGADO: Miembros asignados a la tarea
+
+  
 }
 
 @Component({
@@ -116,6 +121,14 @@ export class EditTareaComponent implements OnInit {
   isOwner: boolean = false;
   permissionLevel: string = 'write';
   isReadOnly: boolean = false;  
+
+  @ViewChild(FechasComponent) fechasComponent?: FechasComponent;
+
+  showEditarFechasModal: boolean = false;
+  editFechasStartDate: string = '';
+  editFechasDueDate: string = '';
+  editFechasEnableNotifications: boolean = false;
+  editFechasNotificationDays: number = 1;
 
   constructor(
     public modal: NgbActiveModal,
@@ -203,11 +216,82 @@ export class EditTareaComponent implements OnInit {
     });
   }
 
+  /**
+   * Verificar si la tarea tiene fechas configuradas
+   */
+  hasFechas(): boolean {
+    return !!(this.tarea?.start_date || this.tarea?.due_date);
+  }
+
+  /**
+   * Verificar si la tarea tiene adjuntos
+   */
+  tieneAdjuntos(): boolean {
+    return (this.adjuntos.archivos.length > 0 || this.adjuntos.enlaces.length > 0);
+  }
+
+  /**
+   * Callback cuando se actualizan las fechas
+   */
+  onFechasActualizadas(tarea: any): void {
+    console.log('📅 Fechas actualizadas, refrescando tarea:', tarea);
+    
+    if (this.tarea && tarea) {
+      this.tarea.start_date = tarea.start_date;
+      this.tarea.due_date = tarea.due_date;
+      this.tarea.notifications_enabled = tarea.notifications_enabled;
+      this.tarea.notification_days_before = tarea.notification_days_before;
+      this.tarea.is_overdue = tarea.is_overdue;
+      this.tarea.is_due_soon = tarea.is_due_soon;
+      this.cdr.detectChanges();
+    }
+    
+    this.loadTimeline();
+    this.TareaE.emit(this.tarea);
+  }
+
+  /**
+   * Callback cuando se actualizan las etiquetas
+   */
+  onEtiquetasChanged(): void {
+    console.log('🏷️ Etiquetas actualizadas, refrescando tarea');
+    this.loadTarea();
+  }
+
+  /**
+   * Callback cuando se actualizan los checklists
+   */
+  onChecklistsChanged(): void {
+    console.log('✅ Checklists actualizados, refrescando tarea');
+    this.loadTarea();
+  }
+  
+
+  loadAdjuntos(): void {
+    console.log('📎 Cargando adjuntos de la tarea:', this.tareaId);
+    
+    this.tareaService.show(this.tareaId.toString()).subscribe({
+      next: (resp: any) => {
+        if (resp.message === 200 && resp.tarea?.adjuntos) {
+          this.adjuntos = resp.tarea.adjuntos;
+          console.log('✅ Adjuntos cargados:', this.adjuntos);
+          this.cdr.detectChanges();
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar adjuntos:', error);
+        this.adjuntos = { enlaces: [], archivos: [] };
+      }
+    });
+  }
+
   
 
   // =============================
   // 🧱 CARGA DE TAREA
   // =============================
+  
+
   loadTarea() {
     console.log('🔄 Cargando tarea con ID:', this.tareaId);
     
@@ -218,32 +302,23 @@ export class EditTareaComponent implements OnInit {
         if (resp.message === 200 && resp.tarea) {
           this.tarea = resp.tarea;
           
-          // Cargar adjuntos
-          this.adjuntos = this.tarea?.adjuntos || { enlaces: [], archivos: [] };
+          // ⭐ AGREGAR ESTA LÍNEA
+          this.loadAdjuntos();
           
-          // 🆕 CARGAR MIEMBROS ASIGNADOS
+          // Cargar miembros asignados
           this.loadMiembrosAsignados();
           
           // Cargar timeline
           this.loadTimeline();
           
+          // Forzar detección de cambios
+          this.cdr.detectChanges();
+          
           console.log('📋 Tarea completa:', this.tarea);
-        } else {
-          console.error('❌ Respuesta inesperada:', resp);
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudo cargar la información de la tarea.'
-          });
         }
       },
       error: (error: any) => {
         console.error('❌ Error al cargar tarea:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: error?.userMessage || 'No se pudo cargar la tarea. Por favor, intenta de nuevo.'
-        });
       }
     });
   }
@@ -868,67 +943,56 @@ export class EditTareaComponent implements OnInit {
   
   abrirModalAdjuntar(): void {
     const modalRef = this.modalService.open(AdjuntarModalComponent, {
-      size: 'lg',
-      centered: true
+      centered: true,
+      size: 'lg'
     });
 
     modalRef.componentInstance.adjuntosExistentes = this.adjuntos;
 
-    modalRef.result.then(
-      (result) => {
-        if (result) {
-          console.log('✅ Adjunto agregado:', result);
-          
-          if (result.type === 'archivo') {
-            this.guardarArchivo(result.data);
-          } else if (result.type === 'enlace') {
-            this.guardarEnlace(result.data);
-          }
-        }
-      },
-      (reason) => {
-        console.log('Modal cerrado sin guardar:', reason);
+    modalRef.componentInstance.adjuntoAgregado.subscribe((resultado: { enlaces: Enlace[], archivos: Archivo[] }) => {
+      if (resultado.enlaces.length > 0) {
+        this.guardarEnlace(resultado.enlaces[0]);
       }
-    );
+      if (resultado.archivos.length > 0) {
+        this.guardarArchivo(resultado.archivos[0]);
+      }
+    });
   }
 
   /**
    * 🔧 CORRECCIÓN 4: Mejorar la subida de archivos (especialmente imágenes)
    */
   guardarArchivo(archivo: Archivo): void {
-    if (!this.tarea || !archivo.file) return;
+    if (!archivo.file) {
+      console.error('❌ No hay archivo para subir');
+      return;
+    }
 
     const formData = new FormData();
     formData.append('tipo', 'archivo');
-    formData.append('file', archivo.file, archivo.file.name);
+    formData.append('file', archivo.file);
 
     this.tareaService.addAdjunto(this.tareaId, formData).subscribe({
-      next: () => {
-        this.loadTarea();
-        this.TareaE.emit(this.tarea);
-
+      next: (resp: any) => {
+        this.loadAdjuntos();
+        this.loadTimeline();
+        
         Swal.fire({
           icon: 'success',
-          title: 'Archivo adjuntado',
-          timer: 1500,
+          title: 'Archivo subido',
+          timer: 2000,
+          showConfirmButton: false,
           toast: true,
-          position: 'top-end',
-          showConfirmButton: false
+          position: 'top-end'
         });
       },
-
       error: (error) => {
-        console.error('❌ Error al guardar archivo:', error);
-
-        let errorMsg = 'Error al adjuntar el archivo';
-        if (error.error?.message) errorMsg = error.error.message;
-        else if (error.status === 413) errorMsg = 'El archivo es demasiado grande';
-        else if (error.status === 422) errorMsg = 'Tipo de archivo no permitido';
-
+        console.error('❌ Error al subir archivo:', error);
         Swal.fire({
           icon: 'error',
           title: 'Error',
-          text: errorMsg,
+          text: 'No se pudo subir el archivo',
+          timer: 3500,
           toast: true,
           position: 'top-end'
         });
@@ -939,8 +1003,6 @@ export class EditTareaComponent implements OnInit {
 
 
   guardarEnlace(enlace: Enlace): void {
-    if (!this.tarea) return;
-
     const data = {
       tipo: 'enlace',
       nombre: enlace.nombre,
@@ -948,24 +1010,26 @@ export class EditTareaComponent implements OnInit {
     };
 
     this.tareaService.addAdjunto(this.tareaId, data).subscribe({
-      next: () => {
-        this.loadTarea();
-        this.TareaE.emit(this.tarea);
-
+      next: (resp: any) => {
+        this.loadAdjuntos();
+        this.loadTimeline();
+        
         Swal.fire({
           icon: 'success',
           title: 'Enlace agregado',
-          timer: 1500,
+          timer: 2000,
+          showConfirmButton: false,
           toast: true,
-          position: 'top-end',
-          showConfirmButton: false
+          position: 'top-end'
         });
       },
-      error: () => {
+      error: (error) => {
+        console.error('❌ Error al guardar enlace:', error);
         Swal.fire({
           icon: 'error',
           title: 'Error',
-          text: 'No se pudo agregar el enlace',
+          text: 'No se pudo guardar el enlace',
+          timer: 3500,
           toast: true,
           position: 'top-end'
         });
@@ -977,45 +1041,17 @@ export class EditTareaComponent implements OnInit {
   /**
    * 🔧 CORRECCIÓN 3: Agregar método para descargar archivos
    */
-  descargarArchivo(archivo: any): void {
-    if (!archivo.file_url && !archivo.url) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'No se puede descargar el archivo: URL no disponible'
-      });
-      return;
+  descargarArchivo(archivo: Archivo): void {
+    if (archivo.file_url) {
+      window.open(archivo.file_url, '_blank');
     }
-
-    const url = archivo.file_url || archivo.url;
-    console.log('⬇️ Descargando archivo desde:', url);
-
-    // Crear un elemento <a> temporal para descargar
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = archivo.nombre || 'archivo';
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    console.log('✅ Descarga iniciada');
   }
 
   abrirEnlace(url: string): void {
-    if (!url) return;
-    
-    // Asegurarse de que la URL tenga protocolo
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      url = 'https://' + url;
-    }
-    
     window.open(url, '_blank');
   }
 
-  eliminarEnlace(index: number): void {
-    const enlace = this.adjuntos.enlaces[index];
-
+  eliminarEnlace(enlaceId: number): void {
     Swal.fire({
       icon: 'warning',
       title: '¿Eliminar enlace?',
@@ -1026,49 +1062,30 @@ export class EditTareaComponent implements OnInit {
       confirmButtonColor: '#d33',
       cancelButtonColor: '#6c757d'
     }).then(result => {
-
       if (result.isConfirmed) {
-
-        if (enlace.id) {
-
-          this.tareaService.deleteAdjunto(this.tareaId, enlace.id).subscribe({
-            next: () => {
-              this.loadTarea();
-              this.TareaE.emit(this.tarea);
-
-              Swal.fire({
-                icon: 'success',
-                title: 'Enlace eliminado',
-                timer: 1500,
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false
-              });
-            },
-            error: () => {
-              Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'No se pudo eliminar el enlace',
-                toast: true,
-                position: 'top-end'
-              });
-            }
-          });
-
-        } else {
-          this.adjuntos.enlaces.splice(index, 1);
-        }
-
+        this.tareaService.deleteAdjunto(this.tareaId, enlaceId).subscribe({
+          next: () => {
+            this.loadAdjuntos();
+            this.loadTimeline();
+            
+            Swal.fire({
+              icon: 'success',
+              title: 'Enlace eliminado',
+              timer: 2000,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+          },
+          error: (error) => {
+            console.error('❌ Error al eliminar enlace:', error);
+          }
+        });
       }
-
     });
   }
 
-
-  eliminarArchivo(index: number): void {
-    const archivo = this.adjuntos.archivos[index];
-
+  eliminarArchivo(archivoId: number): void {
     Swal.fire({
       icon: 'warning',
       title: '¿Eliminar archivo?',
@@ -1079,46 +1096,26 @@ export class EditTareaComponent implements OnInit {
       confirmButtonColor: '#d33',
       cancelButtonColor: '#6c757d'
     }).then(result => {
-
       if (result.isConfirmed) {
-
-        if (archivo.id) {
-
-          this.tareaService.deleteAdjunto(this.tareaId, archivo.id).subscribe({
-            next: () => {
-              this.loadTarea();
-              this.TareaE.emit(this.tarea);
-
-              Swal.fire({
-                icon: 'success',
-                title: 'Archivo eliminado',
-                timer: 1500,
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false
-              });
-            },
-
-            error: (error) => {
-              console.error('❌ Error al eliminar:', error);
-
-              Swal.fire({
-                icon: 'error',
-                title: 'Error al eliminar archivo',
-                timer: 3500,
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false
-              });
-            }
-          });
-
-        } else {
-          this.adjuntos.archivos.splice(index, 1);
-        }
-
+        this.tareaService.deleteAdjunto(this.tareaId, archivoId).subscribe({
+          next: () => {
+            this.loadAdjuntos();
+            this.loadTimeline();
+            
+            Swal.fire({
+              icon: 'success',
+              title: 'Archivo eliminado',
+              timer: 2000,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+          },
+          error: (error) => {
+            console.error('❌ Error al eliminar archivo:', error);
+          }
+        });
       }
-
     });
   }
 
@@ -1126,15 +1123,13 @@ export class EditTareaComponent implements OnInit {
   obtenerIconoArchivo(tipo: string): string {
     if (!tipo) return 'fa-file';
     
-    if (tipo.includes('pdf')) return 'fa-file-pdf';
+    if (tipo.startsWith('image/')) return 'fa-file-image';
+    if (tipo === 'application/pdf') return 'fa-file-pdf';
     if (tipo.includes('word') || tipo.includes('document')) return 'fa-file-word';
     if (tipo.includes('excel') || tipo.includes('spreadsheet')) return 'fa-file-excel';
     if (tipo.includes('powerpoint') || tipo.includes('presentation')) return 'fa-file-powerpoint';
-    if (tipo.includes('image')) return 'fa-file-image';
-    if (tipo.includes('video')) return 'fa-file-video';
-    if (tipo.includes('audio')) return 'fa-file-audio';
-    if (tipo.includes('zip') || tipo.includes('rar') || tipo.includes('compressed')) return 'fa-file-zipper';
-    if (tipo.includes('text')) return 'fa-file-lines';
+    if (tipo === 'text/plain') return 'fa-file-alt';
+    if (tipo === 'text/csv') return 'fa-file-csv';
     
     return 'fa-file';
   }
@@ -1142,68 +1137,24 @@ export class EditTareaComponent implements OnInit {
   /**
    * 🔧 CORRECCIÓN: Verificar si un archivo puede ser visualizado
    */
-  esArchivoVisualizable(archivo: any): boolean {
-    if (!archivo || !archivo.tipo) return false;
+  esArchivoVisualizable(archivo: Archivo): boolean {
+    if (!archivo.tipo) return false;
     
-    const tipo = archivo.tipo.toLowerCase();
+    const tiposVisualizables = [
+      'image/',
+      'application/pdf'
+    ];
     
-    // Imágenes
-    if (tipo.includes('image/') || 
-        tipo.includes('jpeg') || 
-        tipo.includes('jpg') || 
-        tipo.includes('png') || 
-        tipo.includes('gif') || 
-        tipo.includes('webp') || 
-        tipo.includes('svg')) {
-      return true;
-    }
-    
-    // PDFs
-    if (tipo.includes('pdf')) {
-      return true;
-    }
-    
-    return false;
+    return tiposVisualizables.some(tipo => archivo.tipo.startsWith(tipo));
   }
 
   /**
    * 🔧 CORRECCIÓN: Visualizar archivo en modal o nueva ventana
    */
-  visualizarArchivo(archivo: any): void {
-    console.log('👁️ Visualizando archivo:', archivo);
-    
-    if (!archivo.file_url && !archivo.url) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'No se puede visualizar el archivo: URL no disponible'
-      });
-      return;
+  visualizarArchivo(archivo: Archivo): void {
+    if (archivo.file_url) {
+      window.open(archivo.file_url, '_blank');
     }
-
-    const url = archivo.file_url || archivo.url;
-    const tipo = archivo.tipo ? archivo.tipo.toLowerCase() : '';
-
-    // Para imágenes, mostrar en modal con Swal
-    if (tipo.includes('image')) {
-      Swal.fire({
-        title: archivo.nombre || 'Imagen',
-        imageUrl: url,
-        imageAlt: archivo.nombre,
-        width: 800,
-        showCloseButton: true,
-        showConfirmButton: false,
-        customClass: {
-          image: 'img-fluid'
-        }
-      });
-    } 
-    // Para PDFs y otros documentos, abrir en nueva pestaña
-    else {
-      window.open(url, '_blank');
-    }
-
-    console.log('✅ Archivo visualizado correctamente');
   }
 
   // =============================
@@ -1665,6 +1616,206 @@ export class EditTareaComponent implements OnInit {
 
       }
 
+    });
+  }
+
+  abrirModalEditarFechasInline(): void {
+    if (!this.tarea) return;
+    
+    // Cargar valores actuales
+    this.editFechasStartDate = this.tarea.start_date || '';
+    this.editFechasDueDate = this.tarea.due_date || '';
+    this.editFechasEnableNotifications = this.tarea.notifications_enabled || false;
+    this.editFechasNotificationDays = this.tarea.notification_days_before || 1;
+    
+    this.showEditarFechasModal = true;
+  }
+
+  /**
+   * Cerrar modal inline
+   */
+  cerrarModalEditarFechas(): void {
+    this.showEditarFechasModal = false;
+  }
+
+  /**
+   * Guardar cambios del modal inline
+   */
+  guardarFechasInline(): void {
+    if (!this.tarea) return;
+    
+    // Validación
+    if (this.editFechasEnableNotifications && !this.editFechasDueDate) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Fecha requerida',
+        text: 'Debes establecer una fecha de vencimiento para habilitar las notificaciones',
+        timer: 3000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return;
+    }
+    
+    const updateData = {
+      start_date: this.editFechasStartDate || null,
+      due_date: this.editFechasDueDate || null,
+      notifications_enabled: this.editFechasEnableNotifications,
+      notification_days_before: this.editFechasEnableNotifications ? this.editFechasNotificationDays : null
+    };
+
+    this.tareaService.updateTarea(this.tareaId, updateData).subscribe({
+      next: (resp: any) => {
+        console.log('✅ Fechas actualizadas:', resp);
+        
+        // Actualizar la tarea localmente
+        if (this.tarea && resp.tarea) {
+          this.tarea.start_date = resp.tarea.start_date;
+          this.tarea.due_date = resp.tarea.due_date;
+          this.tarea.notifications_enabled = resp.tarea.notifications_enabled;
+          this.tarea.notification_days_before = resp.tarea.notification_days_before;
+          this.tarea.is_overdue = resp.tarea.is_overdue;
+          this.tarea.is_due_soon = resp.tarea.is_due_soon;
+        }
+        
+        // Cerrar modal
+        this.cerrarModalEditarFechas();
+        
+        // Recargar timeline
+        this.loadTimeline();
+        
+        // Forzar detección de cambios
+        this.cdr.detectChanges();
+        
+        // Emitir cambio al padre
+        this.TareaE.emit(this.tarea);
+
+        let successMessage = 'Fechas actualizadas correctamente';
+        if (this.editFechasEnableNotifications) {
+          successMessage += `. Recibirás notificaciones ${this.editFechasNotificationDays} día(s) antes del vencimiento.`;
+        }
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Guardado',
+          text: successMessage,
+          timer: 3000,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+      },
+      error: (error) => {
+        console.error('❌ Error al actualizar fechas:', error);
+        
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudieron actualizar las fechas',
+          timer: 3500,
+          toast: true,
+          position: 'top-end'
+        });
+      }
+    });
+  }
+
+  /**
+   * Abrir modal para editar fechas usando ViewChild
+   */
+  abrirModalEditarFechas(): void {
+    if (this.fechasComponent) {
+      this.fechasComponent.openModal();
+    } else {
+      console.error('❌ Componente fechas no disponible');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo abrir el modal de fechas',
+        timer: 2000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+    }
+  }
+
+  /**
+   * Eliminar fechas de la tarea
+   */
+  eliminarFechas(): void {
+    if (!this.tarea || !this.tarea.id) {
+      console.error('❌ No hay tarea para eliminar fechas');
+      return;
+    }
+
+    Swal.fire({
+      icon: 'warning',
+      title: '¿Eliminar fechas?',
+      text: 'Se eliminarán las fechas y la configuración de notificaciones de esta tarea',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d'
+    }).then(result => {
+      if (result.isConfirmed && this.tarea) {
+        
+        const updateData = {
+          start_date: null,
+          due_date: null,
+          notifications_enabled: false,
+          notification_days_before: null
+        };
+
+        this.tareaService.updateTarea(this.tareaId, updateData).subscribe({
+          next: (resp: any) => {
+            console.log('✅ Fechas eliminadas:', resp);
+            
+            // Actualizar la tarea localmente
+            if (this.tarea) {
+              this.tarea.start_date = null;
+              this.tarea.due_date = null;
+              this.tarea.notifications_enabled = false;
+              this.tarea.notification_days_before = undefined;
+              this.tarea.is_overdue = false;
+              this.tarea.is_due_soon = false;
+            }
+            
+            // Recargar timeline
+            this.loadTimeline();
+            
+            // Forzar detección de cambios
+            this.cdr.detectChanges();
+            
+            // Emitir cambio al padre
+            this.TareaE.emit(this.tarea);
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Fechas eliminadas',
+              text: 'Las fechas y notificaciones se eliminaron correctamente',
+              timer: 2000,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+          },
+          error: (error) => {
+            console.error('❌ Error al eliminar fechas:', error);
+            
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'No se pudieron eliminar las fechas',
+              timer: 3500,
+              toast: true,
+              position: 'top-end'
+            });
+          }
+        });
+      }
     });
   }
 

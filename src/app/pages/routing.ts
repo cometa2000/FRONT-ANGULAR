@@ -77,6 +77,10 @@ const Routing: Routes = [
     loadChildren: () => import('../modules/documents/documents.module').then((m) => m.DocumentsModule),
   },
   {
+    path: 'cronograma-de-envios',
+    loadChildren: () => import('../modules/cronograma-proformas/cronograma-proformas.module').then((m) => m.CronogramaProformasModule),
+  },
+  {
     path: '',
     redirectTo: '/dashboard',
     pathMatch: 'full',

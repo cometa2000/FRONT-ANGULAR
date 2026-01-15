@@ -24,14 +24,14 @@ export class ListGrupoComponent implements OnInit, OnDestroy {
   GRUPOS: any = [];
   isLoading$: any;
 
-  // ✅ SOLUCIÓN PROBLEMA 2: Paginación
+  // Paginación
   totalPages: number = 0;
   currentPage: number = 1;
-  itemsPerPage: number = 12; // ✅ 12 grupos por página
+  itemsPerPage: number = 12;
   totalItems: number = 0;
   paginatedGrupos: any[] = [];
 
-  // ✅ FIX ERROR 1: Exponer Math para usar en template
+  // ✅ FIX: Exponer Math para template
   Math = Math;
 
   openMenuId: number | null = null;
@@ -71,17 +71,12 @@ export class ListGrupoComponent implements OnInit, OnDestroy {
     ).subscribe(params => {
       const newWorkspaceId = +params['workspaceId'];
       
-      console.log('🔍 List-Grupo: Params detectados, workspaceId:', newWorkspaceId);
-      
       if (newWorkspaceId && newWorkspaceId !== this.workspaceId) {
         this.workspaceId = newWorkspaceId;
-        console.log('📌 List-Grupo: Workspace ID actualizado:', this.workspaceId);
-        
         this.loadWorkspaceInfo();
         this.listGruposByWorkspace();
       } else if (newWorkspaceId) {
         this.workspaceId = newWorkspaceId;
-        console.log('🔄 List-Grupo: Mismo workspace, recargando...');
         this.loadWorkspaceInfo();
         this.listGruposByWorkspace();
       }
@@ -91,16 +86,11 @@ export class ListGrupoComponent implements OnInit, OnDestroy {
       filter(event => event instanceof NavigationEnd),
       takeUntil(this.destroy$)
     ).subscribe((event: any) => {
-      console.log('🔀 List-Grupo: Navegación detectada:', event.url);
-      
       const match = event.url.match(/\/tasks\/grupos\/(\d+)/);
       if (match) {
         const workspaceIdFromUrl = +match[1];
-        console.log('📍 List-Grupo: Workspace ID desde URL:', workspaceIdFromUrl);
-        
         if (workspaceIdFromUrl && workspaceIdFromUrl !== this.workspaceId) {
           this.workspaceId = workspaceIdFromUrl;
-          console.log('♻️ List-Grupo: Cargando nuevo workspace');
           this.loadWorkspaceInfo();
           this.listGruposByWorkspace();
         }
@@ -115,85 +105,74 @@ export class ListGrupoComponent implements OnInit, OnDestroy {
 
   loadWorkspaceInfo() {
     this.loadingWorkspace = true;
-    console.log('📂 List-Grupo: Cargando info workspace:', this.workspaceId);
     
     this.workspaceService.getWorkspace(this.workspaceId).pipe(
       takeUntil(this.destroy$)
     ).subscribe({
       next: (resp: any) => {
-        console.log('✅ List-Grupo: Workspace cargado:', resp);
         if (resp.message === 200) {
           this.workspace = resp.workspace;
-          console.log('📋 Workspace:', this.workspace.name);
         }
         this.loadingWorkspace = false;
       },
       error: (error) => {
-        console.error('❌ List-Grupo: Error al cargar workspace:', error);
+        console.error('Error al cargar workspace:', error);
         this.toast.error('Error al cargar el espacio de trabajo', 'Error');
         this.loadingWorkspace = false;
       }
     });
   }
 
-  /**
-   * ✅ SOLUCIÓN PROBLEMA 2: Listar grupos con paginación
-   */
   listGruposByWorkspace() {
-    console.log('📋 List-Grupo: Cargando grupos del workspace:', this.workspaceId);
+    console.log('🔄 Cargando grupos del workspace:', this.workspaceId);
     
     this.workspaceService.getWorkspaceGroups(this.workspaceId, this.search).pipe(
       takeUntil(this.destroy$)
     ).subscribe({
       next: (resp: any) => {
-        console.log('✅ List-Grupo: Grupos recibidos:', resp);
+        console.log('📦 Respuesta del servidor:', resp);
+        
         if (resp.message === 200) {
           this.GRUPOS = resp.grupos || [];
+          
+          // 🐛 DEBUG: Mostrar estado de is_starred de cada grupo
+          console.log('📊 Estado de grupos cargados:');
+          this.GRUPOS.forEach((grupo: any) => {
+            console.log(`  - Grupo "${grupo.name}" (ID: ${grupo.id}):`, {
+              is_starred: grupo.is_starred,
+              tipo: typeof grupo.is_starred,
+              valor_raw: JSON.stringify(grupo.is_starred)
+            });
+          });
+          
           this.totalItems = this.GRUPOS.length;
           this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
-          
-          console.log(`📊 Total grupos: ${this.GRUPOS.length}`);
-          console.log(`📄 Total páginas: ${this.totalPages}`);
-          
-          // ✅ Aplicar paginación
           this.updatePaginatedGrupos();
         }
         this.cdr.detectChanges();
       },
       error: (error) => {
-        console.error('❌ List-Grupo: Error al cargar grupos:', error);
+        console.error('❌ Error al cargar grupos:', error);
         this.toast.error('Error al cargar los grupos', 'Error');
       }
     });
   }
 
-  /**
-   * ✅ SOLUCIÓN PROBLEMA 2: Actualizar grupos paginados
-   */
   updatePaginatedGrupos() {
     const startIndex = (this.currentPage - 1) * this.itemsPerPage;
     const endIndex = startIndex + this.itemsPerPage;
     this.paginatedGrupos = this.GRUPOS.slice(startIndex, endIndex);
     
-    console.log(`📄 Página ${this.currentPage}: Mostrando grupos ${startIndex + 1}-${Math.min(endIndex, this.totalItems)} de ${this.totalItems}`);
+    console.log('📄 Grupos paginados actualizados:', this.paginatedGrupos.length);
   }
 
-  /**
-   * ✅ SOLUCIÓN PROBLEMA 2: Cambiar página
-   */
   goToPage(page: number) {
     if (page < 1 || page > this.totalPages) return;
-    
     this.currentPage = page;
     this.updatePaginatedGrupos();
-    
-    // Scroll al inicio
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  /**
-   * ✅ SOLUCIÓN PROBLEMA 2: Obtener array de páginas
-   */
   getPages(): number[] {
     const pages: number[] = [];
     const maxPages = 5;
@@ -230,9 +209,6 @@ export class ListGrupoComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * ✅ SOLUCIÓN PROBLEMA 3: Detener propagación en todas las acciones
-   */
   editGrupo(grupo: any, event?: MouseEvent) {
     if (event) {
       event.preventDefault();
@@ -284,43 +260,132 @@ export class ListGrupoComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * ⭐ CORREGIDO Y MEJORADO: Marcar/Desmarcar grupo con debugging completo
+   */
   marcarGrupo(grupo: any, event?: MouseEvent) {
     if (event) {
       event.preventDefault();
       event.stopPropagation();
     }
     
+    console.log('==========================================');
+    console.log('⭐ MARCANDO GRUPO - INICIO');
+    console.log('==========================================');
+    console.log('📋 Grupo seleccionado:', {
+      id: grupo.id,
+      nombre: grupo.name,
+      is_starred_antes: grupo.is_starred,
+      tipo_is_starred: typeof grupo.is_starred
+    });
+    
     this.grupoService.toggleStar(grupo.id).subscribe({
       next: (resp: any) => {
-        if (resp.message === 200) {
-          grupo.is_starred = resp.is_starred;
-          const message = grupo.is_starred ? 'Grupo marcado' : 'Marca removida';
-          this.toast.success(message, 'Éxito');
+        console.log('📥 Respuesta completa del servidor:', resp);
+        console.log('📊 Datos de la respuesta:', {
+          message: resp.message,
+          is_starred: resp.is_starred,
+          tipo_is_starred: typeof resp.is_starred,
+          todas_las_propiedades: Object.keys(resp)
+        });
+        
+        if (resp.message === 200 || resp.message === '200') {
           
+          // ✅ Obtener el nuevo valor de is_starred del servidor
+          const nuevoEstado = resp.is_starred === true || resp.is_starred === 'true' || resp.is_starred === 1;
+          
+          console.log('🔄 Actualizando estado:', {
+            estado_del_servidor: resp.is_starred,
+            estado_convertido: nuevoEstado,
+            tipo_convertido: typeof nuevoEstado
+          });
+          
+          // ✅ ACTUALIZACIÓN 1: Objeto local directo
+          grupo.is_starred = nuevoEstado;
+          console.log('✅ Grupo local actualizado:', grupo.is_starred);
+          
+          // ✅ ACTUALIZACIÓN 2: Array principal GRUPOS
+          const grupoIndexMain = this.GRUPOS.findIndex((g: any) => g.id === grupo.id);
+          if (grupoIndexMain !== -1) {
+            this.GRUPOS[grupoIndexMain].is_starred = nuevoEstado;
+            console.log('✅ Array GRUPOS actualizado en índice:', grupoIndexMain);
+            console.log('   Estado del grupo en GRUPOS:', this.GRUPOS[grupoIndexMain].is_starred);
+          } else {
+            console.warn('⚠️ No se encontró el grupo en GRUPOS');
+          }
+          
+          // ✅ ACTUALIZACIÓN 3: Array paginado
+          const paginatedIndex = this.paginatedGrupos.findIndex((g: any) => g.id === grupo.id);
+          if (paginatedIndex !== -1) {
+            this.paginatedGrupos[paginatedIndex].is_starred = nuevoEstado;
+            console.log('✅ Array paginatedGrupos actualizado en índice:', paginatedIndex);
+            console.log('   Estado del grupo en paginatedGrupos:', this.paginatedGrupos[paginatedIndex].is_starred);
+          } else {
+            console.warn('⚠️ No se encontró el grupo en paginatedGrupos');
+          }
+          
+          // ✅ Mensaje de éxito
+          const mensaje = nuevoEstado ? '⭐ Grupo marcado como favorito' : '☆ Grupo desmarcado';
+          this.toast.success(mensaje, 'Éxito');
+          
+          // ✅ ORDENAR: Mover favoritos al inicio
+          console.log('🔀 Ordenando grupos (favoritos primero)...');
           this.GRUPOS.sort((a: any, b: any) => {
             if (a.is_starred === b.is_starred) return 0;
             return a.is_starred ? -1 : 1;
           });
+          
+          // ✅ Actualizar vista paginada
           this.updatePaginatedGrupos();
+          
+          // ✅ Forzar detección de cambios
+          this.cdr.detectChanges();
+          
+          console.log('✅ PROCESO COMPLETADO');
+          console.log('📊 Estado final de todos los grupos:');
+          this.GRUPOS.forEach((g: any, index: number) => {
+            console.log(`   ${index + 1}. ${g.name}: is_starred = ${g.is_starred} (${typeof g.is_starred})`);
+          });
+          
+          // 🐛 VERIFICACIÓN FINAL
+          setTimeout(() => {
+            console.log('🔍 VERIFICACIÓN POST-ACTUALIZACIÓN (después de 100ms):');
+            const grupoVerificacion = this.GRUPOS.find((g: any) => g.id === grupo.id);
+            console.log('   Grupo en GRUPOS:', grupoVerificacion?.is_starred);
+            const grupoVerificacionPag = this.paginatedGrupos.find((g: any) => g.id === grupo.id);
+            console.log('   Grupo en paginatedGrupos:', grupoVerificacionPag?.is_starred);
+            console.log('   Grupo local:', grupo.is_starred);
+          }, 100);
+          
+        } else {
+          console.error('❌ Código de respuesta inesperado:', resp.message);
+          this.toast.error('Error al procesar la solicitud', 'Error');
         }
+        
+        console.log('==========================================');
       },
       error: (error) => {
-        console.error('Error al marcar grupo:', error);
+        console.error('==========================================');
+        console.error('❌ ERROR AL MARCAR GRUPO');
+        console.error('==========================================');
+        console.error('Error completo:', error);
+        console.error('Status:', error.status);
+        console.error('Mensaje:', error.message);
+        console.error('Body:', error.error);
+        console.error('==========================================');
         this.toast.error('No se pudo marcar el grupo', 'Error');
       }
     });
   }
 
   /**
-   * ✅ SOLUCIÓN PROBLEMAS 3 y 4: Navegar al tablero pasando origen
+   * 🔗 Navegar al tablero pasando origen
    */
   goToTablero(grupoId: number, event?: MouseEvent) {
     if (event && (event.target as HTMLElement).closest('.grupo-options-modern')) {
       return;
     }
     
-    console.log('🔗 Navegando al tablero del grupo:', grupoId, 'desde list-grupo');
-    // ✅ SOLUCIÓN PROBLEMA 4: Pasar queryParams con el origen
     this.router.navigate(['/tasks/tareas/tablero', grupoId], {
       queryParams: { from: 'list-grupo', workspaceId: this.workspaceId }
     });
@@ -349,44 +414,34 @@ export class ListGrupoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * ✅ SOLUCIÓN PROBLEMA 1: Toggle menú con posicionamiento dinámico
+   * ✅ Toggle menú
    */
   toggleMenu(id: number, event: MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
-    
     this.openMenuId = this.openMenuId === id ? null : id;
-
-    if (this.openMenuId === id) {
-      setTimeout(() => this.positionMenu(event), 0);
-    }
   }
 
   /**
-   * ✅ SOLUCIÓN PROBLEMA 1: Posicionar menú dinámicamente con position: fixed
+   * ✅ Cerrar menú
    */
-  private positionMenu(event: MouseEvent) {
-    const button = event.target as HTMLElement;
-    const buttonRect = button.getBoundingClientRect();
-    const menu = button.closest('.grupo-options-modern')?.querySelector('.menu.show') as HTMLElement;
-    
-    if (menu) {
-      menu.style.top = `${buttonRect.bottom + 5}px`;
-      menu.style.left = `${buttonRect.right - 200}px`;
-    }
-  }
-
   closeMenu() {
     this.openMenuId = null;
   }
 
+  /**
+   * ✅ Cerrar menú al hacer clic fuera
+   */
   @HostListener('document:click', ['$event'])
-  closeMenuOnClickOutside() {
-    this.openMenuId = null;
+  closeMenuOnClickOutside(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.grupo-options-modern') && !target.closest('.menu')) {
+      this.openMenuId = null;
+    }
   }
 
   /**
-   * ✅ SOLUCIÓN PROBLEMA 3: Pasar evento a todas las acciones
+   * ✅ CORREGIDO: Cerrar menú y ejecutar acción
    */
   closeMenuAnd(action: string, grupo: any, event?: MouseEvent) {
     if (event) {
@@ -394,27 +449,29 @@ export class ListGrupoComponent implements OnInit, OnDestroy {
       event.stopPropagation();
     }
     
+    console.log('🔧 Ejecutando acción:', action, 'para grupo:', grupo.id);
+    
+    // ✅ Cerrar menú inmediatamente
     this.closeMenu();
     
-    setTimeout(() => {
-      switch (action) {
-        case 'marcarGrupo':
-          this.marcarGrupo(grupo, event);
-          break;
-        case 'shareGrupo':
-          this.shareGrupo(grupo, event);
-          break;
-        case 'configPermisos':
-          this.configPermisos(grupo, event);
-          break;
-        case 'editGrupo':
-          this.editGrupo(grupo, event);
-          break;
-        case 'deleteGrupo':
-          this.deleteGrupo(grupo, event);
-          break;
-      }
-    }, 100);
+    // ✅ Ejecutar acción sin timeout
+    switch (action) {
+      case 'marcarGrupo':
+        this.marcarGrupo(grupo);
+        break;
+      case 'shareGrupo':
+        this.shareGrupo(grupo);
+        break;
+      case 'configPermisos':
+        this.configPermisos(grupo);
+        break;
+      case 'editGrupo':
+        this.editGrupo(grupo);
+        break;
+      case 'deleteGrupo':
+        this.deleteGrupo(grupo);
+        break;
+    }
   }
 
   getGrupoImageUrl(imagen: string): string {
@@ -473,7 +530,7 @@ export class ListGrupoComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       },
       error: (error) => {
-        console.error('❌ Error al cargar miembros:', error);
+        console.error('Error al cargar miembros:', error);
         this.loadingMiembros = false;
         this.cdr.detectChanges();
         this.toast.error('No se pudieron cargar los miembros del grupo', 'Error');

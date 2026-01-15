@@ -1,0 +1,80 @@
+.gantt-chart-container {
+  position: relative;
+  width: 100%;
+  min-height: 400px;
+  overflow-x: auto;
+  overflow-y: auto;
+  
+  canvas {
+    max-width: 100%;
+    height: auto !important;
+  }
+}
+
+// Scrollbar personalizado
+.gantt-chart-container::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.gantt-chart-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.gantt-chart-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+  
+  &:hover {
+    background: #555;
+  }
+}
+
+// Animaciones de carga
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+// Responsivo
+@media (max-width: 768px) {
+  .card-header {
+    .card-title {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 0.5rem;
+    }
+    
+    .card-toolbar {
+      width: 100%;
+      margin-top: 1rem;
+      
+      .d-flex {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      
+      .btn-group {
+        flex: 1;
+        min-width: auto;
+      }
+    }
+  }
+  
+  .card-footer {
+    .row {
+      row-gap: 1rem !important;
+    }
+  }
+}

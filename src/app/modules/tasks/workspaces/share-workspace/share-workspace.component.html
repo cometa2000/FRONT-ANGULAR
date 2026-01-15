@@ -89,11 +89,7 @@
                 (click)="toggleGrupoMenu(grupo.id, $event)"
                 style="background: rgba(255,255,255,0.2);"
               >
-                <i class="ki-duotone ki-dots-vertical fs-3 text-white">
-                  <span class="path1"></span>
-                  <span class="path2"></span>
-                  <span class="path3"></span>
-                </i>
+                <i class="fa-solid fa-ellipsis-vertical" style="color: #ffffff;"></i>
               </button>
 
               <!-- Menú desplegable del grupo -->
@@ -102,6 +98,7 @@
                 [class.show]="openGrupoMenuId === grupo.id"
                 style="position: absolute; right: 0; margin-top: 0.5rem; z-index: 105;"
               >
+                <!-- ⭐ OPCIÓN 1: Marcar como favorito -->
                 <div class="menu-item px-3">
                   <a class="menu-link px-3" (click)="toggleStarGrupo(grupo, $event)">
                     <i class="ki-duotone ki-star fs-5 me-2" [class.text-warning]="grupo.is_starred">
@@ -112,36 +109,14 @@
                   </a>
                 </div>
                 
+                <!-- 👥 OPCIÓN 2: Ver miembros -->
                 <div class="menu-item px-3">
                   <a class="menu-link px-3" (click)="shareGrupo(grupo, $event)">
-                    <i class="ki-duotone ki-share fs-5 me-2">
+                    <i class="fa-solid fa-users fs-5 me-2">
                       <span class="path1"></span>
                       <span class="path2"></span>
                     </i>
                     Ver miembros
-                  </a>
-                </div>
-                
-                <div class="menu-item px-3">
-                  <a class="menu-link px-3" (click)="viewPermissions(grupo, $event)">
-                    <i class="ki-duotone ki-lock fs-5 me-2">
-                      <span class="path1"></span>
-                      <span class="path2"></span>
-                      <span class="path3"></span>
-                    </i>
-                    Ver permisos
-                  </a>
-                </div>
-                
-                <div class="separator my-2" *ngIf="grupo.user_permission === 'write'"></div>
-                
-                <div class="menu-item px-3" *ngIf="grupo.user_permission === 'write'">
-                  <a class="menu-link px-3" (click)="editGrupo(grupo, $event)">
-                    <i class="ki-duotone ki-pencil fs-5 me-2">
-                      <span class="path1"></span>
-                      <span class="path2"></span>
-                    </i>
-                    Editar
                   </a>
                 </div>
               </div>
@@ -238,5 +213,119 @@
       </p>
     </div>
 
+  </div>
+</div>
+
+<!-- ========================================
+     👥 MODAL DE MIEMBROS DEL GRUPO
+     ======================================== -->
+<div class="modal fade miembros-modal" id="miembrosModal" tabindex="-1" aria-labelledby="miembrosModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      
+      <!-- Header del Modal -->
+      <div class="modal-header">
+        <h5 class="modal-title" id="miembrosModalLabel">
+          <i class="fa-solid fa-users"></i>
+          Miembros del Grupo: {{ selectedGrupo?.name }}
+        </h5>
+        <button type="button" class="btn-close" (click)="closeMiembrosModal()" aria-label="Close"></button>
+      </div>
+      
+      <!-- Body del Modal -->
+      <div class="modal-body">
+        
+        <!-- Contador de Miembros -->
+        <div class="miembros-counter" *ngIf="miembrosGrupo && miembrosGrupo.length > 0">
+          <div class="counter-text">
+            <i class="fa-solid fa-users-line"></i>
+            Total de miembros:
+            <span class="counter-number">{{ miembrosGrupo.length }}</span>
+          </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="text-center py-5" *ngIf="loadingMiembros">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="mt-3 text-muted">Cargando miembros...</p>
+        </div>
+
+        <!-- Lista de Miembros -->
+        <div class="miembros-list" *ngIf="!loadingMiembros && miembrosGrupo && miembrosGrupo.length > 0">
+          
+          <!-- Card del Propietario (siempre primero) -->
+          <div class="miembro-card d-flex align-items-center gap-3" *ngIf="selectedGrupo?.user">
+            <img 
+              [src]="getUserAvatar()" 
+              [alt]="'Avatar de ' + selectedGrupo.user.name"
+              class="miembro-avatar" />
+            
+            <div class="miembro-info">
+              <div class="miembro-nombre">
+                {{ selectedGrupo.user.name }} {{ selectedGrupo.user.surname }}
+                <span class="badge-owner">
+                  <i class="fa-solid fa-crown"></i>
+                  Propietario
+                </span>
+              </div>
+              
+              <div class="miembro-email">
+                <i class="fa-solid fa-envelope"></i>
+                <span>{{ selectedGrupo.user.email }}</span>
+              </div>
+              
+              <div class="miembro-phone" *ngIf="selectedGrupo.user.phone">
+                <i class="fa-solid fa-phone"></i>
+                <span>{{ selectedGrupo.user.phone }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cards de los Miembros Compartidos -->
+          <div class="miembro-card d-flex align-items-center gap-3" *ngFor="let miembro of miembrosGrupo">
+            <img 
+              [src]="getMemberAvatar(miembro)" 
+              alt="Avatar de {{ miembro.name }}"
+              class="miembro-avatar">
+            
+            <div class="miembro-info">
+              <div class="miembro-nombre">
+                {{ miembro.name }} {{ miembro.surname }}
+              </div>
+              
+              <div class="miembro-email">
+                <i class="fa-solid fa-envelope"></i>
+                <span>{{ miembro.email }}</span>
+              </div>
+              
+              <div class="miembro-phone" *ngIf="miembro.phone">
+                <i class="fa-solid fa-phone"></i>
+                <span>{{ miembro.phone }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado Vacío -->
+        <div class="empty-state" *ngIf="!loadingMiembros && (!miembrosGrupo || miembrosGrupo.length === 0)">
+          <div class="empty-icon">
+            <i class="fa-solid fa-user-slash"></i>
+          </div>
+          <h4 class="empty-title">No hay miembros compartidos</h4>
+          <p class="empty-text">Este grupo no ha sido compartido con otros usuarios todavía.</p>
+        </div>
+      </div>
+      
+      <!-- Footer del Modal -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeMiembrosModal()">
+          <i class="fa-solid fa-xmark me-1"></i>
+          Cerrar
+        </button>
+      </div>
+      
+    </div>
   </div>
 </div>

@@ -1,5 +1,4 @@
-// ✅ FIX ERROR 2: Agregar HostListener en los imports
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, ChangeDetectorRef } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
@@ -25,7 +24,6 @@ export class ListWorkspaceComponent implements OnInit {
   WORKSPACES: any[] = [];
   isLoading$: any;
   
-  // Control de menús desplegables
   openWorkspaceMenuId: number | null = null;
   openGrupoMenuId: number | null = null;
 
@@ -34,7 +32,8 @@ export class ListWorkspaceComponent implements OnInit {
     private grupoService: GrupoService,
     private modalService: NgbModal,
     private toast: ToastrService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef  // ✅ Inyectar ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -42,9 +41,6 @@ export class ListWorkspaceComponent implements OnInit {
     this.loadWorkspaces();
   }
 
-  /**
-   * 📋 Cargar todos los workspaces con sus grupos
-   */
   loadWorkspaces() {
     this.workspaceService.listWorkspaces(this.search).subscribe({
       next: (resp: any) => {
@@ -52,7 +48,6 @@ export class ListWorkspaceComponent implements OnInit {
         if (resp.message === 200) {
           this.WORKSPACES = resp.workspaces || [];
           
-          // Ordenar por fecha de creación (más recientes primero)
           this.WORKSPACES.sort((a, b) => {
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
           });
@@ -65,9 +60,6 @@ export class ListWorkspaceComponent implements OnInit {
     });
   }
 
-  /**
-   * ➕ Crear nuevo workspace
-   */
   createWorkspace() {
     const modalRef = this.modalService.open(CreateWorkspaceComponent, { 
       centered: true, 
@@ -79,9 +71,6 @@ export class ListWorkspaceComponent implements OnInit {
     });
   }
 
-  /**
-   * ✏️ Editar workspace
-   */
   editWorkspace(workspace: any, event?: MouseEvent) {
     if (event) {
       event.preventDefault();
@@ -101,9 +90,6 @@ export class ListWorkspaceComponent implements OnInit {
     this.closeWorkspaceMenu();
   }
 
-  /**
-   * 🗑️ Eliminar workspace
-   */
   deleteWorkspace(workspace: any, event?: MouseEvent) {
     if (event) {
       event.preventDefault();
@@ -123,9 +109,6 @@ export class ListWorkspaceComponent implements OnInit {
     this.closeWorkspaceMenu();
   }
 
-  /**
-   * ✅ Navegar a la vista de grupos de un workspace
-   */
   goToWorkspaceGroups(workspaceId: number, event?: MouseEvent) {
     if (event) {
       event.preventDefault();
@@ -136,9 +119,6 @@ export class ListWorkspaceComponent implements OnInit {
     this.router.navigate(['/tasks/grupos', workspaceId]);
   }
 
-  /**
-   * ➕ Crear grupo en un workspace específico
-   */
   createGrupoInWorkspace(workspace: any, event?: MouseEvent) {
     if (event) {
       event.preventDefault();
@@ -150,7 +130,6 @@ export class ListWorkspaceComponent implements OnInit {
       size: 'md' 
     });
     
-    // Pasar el workspace_id al modal
     modalRef.componentInstance.WORKSPACE_ID = workspace.id;
     modalRef.componentInstance.WORKSPACE_NAME = workspace.name;
     
@@ -161,9 +140,6 @@ export class ListWorkspaceComponent implements OnInit {
     });
   }
 
-  /**
-   * ✏️ Editar grupo
-   */
   editGrupo(grupo: any, event?: MouseEvent) {
     if (event) {
       event.preventDefault();
@@ -183,9 +159,6 @@ export class ListWorkspaceComponent implements OnInit {
     this.closeGrupoMenu();
   }
 
-  /**
-   * 🗑️ Eliminar grupo
-   */
   deleteGrupo(grupo: any, event?: MouseEvent) {
     if (event) {
       event.preventDefault();
@@ -205,9 +178,6 @@ export class ListWorkspaceComponent implements OnInit {
     this.closeGrupoMenu();
   }
 
-  /**
-   * 📤 Compartir grupo
-   */
   shareGrupo(grupo: any, event?: MouseEvent) {
     if (event) {
       event.preventDefault();
@@ -227,9 +197,6 @@ export class ListWorkspaceComponent implements OnInit {
     this.closeGrupoMenu();
   }
 
-  /**
-   * ⚙️ Configurar permisos del grupo
-   */
   configPermisosGrupo(grupo: any, event?: MouseEvent) {
     if (event) {
       event.preventDefault();
@@ -255,7 +222,7 @@ export class ListWorkspaceComponent implements OnInit {
   }
 
   /**
-   * ⭐ Marcar/Desmarcar grupo como favorito
+   * ⭐ CORREGIDO: Marcar/Desmarcar grupo con detección de cambios INMEDIATA
    */
   toggleStarGrupo(grupo: any, event?: MouseEvent) {
     if (event) {
@@ -263,99 +230,89 @@ export class ListWorkspaceComponent implements OnInit {
       event.stopPropagation();
     }
     
+    console.log('⭐ Marcando grupo:', grupo.id, 'Estado actual:', grupo.is_starred);
+    
     this.grupoService.toggleStar(grupo.id).subscribe({
       next: (resp: any) => {
+        console.log('✅ Respuesta del servidor:', resp);
+        
         if (resp.message === 200) {
+          // ✅ PASO 1: Actualizar el objeto local inmediatamente
           grupo.is_starred = resp.is_starred;
-          const message = grupo.is_starred ? 'Grupo marcado' : 'Marca removida';
+          
+          // ✅ PASO 2: Buscar y actualizar en TODOS los workspaces
+          this.WORKSPACES.forEach(workspace => {
+            if (workspace.grupos && workspace.grupos.length > 0) {
+              const grupoIndex = workspace.grupos.findIndex((g: any) => g.id === grupo.id);
+              if (grupoIndex !== -1) {
+                workspace.grupos[grupoIndex].is_starred = resp.is_starred;
+              }
+            }
+          });
+          
+          // ✅ PASO 3: FORZAR detección de cambios ANTES de cerrar el menú
+          this.cdr.detectChanges();
+          
+          // ✅ PASO 4: Mostrar mensaje de éxito
+          const message = resp.is_starred ? 'Grupo marcado como favorito' : 'Grupo desmarcado';
           this.toast.success(message, 'Éxito');
-          this.loadWorkspaces();
+          
+          console.log('✅ Grupo actualizado y UI refrescada');
+          
+          // ✅ PASO 5: Cerrar menú DESPUÉS de actualizar la UI
+          setTimeout(() => {
+            this.closeGrupoMenu();
+          }, 50);
         }
       },
       error: (error) => {
-        console.error('Error al marcar grupo:', error);
+        console.error('❌ Error al marcar grupo:', error);
         this.toast.error('No se pudo marcar el grupo', 'Error');
+        this.closeGrupoMenu();
       }
     });
-    
-    this.closeGrupoMenu();
   }
 
   /**
-   * 🔗 Navegar al tablero de tareas del grupo
-   * ✅ SOLUCIÓN PROBLEMA 4: Pasar origen list-workspace
+   * 🔗 Navegar al tablero pasando origen
    */
-  goToTablero(grupoId: number) {
+  goToTablero(grupoId: number, event?: MouseEvent) {
+    if (event && (event.target as HTMLElement).closest('.grupo-options')) {
+      return;
+    }
+    
     console.log('🔗 Navegando al tablero del grupo:', grupoId, 'desde list-workspace');
-    // ✅ Pasar queryParams indicando que viene de list-workspace
     this.router.navigate(['/tasks/tareas/tablero', grupoId], {
       queryParams: { from: 'list-workspace' }
     });
   }
 
-  /**
-   * 🎨 Obtener color de fondo para el workspace
-   */
   getWorkspaceColor(workspace: any): string {
     return workspace.color || '#6366f1';
   }
 
   /**
-   * 🔧 Toggle menú workspace
-   * ✅ SOLUCIÓN PROBLEMA 1: Con posicionamiento dinámico
+   * ✅ Toggle menú workspace
    */
   toggleWorkspaceMenu(id: number, event: MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
     this.openWorkspaceMenuId = this.openWorkspaceMenuId === id ? null : id;
     this.openGrupoMenuId = null;
-    
-    // ✅ Posicionar menú
-    if (this.openWorkspaceMenuId === id) {
-      setTimeout(() => this.positionMenu(event), 0);
-    }
+    console.log('🔧 Menú workspace toggled:', this.openWorkspaceMenuId);
   }
 
   /**
-   * 🔧 Toggle menú grupo
-   * ✅ SOLUCIÓN PROBLEMA 1: Con posicionamiento dinámico
+   * ✅ Toggle menú grupo
    */
   toggleGrupoMenu(id: number, event: MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
     this.openGrupoMenuId = this.openGrupoMenuId === id ? null : id;
     this.openWorkspaceMenuId = null;
-    
-    // ✅ Posicionar menú
-    if (this.openGrupoMenuId === id) {
-      setTimeout(() => this.positionMenu(event), 0);
-    }
+    console.log('🔧 Menú grupo toggled:', this.openGrupoMenuId);
   }
 
-  /**
-   * ✅ SOLUCIÓN PROBLEMA 1: Posicionar menú dinámicamente
-   */
-  private positionMenu(event: MouseEvent) {
-    const button = event.target as HTMLElement;
-    const buttonRect = button.getBoundingClientRect();
-    
-    // Buscar el menú en workspace o grupo
-    let menu = button.parentElement?.querySelector('.menu.show') as HTMLElement;
-    
-    if (!menu) {
-      // Intentar buscar en grupo-options
-      menu = button.closest('.grupo-options')?.querySelector('.menu.show') as HTMLElement;
-    }
-    
-    if (menu) {
-      menu.style.top = `${buttonRect.bottom + 5}px`;
-      menu.style.left = `${buttonRect.right - 200}px`;
-    }
-  }
-
-  /**
-   * 🚫 Cerrar menús
-   */
   closeWorkspaceMenu() {
     this.openWorkspaceMenuId = null;
   }
@@ -365,18 +322,20 @@ export class ListWorkspaceComponent implements OnInit {
   }
 
   /**
-   * 🚫 Cerrar menús al hacer clic fuera
-   * ✅ FIX ERROR 2: HostListener ahora está correctamente importado
+   * ✅ Cerrar menús al hacer clic fuera
    */
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent) {
-    this.openWorkspaceMenuId = null;
-    this.openGrupoMenuId = null;
+    const target = event.target as HTMLElement;
+    
+    if (!target.closest('.workspace-options') && 
+        !target.closest('.grupo-options') && 
+        !target.closest('.menu')) {
+      this.openWorkspaceMenuId = null;
+      this.openGrupoMenuId = null;
+    }
   }
 
-  /**
-   * 🎨 Obtener avatar del usuario
-   */
   getAvatarUrl(avatar: string): string {
     if (!avatar) {
       return 'assets/media/avatars/blank.png';
@@ -393,9 +352,6 @@ export class ListWorkspaceComponent implements OnInit {
     return `assets/media/avatars/${avatar}`;
   }
 
-  /**
-   * 🎨 Obtener URL de imagen de grupo
-   */
   getGrupoImageUrl(imagen: string): string {
     if (!imagen) {
       return 'assets/media/fondos/fondo1.png';
