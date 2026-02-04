@@ -70,7 +70,7 @@ export class VistaDocumentoService {
     
     return this.http.get(URL, { 
       params,
-      headers: this.getHeaders() // ← AGREGAR HEADERS
+      headers: this.getHeaders()
     }).pipe(
       finalize(() => this.isLoadingSubject.next(false))
     );
@@ -85,7 +85,22 @@ export class VistaDocumentoService {
     
     return this.http.get(URL, { 
       params: { sucursale_id: sucursale_id.toString() },
-      headers: this.getHeaders() // ← AGREGAR HEADERS
+      headers: this.getHeaders()
+    }).pipe(
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
+  /**
+   * Obtener árbol de carpetas (solo carpetas, para selección)
+   */
+  getFolderTree(sucursale_id: number): Observable<any> {
+    this.isLoadingSubject.next(true);
+    let URL = URL_SERVICIOS + "/documentos/folder-tree";
+    
+    return this.http.get(URL, { 
+      params: { sucursale_id: sucursale_id.toString() },
+      headers: this.getHeaders()
     }).pipe(
       finalize(() => this.isLoadingSubject.next(false))
     );
@@ -99,7 +114,7 @@ export class VistaDocumentoService {
     let URL = URL_SERVICIOS + `/documentos/folder/${folderId}`;
     
     return this.http.get(URL, {
-      headers: this.getHeaders() // ← AGREGAR HEADERS
+      headers: this.getHeaders()
     }).pipe(
       finalize(() => this.isLoadingSubject.next(false))
     );
@@ -113,21 +128,21 @@ export class VistaDocumentoService {
     let URL = URL_SERVICIOS + "/documentos/folder";
     
     return this.http.post(URL, data, {
-      headers: this.getHeaders() // ← AGREGAR HEADERS
+      headers: this.getHeaders()
     }).pipe(
       finalize(() => this.isLoadingSubject.next(false))
     );
   }
 
   /**
-   * Subir archivo
+   * Subir archivo(s) - ahora soporta múltiples archivos y sucursales
    */
   uploadFile(data: FormData): Observable<any> {
     this.isLoadingSubject.next(true);
     let URL = URL_SERVICIOS + "/documentos";
     
     return this.http.post(URL, data, {
-      headers: this.getHeadersForFormData() // ← HEADERS SIN Content-Type para FormData
+      headers: this.getHeadersForFormData()
     }).pipe(
       finalize(() => this.isLoadingSubject.next(false))
     );
@@ -141,7 +156,7 @@ export class VistaDocumentoService {
     let URL = URL_SERVICIOS + `/documentos/${documentId}/move`;
     
     return this.http.post(URL, data, {
-      headers: this.getHeaders() // ← AGREGAR HEADERS
+      headers: this.getHeaders()
     }).pipe(
       finalize(() => this.isLoadingSubject.next(false))
     );
@@ -155,7 +170,7 @@ export class VistaDocumentoService {
     let URL = URL_SERVICIOS + `/documentos/${documentId}`;
     
     return this.http.put(URL, data, {
-      headers: this.getHeaders() // ← AGREGAR HEADERS
+      headers: this.getHeaders()
     }).pipe(
       finalize(() => this.isLoadingSubject.next(false))
     );
@@ -169,10 +184,21 @@ export class VistaDocumentoService {
     let URL = URL_SERVICIOS + `/documentos/${documentId}`;
     
     return this.http.delete(URL, {
-      headers: this.getHeaders() // ← AGREGAR HEADERS
+      headers: this.getHeaders()
     }).pipe(
       finalize(() => this.isLoadingSubject.next(false))
     );
+  }
+
+  /**
+   * Marcar documento como visto
+   */
+  markAsViewed(documentId: number): Observable<any> {
+    let URL = URL_SERVICIOS + `/documentos/${documentId}/mark-viewed`;
+    
+    return this.http.post(URL, {}, {
+      headers: this.getHeaders()
+    });
   }
 
   /**
@@ -182,7 +208,7 @@ export class VistaDocumentoService {
     let URL = URL_SERVICIOS + "/documentos/config";
     
     return this.http.get(URL, {
-      headers: this.getHeaders() // ← AGREGAR HEADERS
+      headers: this.getHeaders()
     });
   }
 
@@ -195,7 +221,7 @@ export class VistaDocumentoService {
     
     return this.http.get(URL, {
       headers: this.getHeaders(),
-      responseType: 'blob' // ← Importante
+      responseType: 'blob'
     }).pipe(
       finalize(() => this.isLoadingSubject.next(false))
     );

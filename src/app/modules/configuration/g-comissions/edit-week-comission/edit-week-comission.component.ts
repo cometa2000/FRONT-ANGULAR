@@ -60,7 +60,7 @@ export class EditWeekComissionComponent {
     }
 
     this.weekComissionService.updateWeekComision(this.WEEK_COMISSION_SELECTED.id,data).subscribe((resp:any) => {
-      console.log(resp);
+      // console.log(resp);
       if(resp.message == 403){
         this.toast.error("Validación",resp.message_text);
       }else{

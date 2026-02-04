@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import { TareaService } from '../service/tarea.service';
 import Swal from 'sweetalert2';
 
@@ -7,7 +7,7 @@ import Swal from 'sweetalert2';
   templateUrl: './fechas.component.html',
   styleUrls: ['./fechas.component.scss']
 })
-export class FechasComponent implements OnInit {
+export class FechasComponent implements OnInit, OnChanges {
   @Input() tareaId?: number;
   @Output() fechasActualizadas = new EventEmitter<any>();
 
@@ -35,6 +35,14 @@ export class FechasComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadFechas();
+  }
+
+  // 🆕 Detectar cambios en el @Input tareaId
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['tareaId'] && !changes['tareaId'].firstChange) {
+      console.log('🔄 tareaId cambió, recargando fechas...');
+      this.loadFechas();
+    }
   }
 
   loadFechas(): void {

@@ -1,0 +1,19 @@
+/* Texto blanco cuando el link está activo */
+.menu-link.active,
+.menu-link.active .menu-title,
+.menu-item.here > .menu-link,
+.menu-item.here > .menu-link .menu-title {
+  color: #ffffff !important;
+}
+
+/* Íconos blancos cuando está activo */
+.menu-link.active .menu-icon i,
+.menu-item.here > .menu-link .menu-icon i {
+  color: #ffffff !important;
+}
+
+/* Bullet (puntito) blanco */
+.menu-link.active .bullet,
+.menu-link.active .bullet-dot {
+  background-color: #ffffff !important;
+}

@@ -19,7 +19,7 @@ export class AccountComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    console.log('📄 AccountComponent inicializado');
+    // console.log('📄 AccountComponent inicializado');
     this.loadUserProfile();
   }
 
@@ -30,7 +30,7 @@ export class AccountComponent implements OnInit, OnDestroy {
     // ⭐ Suscribirse a los cambios del usuario (tiempo real)
     const userSub = this.profileService.currentUser$.subscribe({
       next: (user) => {
-        console.log('👤 Usuario actualizado en AccountComponent:', user);
+        // console.log('👤 Usuario actualizado en AccountComponent:', user);
         if (user) {
           this.currentUser = user;
           this.isLoading = false;
@@ -45,18 +45,18 @@ export class AccountComponent implements OnInit, OnDestroy {
     const currentValue = this.profileService.getCurrentUserValue();
     
     if (!currentValue || !currentValue.role || !currentValue.sucursal) {
-      console.log('⚠️ Datos incompletos o no disponibles, cargando desde servidor...');
+      // console.log('⚠️ Datos incompletos o no disponibles, cargando desde servidor...');
       
       const profileSub = this.profileService.getProfile().subscribe({
         next: (resp: any) => {
-          console.log('✅ Perfil cargado correctamente:', resp);
+          // console.log('✅ Perfil cargado correctamente:', resp);
           this.currentUser = resp;
           this.profileService.setCurrentUser(resp);
           this.isLoading = false;
           this.cdr.detectChanges();
         },
         error: (error) => {
-          console.error('❌ Error al cargar el perfil:', error);
+          // console.error('❌ Error al cargar el perfil:', error);
           this.isLoading = false;
           this.cdr.detectChanges();
         }
@@ -64,7 +64,7 @@ export class AccountComponent implements OnInit, OnDestroy {
       
       this.unsubscribe.push(profileSub);
     } else {
-      console.log('✅ Usando datos existentes del servicio');
+      // console.log('✅ Usando datos existentes del servicio');
       this.currentUser = currentValue;
       this.isLoading = false;
       this.cdr.detectChanges();
@@ -110,7 +110,7 @@ export class AccountComponent implements OnInit, OnDestroy {
    * Obtener el rol del usuario
    */
   getUserRole(): string {
-    console.log('📝 Obteniendo rol del usuario:', this.currentUser?.role);
+    // console.log('📝 Obteniendo rol del usuario:', this.currentUser?.role);
     
     if (this.currentUser?.role) {
       return this.currentUser.role.name || 'Sin rol';
@@ -135,7 +135,7 @@ export class AccountComponent implements OnInit, OnDestroy {
    * Obtener la sucursal del usuario
    */
   getUserSucursal(): string {
-    console.log('📝 Obteniendo sucursal del usuario:', this.currentUser?.sucursal);
+    // console.log('📝 Obteniendo sucursal del usuario:', this.currentUser?.sucursal);
     
     if (this.currentUser?.sucursal) {
       return this.currentUser.sucursal.name || 'Sin sucursal';
@@ -166,7 +166,7 @@ export class AccountComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    console.log('📚 AccountComponent destruido');
+    // console.log('📚 AccountComponent destruido');
     this.unsubscribe.forEach((sb) => sb.unsubscribe());
   }
 }

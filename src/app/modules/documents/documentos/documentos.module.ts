@@ -13,6 +13,7 @@ import { NgbModule, NgbModalModule, NgbPaginationModule } from '@ng-bootstrap/ng
 import { InlineSVGModule } from 'ng-inline-svg-2';
 import { CreateFolderComponent } from './create-folder/create-folder.component';
 import { DocumentViewerComponent } from './document-viewer/document-viewer.component';
+import { MoveDocumentoComponent } from './move-documento/move-documento.component';
 
 
 @NgModule({
@@ -24,6 +25,7 @@ import { DocumentViewerComponent } from './document-viewer/document-viewer.compo
     ListDocumentoComponent,
     CreateFolderComponent,
     DocumentViewerComponent,
+    MoveDocumentoComponent,
   ],
   imports: [
     CommonModule,

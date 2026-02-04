@@ -34,7 +34,7 @@ export class ListCategorieComissionComponent {
 
   listCategorieComisions(page = 1){
     this.categporieComisionService.listCategorieComisions(page,this.search).subscribe((resp:any) => {
-      console.log(resp);
+      // console.log(resp);
       this.CATEGORIE_COMISSIONS = resp.categorie_commissions;
       this.categorias = resp.categorias;
       this.totalPages = resp.total;

@@ -51,7 +51,7 @@ export class CreatePositionComissionComponent {
     }
 
     this.positionComissionService.registerPositionComision(data).subscribe((resp:any) => {
-      console.log(resp);
+      // console.log(resp);
       if(resp.message == 403){
         this.toast.error("Validación",resp.message_text);
       }else{

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { Subject, takeUntil, timer, retry, catchError, of } from 'rxjs';
 import { AuthService } from 'src/app/modules/auth';
 import { WorkspaceService } from 'src/app/modules/tasks/workspaces/service/workspace.service';
@@ -19,20 +19,22 @@ export class SidebarMenuComponent implements OnInit, OnDestroy {
   
   constructor(
     public authService: AuthService,
-    private workspaceService: WorkspaceService
+    private workspaceService: WorkspaceService,
+    private cdr: ChangeDetectorRef,  // ✅ SOLUCIÓN: Inyectar ChangeDetectorRef
+    private ngZone: NgZone  // ✅ SOLUCIÓN: Inyectar NgZone
   ) { }
 
   ngOnInit(): void {
     this.user = this.authService.user;
     
-    // ✅ SOLUCIÓN PROBLEMA 1: Timer inicial más corto
+    // ✅ SOLUCIÓN: Timer inicial más corto
     timer(200).pipe(
       takeUntil(this.destroy$)
     ).subscribe(() => {
       this.loadWorkspaces();
     });
 
-    // ✅ SOLUCIÓN PROBLEMAS 1 y 2: Suscribirse a cambios de workspaces
+    // ✅ SOLUCIÓN: Suscribirse a cambios de workspaces
     this.workspaceService.workspacesChanged$.pipe(
       takeUntil(this.destroy$)
     ).subscribe(changed => {
@@ -50,7 +52,7 @@ export class SidebarMenuComponent implements OnInit, OnDestroy {
   
   /**
    * 📋 Cargar workspaces del usuario
-   * ✅ SOLUCIÓN PROBLEMA 1: Mejor manejo de datos
+   * ✅ SOLUCIÓN: Forzar detección de cambios después de cargar
    */
   loadWorkspaces() {
     if (!this.showMenu(['register_task', 'edit_task'])) {
@@ -77,18 +79,25 @@ export class SidebarMenuComponent implements OnInit, OnDestroy {
         console.log('📦 Sidebar - Respuesta recibida:', resp);
         
         if (resp.message === 200 && resp.workspaces) {
-          this.workspaces = resp.workspaces || [];
-          
-          // Ordenar por fecha de creación (más recientes primero)
-          this.workspaces.sort((a, b) => {
-            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          // ✅ SOLUCIÓN CRÍTICA: Ejecutar dentro de NgZone para asegurar detección
+          this.ngZone.run(() => {
+            this.workspaces = resp.workspaces || [];
+            
+            // Ordenar por fecha de creación (más recientes primero)
+            this.workspaces.sort((a, b) => {
+              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            });
+            
+            console.log('✅ Sidebar - Workspaces cargados:', this.workspaces.length);
+            console.log('📋 Workspaces:', this.workspaces.map(w => w.name));
+            
+            this.loadingWorkspaces = false;
+            this.loadAttempts = 0;
+            
+            // ✅ SOLUCIÓN CRÍTICA: Forzar detección de cambios
+            this.cdr.detectChanges();
+            console.log('🔄 Sidebar - Change detection forzada');
           });
-          
-          console.log('✅ Sidebar - Workspaces cargados:', this.workspaces.length);
-          console.log('📋 Workspaces:', this.workspaces.map(w => w.name));
-          
-          this.loadingWorkspaces = false;
-          this.loadAttempts = 0; // Reset intentos después de éxito
           
         } else if (this.loadAttempts < this.maxRetries) {
           // Reintentar después de 2 segundos
@@ -102,11 +111,18 @@ export class SidebarMenuComponent implements OnInit, OnDestroy {
         } else {
           console.warn('⚠️ Sidebar - Máximo de reintentos alcanzado');
           this.loadingWorkspaces = false;
+          // ✅ Forzar detección incluso en caso de error
+          this.cdr.detectChanges();
         }
       },
       error: (error) => {
         console.error('❌ Sidebar - Error en suscripción:', error);
-        this.loadingWorkspaces = false;
+        
+        // ✅ SOLUCIÓN: Ejecutar en NgZone
+        this.ngZone.run(() => {
+          this.loadingWorkspaces = false;
+          this.cdr.detectChanges();
+        });
         
         // ✅ Reintentar automáticamente si no se ha alcanzado el máximo
         if (this.loadAttempts < this.maxRetries) {

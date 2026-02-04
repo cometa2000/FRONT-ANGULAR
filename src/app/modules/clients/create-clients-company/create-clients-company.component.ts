@@ -62,25 +62,25 @@ export class CreateClientsCompanyComponent {
   }
 
   changeRegion($event:any){
-    console.log($event.target.value);
+    // console.log($event.target.value);
     let REGION_ID = $event.target.value;
     let REGION_SELECTED = this.REGIONES.find((region:any) => region.id == REGION_ID);
     if(REGION_SELECTED){
       this.region = REGION_SELECTED.name;
     }
     let provincias = this.PROVINCIAS.filter((provincia:any) => provincia.department_id == REGION_ID);
-    console.log(provincias);
+    // console.log(provincias);
     this.PROVINCIA_SELECTEDS = provincias;
   }
   changeProvincia($event:any){
-    console.log($event.target.value);
+    // console.log($event.target.value);
     let PROVINCIA_ID = $event.target.value;
     let PROVINCIA_SELECTED = this.PROVINCIAS.find((prov:any) => prov.id == PROVINCIA_ID);
     if(PROVINCIA_SELECTED){
       this.provincia = PROVINCIA_SELECTED.name;
     }
     let distritos = this.DISTRITOS.filter((distrito:any) => distrito.province_id == PROVINCIA_ID);
-    console.log(distritos);
+    // console.log(distritos);
     this.DISTRITO_SELECTEDS = distritos;
   }
   selectedTab(val:number){
@@ -124,7 +124,7 @@ export class CreateClientsCompanyComponent {
     }
 
     this.clientsService.registerClient(data).subscribe((resp:any) => {
-      console.log(resp);
+      // console.log(resp);
       if(resp.message == 403){
         this.toast.error("Validación",resp.message_text);
       }else{

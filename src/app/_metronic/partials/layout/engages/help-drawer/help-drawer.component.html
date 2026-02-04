@@ -12,14 +12,141 @@
   data-kt-drawer-close="#kt_help_close">
 
   <!--begin::Card-->
-  <!-- VIDEO DE FONDO -->
-<div class="video-background">
-  <video autoplay muted loop playsinline>
-    <source src="assets/media/videos/fondo1.mp4" type="video/mp4">
-  </video>
-</div>
+
+  <!-- Card de Construcción -->
+  <div class="construction-card">
+    <div class="construction-card-content">
+      <div class="construction-icon">
+        <i class="bi bi-cone-striped"></i>
+      </div>
+      <h3 class="construction-title">Estamos en Construcción</h3>
+      <video class="video" autoplay muted loop playsinline>
+        <source src="assets/media/videos/fondo1.mp4" type="video/mp4">
+      </video>
+      <p class="construction-text">
+        Cualquier inconveniente o ayuda comunicarse al área de sistemas
+      </p>
+      <div class="construction-contact">
+        <i class="bi bi-whatsapp"></i>
+        <a href="https://wa.me/525572058400" target="_blank">55 7205 8400</a>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .video{
+      width: 40%;
+    }
+
+    .construction-card {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .construction-card-content {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 40px 30px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      border: 2px solid rgba(255, 193, 7, 0.3);
+    }
+
+    .construction-icon {
+      font-size: 64px;
+      color: #FFC107;
+      margin-bottom: 20px;
+      animation: bounce 2s infinite;
+    }
+
+    .construction-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1e1e2d;
+      margin-bottom: 15px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .construction-text {
+      font-size: 15px;
+      color: #5e6278;
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+
+    .construction-contact {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+      padding: 15px 25px;
+      border-radius: 10px;
+      transition: transform 0.3s ease;
+      cursor: pointer;
+    }
+
+    .construction-contact:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 20px rgba(37, 211, 102, 0.4);
+    }
+
+    .construction-contact i {
+      color: white;
+      font-size: 20px;
+    }
+
+    .construction-contact a {
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      text-decoration: none;
+      letter-spacing: 1px;
+    }
+
+    @keyframes bounce {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .construction-card {
+        width: 85%;
+      }
+
+      .construction-card-content {
+        padding: 30px 20px;
+      }
+
+      .construction-icon {
+        font-size: 48px;
+      }
+
+      .construction-title {
+        font-size: 20px;
+      }
+
+      .construction-text {
+        font-size: 14px;
+      }
+
+      .construction-contact a {
+        font-size: 16px;
+      }
+    }
+  </style>
 
   <!--end::Card-->
 </div>
 <!--end::Exolore drawer-->
-

@@ -40,7 +40,34 @@
 
       <!-- HEADER DE TAREA -->
       <div class="tarea-header-section">
-        <h2 class="tarea-title">{{ tarea.name || 'Sin título' }}</h2>
+        <!-- 🔄 MODO VISUALIZACIÓN -->
+        <h2 
+          *ngIf="!editingTaskName" 
+          class="tarea-title editable-title" 
+          (dblclick)="startEditingTaskName()"
+          [title]="hasWriteAccess ? 'Doble click para editar' : 'Solo lectura'">
+          {{ tarea.name || 'Sin título' }}
+        </h2>
+        
+        <!-- ✏️ MODO EDICIÓN -->
+        <div *ngIf="editingTaskName" class="edit-task-name-container">
+          <input 
+            type="text" 
+            class="form-control edit-task-name-input" 
+            [(ngModel)]="tempTaskName"
+            (keyup.enter)="saveTaskName()"
+            (keyup.escape)="cancelEditTaskName()"
+            maxlength="150"
+            placeholder="Nombre de la tarea">
+          <div class="edit-task-name-actions mt-2">
+            <button class="btn btn-sm btn-primary" (click)="saveTaskName()">
+              <i class="fa-solid fa-check"></i> Guardar
+            </button>
+            <button class="btn btn-sm btn-secondary ms-2" (click)="cancelEditTaskName()">
+              <i class="fa-solid fa-times"></i> Cancelar
+            </button>
+          </div>
+        </div>
 
         <!-- ✅ ACCIONES LATERALES - Solo mostrar si tiene permisos -->
         <div class="tarea-actions" *ngIf="hasWriteAccess">
@@ -118,7 +145,7 @@
         </div>
 
         <!-- 🆕 ETIQUETAS - Solo mostrar si hay etiquetas -->
-        <div class="section" *ngIf="tarea.etiquetas && tarea.etiquetas.length > 0">
+        <div class="section mt-4" *ngIf="tarea.etiquetas && tarea.etiquetas.length > 0">
           <div class="section-header">
             <i class="fa-solid fa-tag"></i>
             <h3>Etiquetas</h3>
@@ -128,7 +155,7 @@
             <div class="etiquetas-container">
 
               <div *ngFor="let etiqueta of tarea.etiquetas" class="etiqueta-wrapper">
-                <span class="etiqueta-tag" [ngClass]="getEtiquetaColorClass(etiqueta.color)">
+                <span class="etiqueta-tag" [style.background-color]="etiqueta.color">
                   {{ etiqueta.name }}
                 </span>
 
@@ -321,11 +348,49 @@
             <div *ngFor="let checklist of tarea.checklists" class="checklist-block">
               
               <div class="checklist-header">
-                <h4>{{ checklist.name }}</h4>
+                <!-- 🔄 MODO VISUALIZACIÓN DEL CHECKLIST -->
+                <h4 
+                  *ngIf="editingChecklistId !== checklist.id" 
+                  class="checklist-name editable-checklist-name"
+                  (dblclick)="startEditingChecklist(checklist)"
+                  [title]="hasWriteAccess ? 'Doble click para editar' : 'Solo lectura'">
+                  {{ checklist.name }}
+                </h4>
+                
+                <!-- ✏️ MODO EDICIÓN DEL CHECKLIST -->
+                <div *ngIf="editingChecklistId === checklist.id" class="edit-checklist-container">
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm edit-checklist-input-{{checklist.id}}" 
+                    [(ngModel)]="editingChecklistName"
+                    (keyup.enter)="saveChecklistName(checklist.id)"
+                    (keyup.escape)="cancelEditChecklist()"
+                    maxlength="100"
+                    placeholder="Nombre del checklist">
+                  <div class="edit-checklist-actions">
+                    <button class="btn btn-xs btn-success" (click)="saveChecklistName(checklist.id)" title="Guardar">
+                      <i class="fa-solid fa-check"></i>
+                    </button>
+                    <button class="btn btn-xs btn-secondary ms-1" (click)="cancelEditChecklist()" title="Cancelar">
+                      <i class="fa-solid fa-times"></i>
+                    </button>
+                  </div>
+                </div>
 
                 <!-- ✅ Solo mostrar acciones si tiene permisos -->
                 <div class="checklist-actions" *ngIf="hasWriteAccess">
-                  <button (click)="deleteChecklist(checklist.id)">Eliminar</button>
+                  <button 
+                    class="btn-icon-sm"
+                    (click)="startEditingChecklist(checklist)"
+                    title="Editar checklist">
+                    <i class="fa-solid fa-pen"></i>
+                  </button>
+                  <button 
+                    class="btn-icon-sm btn-danger-icon"
+                    (click)="deleteChecklist(checklist.id)"
+                    title="Eliminar checklist">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
                 </div>
               </div>
 
@@ -344,14 +409,59 @@
                     type="checkbox" 
                     [checked]="item.completed" 
                     [disabled]="!hasWriteAccess"
-                    (change)="toggleChecklistItem(checklist.id, item)">
+                    (change)="toggleChecklistItem(checklist.id, item.id)">
 
                   <div class="item-content">
-                    <span class="item-name" [ngClass]="{'completed': item.completed}">{{ item.name }}</span>
+                    <!-- 🔄 MODO VISUALIZACIÓN DEL ITEM -->
+                    <span 
+                      *ngIf="editingItemId !== item.id"
+                      class="item-name editable-item-name" 
+                      [ngClass]="{'completed': item.completed}"
+                      (dblclick)="startEditingItem(checklist.id, item)"
+                      [title]="hasWriteAccess ? 'Doble click para editar' : 'Solo lectura'">
+                      {{ item.name }}
+                    </span>
+                    
+                    <!-- ✏️ MODO EDICIÓN DEL ITEM -->
+                    <div *ngIf="editingItemId === item.id" class="edit-item-inline">
+                      <input 
+                        type="text" 
+                        class="form-control form-control-sm edit-item-input-{{item.id}}" 
+                        [(ngModel)]="editingItemName"
+                        (keyup.enter)="saveItemName(checklist.id, item.id)"
+                        (keyup.escape)="cancelEditItem()"
+                        maxlength="255"
+                        placeholder="Nombre del elemento">
+                      <div class="checklist-actions">
+                        <button 
+                          class="btn btn-xs btn-success" 
+                          (click)="saveItemName(checklist.id, item.id)" 
+                          title="Guardar">
+                          <i class="fa-solid fa-check"></i>
+                        </button>
+                        <button 
+                          class="btn btn-xs btn-secondary ms-1" 
+                          (click)="cancelEditItem()" 
+                          title="Cancelar">
+                          <i class="fa-solid fa-times"></i>
+                        </button>
+                      </div>
+                    </div>
 
-                    <!-- ✅ Solo mostrar acciones si tiene permisos -->
-                    <div class="item-actions" *ngIf="hasWriteAccess">
-                      <button (click)="deleteChecklistItem(checklist.id, item.id)">Eliminar</button>
+                    <!-- ✅ Solo mostrar acciones si tiene permisos y no está editando -->
+                    <div class="item-actions" *ngIf="hasWriteAccess && editingItemId !== item.id">
+                      <button 
+                        class="btn-icon-xs"
+                        (click)="startEditingItem(checklist.id, item)"
+                        title="Editar">
+                        <i class="fa-solid fa-pen"></i>
+                      </button>
+                      <button 
+                        class="btn-icon-xs btn-danger-icon"
+                        (click)="deleteChecklistItem(checklist.id, item.id)"
+                        title="Eliminar">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
                     </div>
                   </div>
 

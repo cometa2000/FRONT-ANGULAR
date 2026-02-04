@@ -34,7 +34,7 @@ export class ListClientSegmentComponent {
 
   listClientSegments(page = 1){
     this.clientSegmentService.listClientSegments(page,this.search).subscribe((resp:any) => {
-      console.log(resp);
+      // console.log(resp);
       this.CLIENTE_SEGMENTS = resp.client_segments;
       this.totalPages = resp.total;
       this.currentPage = page;

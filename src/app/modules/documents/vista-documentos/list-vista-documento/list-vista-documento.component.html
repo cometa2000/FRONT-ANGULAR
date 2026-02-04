@@ -1,11 +1,10 @@
 <div class="card">
-  <!--begin::Card header-->
+  <!-- Card header -->
   <div class="card-header border-0 pt-6">
-    <!--begin::Card title-->
-    <div class="card-title">
-      <!--begin::Breadcrumb-->
-      <div class="d-flex align-items-center">
-        <!-- Botón de volver -->
+    <!-- Card title con breadcrumb -->
+    <div class="card-title flex-column align-items-start">
+      <!-- Breadcrumb -->
+      <div class="d-flex align-items-center mb-3">
         <button 
           *ngIf="breadcrumb.length > 1"
           class="btn btn-icon btn-light btn-sm me-3"
@@ -17,7 +16,6 @@
           </i>
         </button>
 
-        <!-- Breadcrumb de navegación -->
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb breadcrumb-line text-muted fs-6 fw-semibold mb-0">
             <li class="breadcrumb-item" *ngFor="let item of breadcrumb; let i = index; let last = last">
@@ -44,16 +42,9 @@
           </ol>
         </nav>
       </div>
-      <!--end::Breadcrumb-->
-    </div>
-    <!--begin::Card title-->
 
-    <span class="spinner-border spinner-border-sm align-middle ms-2" *ngIf="isLoading$ | async"></span>
-
-    <!--begin::Card toolbar-->
-    <div class="card-toolbar">
-      <!--begin::Search-->
-      <div class="d-flex align-items-center position-relative me-3">
+      <!-- Búsqueda -->
+      <div class="d-flex align-items-center position-relative">
         <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-5">
           <span class="path1"></span>
           <span class="path2"></span>
@@ -63,15 +54,19 @@
           [(ngModel)]="search" 
           (keyup.enter)="listDocumentos()" 
           name="search"
-          class="form-control form-control-solid w-250px ps-12" 
-          placeholder="Buscar...">
+          class="form-control form-control-solid w-300px ps-12" 
+          placeholder="Buscar documentos...">
       </div>
-      <!--end::Search-->
+    </div>
 
-      <!--begin::Create Folder Button-->
+    <span class="spinner-border spinner-border-sm align-middle ms-2" *ngIf="isLoading$ | async"></span>
+
+    <!-- Card toolbar -->
+    <div class="card-toolbar">
+      <!-- Botón Nueva Carpeta -->
       <button 
         type="button" 
-        class="btn btn-primary me-2"
+        class="btn btn-light-primary me-2"
         (click)="createFolder()">
         <i class="ki-duotone ki-folder-added fs-2">
           <span class="path1"></span>
@@ -79,201 +74,180 @@
         </i>
         Nueva Carpeta
       </button>
-      <!--end::Create Folder Button-->
+
+      <!-- Botón Subir Documento -->
+      <button 
+        type="button" 
+        class="btn btn-primary"
+        (click)="uploadDocumento()">
+        <i class="ki-duotone ki-file-up fs-2">
+          <span class="path1"></span>
+          <span class="path2"></span>
+        </i>
+        Subir Documento(s)
+      </button>
     </div>
-    <!--end::Card toolbar-->
   </div>
-  <!--end::Card header-->
 
-  <!--begin::Card body-->
+  <!-- Card body -->
   <div class="card-body pt-0">
+    
+    <!-- Tabla de documentos -->
+    <div class="table-responsive">
+      <table class="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
+        <!-- Encabezados -->
+        <thead>
+          <tr class="fw-bold text-muted">
+            <th class="w-50px"></th>
+            <th class="min-w-300px cursor-pointer" (click)="sortBy('name')">
+              Nombre
+              <i class="ki-duotone ki-arrow-up fs-7 ms-1" *ngIf="sortColumn === 'name' && sortDirection === 'asc'"></i>
+              <i class="ki-duotone ki-arrow-down fs-7 ms-1" *ngIf="sortColumn === 'name' && sortDirection === 'desc'"></i>
+            </th>
+            <th class="min-w-150px cursor-pointer" (click)="sortBy('user')">
+              Propietario
+              <i class="ki-duotone ki-arrow-up fs-7 ms-1" *ngIf="sortColumn === 'user' && sortDirection === 'asc'"></i>
+              <i class="ki-duotone ki-arrow-down fs-7 ms-1" *ngIf="sortColumn === 'user' && sortDirection === 'desc'"></i>
+            </th>
+            <th class="min-w-150px cursor-pointer" (click)="sortBy('updated_at')">
+              Fecha de modificación
+              <i class="ki-duotone ki-arrow-up fs-7 ms-1" *ngIf="sortColumn === 'updated_at' && sortDirection === 'asc'"></i>
+              <i class="ki-duotone ki-arrow-down fs-7 ms-1" *ngIf="sortColumn === 'updated_at' && sortDirection === 'desc'"></i>
+            </th>
+            <th class="min-w-100px cursor-pointer" (click)="sortBy('size')">
+              Tamaño
+              <i class="ki-duotone ki-arrow-up fs-7 ms-1" *ngIf="sortColumn === 'size' && sortDirection === 'asc'"></i>
+              <i class="ki-duotone ki-arrow-down fs-7 ms-1" *ngIf="sortColumn === 'size' && sortDirection === 'desc'"></i>
+            </th>
+            <th class="min-w-100px text-end">Acciones</th>
+          </tr>
+        </thead>
 
-    <!-- Drop Zone para la carpeta actual (raíz) -->
-    <div 
-      #rootDropZone
-      class="drop-zone-root mb-5 p-5 border border-dashed border-gray-300 rounded text-center"
-      *ngIf="isDragging"
-      [class.drop-zone-root-active]="isOverRoot">
-      <i class="ki-duotone ki-folder-down fs-3x text-primary">
-        <span class="path1"></span>
-        <span class="path2"></span>
-      </i>
-      <p class="text-gray-600 mt-3 mb-0">
-        Suelta aquí para mover a <strong>{{ breadcrumb[breadcrumb.length - 1].name }}</strong>
-      </p>
-      <div *ngIf="draggedItems && draggedItems.length > 1" class="text-muted fs-8 mt-1">
-        Moviendo {{ draggedItems.length }} elemento(s)
-      </div>
-    </div>
-
-    <!-- Vista flotante de stack al arrastrar (multi / individual) -->
-    <div 
-      *ngIf="dragPreviewVisible"
-      class="dragging-stack-preview"
-      [ngStyle]="{ top: dragPreviewPosition.y + 'px', left: dragPreviewPosition.x + 'px' }">
-      <div class="stack-icon">
-        <!-- 1 solo folder -->
-        <i class="ki-duotone ki-folder fs-2x" *ngIf="draggedItems?.length === 1 && draggedItems[0]?.type === 'folder'">
-          <span class="path1"></span>
-          <span class="path2"></span>
-          <span class="path3"></span>
-        </i>
-        <!-- 1 solo file o default -->
-        <i class="ki-duotone ki-file fs-2x" *ngIf="draggedItems?.length === 1 && draggedItems[0]?.type === 'file'">
-          <span class="path1"></span>
-          <span class="path2"></span>
-        </i>
-        <!-- Varios elementos -->
-        <i class="ki-duotone ki-folder fs-2x" *ngIf="(draggedItems?.length || 0) > 1">
-          <span class="path1"></span>
-          <span class="path2"></span>
-          <span class="path3"></span>
-        </i>
-      </div>
-      <div class="stack-text">
-        {{ draggedItems?.length || 0 }} elemento(s)
-      </div>
-    </div>
-
-    <!--begin::Grid View (Vista de tarjetas)-->
-    <div class="row g-6 g-xl-9 mb-6">
-      <ng-container *ngFor="let DOCUMENTO of DOCUMENTOS">
-        <div class="col-md-6 col-lg-4 col-xl-3">
-          <!--begin::Card-->
-          <div 
-            class="card h-100 documento-card"
-            [class.is-folder]="DOCUMENTO.type === 'folder'"
-            [class.is-file]="DOCUMENTO.type === 'file'"
-            [class.drag-selected]="isSelected(DOCUMENTO)"
-            [class.drop-zone-active]="hoverFolderId === DOCUMENTO.id && DOCUMENTO.type === 'folder'"
-            cdkDrag
-            [cdkDragData]="DOCUMENTO"
-            [attr.data-id]="DOCUMENTO.id"
-            (cdkDragStarted)="onDragStarted(DOCUMENTO)"
-            (cdkDragMoved)="onDragMoved($event)"
-            (cdkDragEnded)="onDragEnded($event)">
-
-            <!-- Checkbox de selección -->
-            <div class="doc-select-checkbox form-check form-check-sm">
-              <input 
-                type="checkbox" 
-                class="form-check-input"
-                [checked]="isSelected(DOCUMENTO)"
-                (click)="$event.stopPropagation()"
-                (change)="toggleSelection(DOCUMENTO, $event)">
-            </div>
-            
-            <!--begin::Card body-->
-            <div 
-              class="card-body d-flex flex-column text-center pb-5"
-              (click)="onCardClick(DOCUMENTO, $event)">
-              
-              <!-- Icono del archivo/carpeta -->
-              <a 
-                href="#" 
-                onclick="return false;"
-                class="text-gray-800 text-hover-primary d-flex flex-column">
-                
-                <div class="symbol symbol-75px mb-5">
+        <!-- Cuerpo de la tabla -->
+        <tbody>
+          <tr *ngFor="let DOCUMENTO of sortedDocumentos" class="documento-row">
+            <!-- Ícono -->
+            <td>
+              <div class="symbol symbol-45px">
+                <div 
+                  class="symbol-label"
+                  [ngClass]="DOCUMENTO.type === 'folder' ? 'bg-light-warning' : getFileIconClass(DOCUMENTO)">
                   <i 
-                    class="ki-duotone {{ getFileIcon(DOCUMENTO) }} fs-3x {{ getFileIconClass(DOCUMENTO) }}">
+                    [class]="getFileIcon(DOCUMENTO) + ' fs-2x'"
+                    [ngClass]="getFileIconColor(DOCUMENTO)">
                     <span class="path1"></span>
                     <span class="path2"></span>
                     <span *ngIf="DOCUMENTO.type === 'folder'" class="path3"></span>
                   </i>
                 </div>
+              </div>
+            </td>
 
-                <!-- Nombre -->
-                <div class="fs-5 fw-bold mb-2 text-truncate" [title]="DOCUMENTO.name">
-                  {{ DOCUMENTO.name }}
-                </div>
+            <!-- Nombre con badge "new" si aplica -->
+            <td>
+              <a 
+                href="#" 
+                onclick="return false;"
+                (click)="viewDocumento(DOCUMENTO)"
+                class="text-gray-800 text-hover-primary fw-bold fs-6">
+                {{ DOCUMENTO.name }}
               </a>
+              
+              <!-- Badge NEW -->
+              <span 
+                class="badge badge-sm badge-light-primary ms-2"
+                *ngIf="DOCUMENTO.is_new">
+                Nuevo
+              </span>
 
-              <!-- Información adicional -->
-              <div class="text-muted fs-7 mb-3">
-                <ng-container *ngIf="DOCUMENTO.type === 'folder'">
-                  <i class="ki-duotone ki-files fs-6 me-1">
-                    <span class="path1"></span>
-                    <span class="path2"></span>
-                  </i>
-                  {{ DOCUMENTO.files_count || 0 }} archivo(s)
-                </ng-container>
+              <!-- Info de carpeta -->
+              <div class="text-muted fs-7 mt-1" *ngIf="DOCUMENTO.type === 'folder'">
+                {{ DOCUMENTO.files_count || 0 }} archivo(s)
+              </div>
+            </td>
+
+            <!-- Propietario -->
+            <td>
+              <div class="d-flex align-items-center">
+                <div class="symbol symbol-30px me-3">
+                  <div class="symbol-label bg-light-primary">
+                    <span class="text-primary fw-bold fs-7">
+                      {{ getInitials(DOCUMENTO.user?.name, DOCUMENTO.user?.surname) }}
+                    </span>
+                  </div>
+                </div>
+                <div class="d-flex flex-column">
+                  <span class="text-gray-800 fs-7 fw-semibold">
+                    {{ DOCUMENTO.user?.name }} {{ DOCUMENTO.user?.surname }}
+                  </span>
+                </div>
+              </div>
+            </td>
+
+            <!-- Fecha de modificación -->
+            <td>
+              <span class="text-gray-600 fs-7">
+                {{ DOCUMENTO.updated_at }}
+              </span>
+            </td>
+
+            <!-- Tamaño -->
+            <td>
+              <span class="text-gray-600 fs-7">
                 <ng-container *ngIf="DOCUMENTO.type === 'file'">
                   {{ DOCUMENTO.size_formatted }}
                 </ng-container>
+                <ng-container *ngIf="DOCUMENTO.type === 'folder'">
+                  —
+                </ng-container>
+              </span>
+            </td>
+
+            <!-- Acciones -->
+            <td class="text-end">
+              <!-- Botón Mover -->
+              <button
+                class="btn btn-icon btn-light-primary btn-sm me-1"
+                (click)="moveDocumento(DOCUMENTO); $event.stopPropagation()"
+                title="Mover">
+                <i class="ki-duotone ki-arrow-right-left fs-2">
+                  <span class="path1"></span>
+                  <span class="path2"></span>
+                </i>
+              </button>
+
+              <!-- Botón Eliminar (condicional) -->
+              <button
+                *ngIf="canDelete(DOCUMENTO)"
+                class="btn btn-icon btn-light-danger btn-sm"
+                (click)="deleteDocumento(DOCUMENTO); $event.stopPropagation()"
+                title="Eliminar">
+                <i class="ki-duotone ki-trash fs-2">
+                  <span class="path1"></span>
+                  <span class="path2"></span>
+                  <span class="path3"></span>
+                  <span class="path4"></span>
+                  <span class="path5"></span>
+                </i>
+              </button>
+            </td>
+          </tr>
+
+          <!-- Mensaje si no hay documentos -->
+          <tr *ngIf="DOCUMENTOS.length === 0">
+            <td colspan="6" class="text-center py-10">
+              <div class="d-flex flex-column align-items-center">
+                <i class="ki-duotone ki-folder fs-5x text-gray-400 mb-5">
+                  <span class="path1"></span>
+                  <span class="path2"></span>
+                </i>
+                <h3 class="text-gray-600">Esta carpeta está vacía</h3>
+                <p class="text-muted">Crea una nueva carpeta o sube archivos</p>
               </div>
-
-              <!-- Usuario y fecha -->
-              <div class="text-muted fs-8 mb-3">
-                <div class="text-truncate" [title]="DOCUMENTO.user?.name + ' ' + DOCUMENTO.user?.surname">
-                  <i class="ki-duotone ki-user fs-6 me-1">
-                    <span class="path1"></span>
-                    <span class="path2"></span>
-                  </i>
-                  {{ DOCUMENTO.user?.name }} {{ DOCUMENTO.user?.surname }}
-                </div>
-                <div class="mt-1">
-                  <i class="ki-duotone ki-calendar fs-6 me-1">
-                    <span class="path1"></span>
-                    <span class="path2"></span>
-                  </i>
-                  {{ DOCUMENTO.created_at }}
-                </div>
-              </div>
-
-              <!-- Acciones -->
-              <div class="d-flex justify-content-center gap-2 mt-auto">
-                <!-- Ver/Abrir -->
-                <button
-                  class="btn btn-icon btn-light btn-sm"
-                  (click)="viewDocumento(DOCUMENTO); $event.stopPropagation()"
-                  [title]="DOCUMENTO.type === 'folder' ? 'Abrir carpeta' : 'Ver documento'">
-                  <i class="fa-solid fa-eye"></i>
-                </button>
-
-                <!-- Descargar -->
-                <button 
-                    *ngIf="DOCUMENTO.type === 'file' && DOCUMENTO.file_path"
-                    class="btn btn-icon btn-light-success btn-sm"
-                    (click)="downloadDocument(DOCUMENTO); $event.stopPropagation()"
-                    title="Descargar">
-                    <i class="fa-solid fa-circle-arrow-down"></i>
-                </button>
-
-                <!-- Eliminar -->
-                <button
-                  class="btn btn-icon btn-light-danger btn-sm"
-                  (click)="deleteDocumento(DOCUMENTO); $event.stopPropagation()"
-                  title="Eliminar">
-                  <i class="ki-duotone ki-trash fs-2">
-                    <span class="path1"></span>
-                    <span class="path2"></span>
-                    <span class="path3"></span>
-                    <span class="path4"></span>
-                    <span class="path5"></span>
-                  </i>
-                </button>
-              </div>
-            </div>
-            <!--end::Card body-->
-          </div>
-          <!--end::Card-->
-        </div>
-      </ng-container>
-
-      <!-- Mensaje si no hay documentos -->
-      <div class="col-12" *ngIf="DOCUMENTOS.length === 0">
-        <div class="text-center py-10">
-          <i class="ki-duotone ki-folder fs-5x text-gray-400 mb-5">
-            <span class="path1"></span>
-            <span class="path2"></span>
-          </i>
-          <h3 class="text-gray-600">Esta carpeta está vacía</h3>
-          <p class="text-muted">Crea una nueva carpeta o sube archivos</p>
-        </div>
-      </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    <!--end::Grid View-->
   </div>
-  <!--end::Card body-->
 </div>

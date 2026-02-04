@@ -145,14 +145,46 @@ $label-black: #344563;
 
 /* Título de la tarea */
 .tarea-title {
-  margin: 0 0 12px 0;
-  margin-left: 25px;
-  padding: 0;
-  font-size: 20px;
+  margin: 0;
+  font-size: 1.75rem;
   font-weight: 600;
-  color: $trello-text-primary;
-  line-height: 24px;
-  word-break: break-word;
+  color: #1e293b;
+  transition: all 0.2s ease;
+  
+  &.editable-title {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 8px 12px;
+    
+    &:hover {
+      background-color: #f1f5f9;
+      color: #3b82f6;
+    }
+  }
+}
+
+.edit-task-name-container {
+  width: 100%;
+  
+  .edit-task-name-input {
+    font-size: 1.75rem;
+    font-weight: 600;
+    padding: 8px 12px;
+    border: 2px solid #3b82f6;
+    border-radius: 4px;
+    
+    &:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+  }
+  
+  .edit-task-name-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
 }
 
 /* Botones de acción de la tarea */
@@ -509,35 +541,61 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  gap: 12px;
   
-  h4 {
+  .checklist-name {
     margin: 0;
-    font-size: 16px;
+    font-size: 1.125rem;
     font-weight: 600;
-    color: $trello-text-primary;
+    color: #1e293b;
+    flex: 1;
+    
+    &.editable-checklist-name {
+      cursor: pointer;
+      border-radius: 4px;
+      padding: 6px 10px;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        background-color: #f1f5f9;
+        color: #3b82f6;
+      }
+    }
+  }
+  
+  .edit-checklist-container {
+    flex: 1;
     display: flex;
     align-items: center;
     gap: 8px;
     
-    i {
-      font-size: 16px;
+    input {
+      flex: 1;
+      padding: 6px 10px;
+      border: 2px solid #3b82f6;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-weight: 500;
+      
+      &:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+    }
+    
+    .edit-checklist-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
     }
   }
   
-  .delete-checklist-btn {
-    padding: 4px 8px;
-    background: transparent;
-    border: none;
-    color: $trello-text-secondary;
-    font-size: 12px;
-    cursor: pointer;
-    border-radius: 3px;
-    
-    &:hover {
-      background-color: $trello-hover;
-      color: $trello-text-primary;
-    }
+  .checklist-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
   }
 }
 
@@ -580,115 +638,187 @@ textarea {
   margin-bottom: 8px;
 }
 
+
 .checklist-item {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 3px;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
+  gap: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
   
+  &:last-child {
+    border-bottom: none;
+  }
+  
+  // Efecto hover en todo el item
   &:hover {
-    background-color: $trello-hover;
-    
-    .item-actions {
-      opacity: 1;
-    }
+    background-color: rgba(9, 30, 66, 0.04);
   }
   
   input[type="checkbox"] {
-    margin-top: 2px;
-    width: 16px;
-    height: 16px;
+    margin-top: 4px;
+    width: 18px;
+    height: 18px;
     cursor: pointer;
-    accent-color: $trello-blue;
+    flex-shrink: 0;
+    accent-color: #0079bf; // Color azul de Trello
+    
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
   }
   
   .item-content {
     flex: 1;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 8px;
-  }
-  
-  .item-name {
-    flex: 1;
-    font-size: 14px;
-    color: $trello-text-primary;
+    min-height: 26px;
     
-    &.completed {
-      text-decoration: line-through;
-      color: $trello-text-secondary;
-    }
-  }
-  
-  .item-actions {
-    display: flex;
-    gap: 4px;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-    
-    button {
-      padding: 2px 6px;
-      background: transparent;
-      border: none;
-      color: $trello-text-secondary;
-      font-size: 12px;
-      cursor: pointer;
-      border-radius: 3px;
+    .item-name {
+      flex: 1;
+      font-size: 0.95rem;
+      color: #172b4d;
+      line-height: 1.5;
+      word-break: break-word;
       
-      &:hover {
-        background-color: $trello-btn-bg;
-        color: $trello-text-primary;
+      &.editable-item-name {
+        cursor: pointer;
+        border-radius: 3px;
+        padding: 4px 6px;
+        margin: -4px -6px;
+        transition: all 0.2s ease;
+        
+        &:hover {
+          background-color: rgba(9, 30, 66, 0.08);
+        }
+      }
+      
+      &.completed {
+        text-decoration: line-through;
+        color: #5e6c84;
+        opacity: 0.7;
+      }
+    }
+    
+    // ✅ MEJORA: Botones más visibles
+    .item-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+      
+      // En desktop: ocultos por defecto, visibles en hover
+      @media (min-width: 769px) {
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+      
+      // En mobile: siempre visibles
+      @media (max-width: 768px) {
+        opacity: 1;
       }
     }
   }
+  
+  // Mostrar botones en hover (solo desktop)
+  .item-content:hover .item-actions {
+    opacity: 1;
+  }
+
 }
 
+
 .add-item-container {
-  margin-top: 8px;
+  margin-top: 12px;
+  padding: 8px;
+  background-color: rgba(9, 30, 66, 0.04);
+  border-radius: 4px;
   
   .add-item-input {
     width: 100%;
     padding: 8px 12px;
-    border: none;
+    border: 2px solid #0079bf;
     border-radius: 3px;
-    background-color: #ffffff;
-    box-shadow: inset 0 0 0 2px $trello-blue;
-    font-size: 14px;
-    color: $trello-text-primary;
-    font-family: inherit;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
     
     &:focus {
       outline: none;
-    }
-    
-    &::placeholder {
-      color: $trello-text-light;
+      border-color: #0079bf;
+      box-shadow: 0 0 0 3px rgba(0, 121, 191, 0.1);
     }
   }
   
   .item-actions {
     display: flex;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 6px;
+    opacity: 1 !important; // Siempre visible en modo agregar
+  }
+  
+  .btn-blue {
+    background-color: #0079bf;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 3px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    
+    &:hover {
+      background-color: #026aa7;
+      transform: translateY(-1px);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+  }
+  
+  .btn-light {
+    background-color: rgba(9, 30, 66, 0.04);
+    color: #172b4d;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 3px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    
+    &:hover {
+      background-color: rgba(9, 30, 66, 0.08);
+    }
   }
 }
 
 .add-checklist-btn {
-  padding: 6px 12px;
-  background-color: $trello-btn-bg;
+  width: 100%;
+  padding: 8px 12px;
+  background-color: rgba(9, 30, 66, 0.04);
   border: none;
   border-radius: 3px;
-  color: $trello-text-primary;
-  font-size: 14px;
+  color: #5e6c84;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
   
   &:hover {
-    background-color: $trello-btn-hover;
+    background-color: rgba(9, 30, 66, 0.08);
+    color: #172b4d;
+  }
+  
+  i {
+    font-size: 0.75rem;
   }
 }
 
@@ -1000,7 +1130,7 @@ textarea {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-4px);
   }
   to {
     opacity: 1;
@@ -1008,9 +1138,44 @@ textarea {
   }
 }
 
-.section {
-  animation: fadeIn 0.3s ease;
+.edit-task-name-container,
+.edit-checklist-container{
+  animation: fadeIn 0.2s ease;
 }
+
+// ========================================
+// 📝 MODO EDICIÓN DE ITEMS
+// ========================================
+
+.edit-item-inline {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: fadeIn 0.2s ease;
+  
+  input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 2px solid #0079bf;
+    border-radius: 3px;
+    font-size: 0.95rem;
+    background-color: white;
+    
+    &:focus {
+      outline: none;
+      border-color: #0079bf;
+      box-shadow: 0 0 0 3px rgba(0, 121, 191, 0.1);
+    }
+  }
+  
+  .edit-item-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+}
+
 
 /* ========================================
    UTILIDADES
@@ -1450,29 +1615,37 @@ textarea {
 // =============================
 // 📱 RESPONSIVE
 // =============================
+
 @media (max-width: 768px) {
-  .adjunto-item {
-    flex-wrap: wrap;
-    gap: 0.75rem;
-
-    .adjunto-info {
-      flex-basis: 100%;
-      order: 2;
-    }
-
-    .adjunto-acciones {
-      order: 3;
+  .tarea-title {
+    font-size: 1.5rem;
+  }
+  
+  .edit-task-name-input {
+    font-size: 1.5rem;
+  }
+  
+  .checklist-header {
+    flex-direction: column;
+    align-items: flex-start;
+    
+    .checklist-actions {
       width: 100%;
       justify-content: flex-end;
     }
-
-    .adjunto-icon {
-      order: 1;
+  }
+  
+  .edit-checklist-container {
+    flex-direction: column;
+    
+    .edit-checklist-actions {
+      width: 100%;
+      justify-content: flex-end;
     }
   }
-
-  .adjuntos-group-title {
-    font-size: 0.85rem;
+  
+  .item-actions {
+    opacity: 1 !important;
   }
 }
 
@@ -2185,5 +2358,308 @@ $elegant-border: #e2e8f0;
     background: #fee;
     border-color: #d32f2f;
     color: #d32f2f;
+  }
+}
+
+
+
+.btn-icon-sm {
+  padding: 4px 8px;
+  font-size: 0.875rem;
+  background-color: transparent;
+  border: none;
+  color: #64748b;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: #f1f5f9;
+    color: #3b82f6;
+  }
+  
+  &.btn-danger-icon:hover {
+    background-color: #fee2e2;
+    color: #ef4444;
+  }
+  
+  i {
+    font-size: 0.875rem;
+  }
+}
+
+
+
+// Tooltip para botones
+.btn-icon-xs,
+.btn-xs {
+  position: relative;
+  
+  &[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background-color: #172b4d;
+    color: white;
+    font-size: 0.75rem;
+    border-radius: 3px;
+    white-space: nowrap;
+    margin-bottom: 4px;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+  }
+}
+
+
+// Focus visible para accesibilidad
+.btn-icon-xs:focus-visible,
+.btn-xs:focus-visible {
+  outline: 2px solid #0079bf;
+  outline-offset: 2px;
+}
+
+// Estado disabled
+.btn-icon-xs:disabled,
+.btn-xs:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+
+
+
+// ========================================
+// 7️⃣ ACCESIBILIDAD
+// ========================================
+
+// Focus visible para teclado
+.editable-title:focus-visible,
+.editable-checklist-name:focus-visible,
+.editable-item-name:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+// Estados deshabilitados
+input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+// ========================================
+// 🎯 BARRA DE PROGRESO CHECKLISTS - CORRECCIÓN
+// ========================================
+
+.progress-bar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 4px 0;
+  
+  .progress-bar {
+    flex: 1;
+    height: 8px;
+    background-color: rgba(9, 30, 66, 0.13);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    
+    .progress-fill {
+      height: 100%;
+      background-color: #0079bf; // Azul de Trello por defecto
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 4px;
+      position: relative;
+      
+      // Cuando el progreso es 100%, cambiar a verde
+      &[style*="width: 100%"] {
+        background-color: #61bd4f !important; // Verde al 100%
+      }
+    }
+  }
+  
+  .progress-text {
+    font-size: 11px;
+    color: #5e6c84;
+    font-weight: 600;
+    min-width: 35px;
+    text-align: right;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  }
+}
+
+// ========================================
+// 🏷️ ETIQUETAS CON COLORES DINÁMICOS - CORRECCIÓN
+// ========================================
+
+// Sobrescribir estilos de etiquetas para usar colores dinámicos
+.etiqueta-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ffffff !important; // Texto blanco por defecto
+  gap: 6px;
+  white-space: nowrap;
+  line-height: 1.4;
+  transition: opacity 0.2s ease;
+  
+  // Asegurar que el texto sea legible en colores claros
+  // Amarillo, Lima, Celeste claro
+  &[style*="#F2D600"],
+  &[style*="#51E898"],
+  &[style*="#00C2E0"],
+  &[style*="rgb(242, 214, 0)"],
+  &[style*="rgb(81, 232, 152)"],
+  &[style*="rgb(0, 194, 224)"] {
+    color: #172b4d !important; // Texto oscuro para colores claros
+  }
+  
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.etiqueta-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  border-radius: 6px;
+  padding: 2px;
+  margin-right: 4px;
+  margin-bottom: 4px;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: rgba(9, 30, 66, 0.08);
+  }
+
+  .etiqueta-actions {
+    display: flex;
+    gap: 2px;
+    margin-left: 4px;
+    overflow: hidden;
+    width: 0;
+    opacity: 0;
+    transition: width 0.25s ease, opacity 0.25s ease;
+  }
+
+  &:hover .etiqueta-actions {
+    width: 56px;
+    opacity: 1;
+  }
+}
+
+.etiqueta-action-btn {
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  cursor: pointer;
+  color: #5e6c84;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    background-color: rgba(9, 30, 66, 0.13);
+    color: #172b4d;
+  }
+  
+  &.delete:hover {
+    background-color: #eb5a46;
+    color: white;
+  }
+  
+  i {
+    font-size: 11px;
+  }
+}
+
+// ========================================
+// 📊 VARIACIONES DE COLOR DE LA BARRA
+// ========================================
+
+// Colores progresivos según el porcentaje
+.progress-bar-wrapper {
+  .progress-fill {
+    // 0-24%: Rojo
+    &[style*="width: 0%"],
+    &[style*="width: 1%"],
+    &[style*="width: 2%"] {
+      background-color: #eb5a46 !important;
+    }
+    
+    // 25-49%: Naranja
+    &[style*="width: 25%"],
+    &[style*="width: 3"],
+    &[style*="width: 4"] {
+      background-color: #ff9f1a !important;
+    }
+    
+    // 50-74%: Amarillo
+    &[style*="width: 5"],
+    &[style*="width: 6"],
+    &[style*="width: 7"] {
+      background-color: #f2d600 !important;
+    }
+    
+    // 75-99%: Azul
+    &[style*="width: 75%"],
+    &[style*="width: 8"],
+    &[style*="width: 9"] {
+      background-color: #0079bf !important;
+    }
+    
+    // 100%: Verde
+    &[style*="width: 100%"] {
+      background-color: #61bd4f !important;
+    }
+  }
+}
+
+// ========================================
+// 🎨 CONTENEDOR DE ETIQUETAS
+// ========================================
+
+.etiquetas-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+// ========================================
+// 📱 RESPONSIVE
+// ========================================
+
+@media (max-width: 768px) {
+  .etiqueta-wrapper {
+    .etiqueta-actions {
+      opacity: 1 !important;
+      width: 56px !important;
+    }
+  }
+  
+  .progress-bar-wrapper {
+    .progress-text {
+      min-width: 30px;
+      font-size: 10px;
+    }
   }
 }

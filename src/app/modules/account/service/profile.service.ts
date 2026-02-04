@@ -38,12 +38,12 @@ export class ProfileService {
     if (this.authservice.token && !this.profileLoaded) {
       this.getProfile().subscribe({
         next: (user) => {
-          console.log('✅ Perfil inicializado automáticamente:', user);
+          // console.log('✅ Perfil inicializado automáticamente:', user);
           this.setCurrentUser(user);
           this.profileLoaded = true;
         },
         error: (error) => {
-          console.error('❌ Error al inicializar perfil:', error);
+          // console.error('❌ Error al inicializar perfil:', error);
           const fallbackUser = this.authservice.user;
           if (fallbackUser) {
             this.currentUserSubject.next(fallbackUser);
@@ -61,11 +61,11 @@ export class ProfileService {
     let headers = new HttpHeaders({'Authorization': 'Bearer '+ this.authservice.token});
     let URL = URL_SERVICIOS + "/auth/me";
     
-    console.log('📡 Solicitando perfil desde:', URL);
+    // console.log('📡 Solicitando perfil desde:', URL);
     
     return this.http.post(URL, {}, {headers: headers}).pipe(
       tap(response => {
-        console.log('📥 Respuesta del servidor (getProfile):', response);
+        // console.log('📥 Respuesta del servidor (getProfile):', response);
       }),
       finalize(() => this.isLoadingSubject.next(false))
     );
@@ -86,11 +86,11 @@ export class ProfileService {
     
     let URL = URL_SERVICIOS + "/users/" + userId;
     
-    console.log('📡 Actualizando perfil en:', URL);
+    // console.log('📡 Actualizando perfil en:', URL);
     
     return this.http.post(URL, data, {headers: headers}).pipe(
       tap(response => {
-        console.log('📥 Respuesta del servidor (updateProfile):', response);
+        // console.log('📥 Respuesta del servidor (updateProfile):', response);
       }),
       finalize(() => this.isLoadingSubject.next(false))
     );
@@ -100,7 +100,7 @@ export class ProfileService {
    * ⭐ ACTUALIZADO: Actualizar el usuario en el BehaviorSubject Y en AuthService
    */
   setCurrentUser(user: any): void {
-    console.log('💾 Actualizando usuario en BehaviorSubject:', user);
+    // console.log('💾 Actualizando usuario en BehaviorSubject:', user);
     
     // Actualizar en el BehaviorSubject
     this.currentUserSubject.next(user);
@@ -113,7 +113,7 @@ export class ProfileService {
       this.authservice.currentUserSubject.next(user);
     }
     
-    console.log('✅ Usuario actualizado en ambos servicios');
+    // console.log('✅ Usuario actualizado en ambos servicios');
   }
 
   /**
@@ -131,11 +131,11 @@ export class ProfileService {
     let headers = new HttpHeaders({'Authorization': 'Bearer '+ this.authservice.token});
     let URL = URL_SERVICIOS + "/users/config";
     
-    console.log('📡 Solicitando configuración desde:', URL);
+    // console.log('📡 Solicitando configuración desde:', URL);
     
     return this.http.get(URL, {headers: headers}).pipe(
       tap(response => {
-        console.log('📥 Respuesta del servidor (getConfig):', response);
+        // console.log('📥 Respuesta del servidor (getConfig):', response);
       }),
       finalize(() => this.isLoadingSubject.next(false))
     );

@@ -53,7 +53,7 @@ export class CreateClientSegmentComponent {
     this.clientSegmentService.registerClientSegment(data)
       .subscribe({
         next: (resp: any) => {
-          console.log(resp);
+          // console.log(resp);
 
           if (resp.message == 403) {
             Swal.fire({

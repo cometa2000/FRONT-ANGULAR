@@ -1,0 +1,168 @@
+<div class="modal-content">
+  <!-- Modal Header -->
+  <div class="modal-header">
+    <h2 class="modal-title">
+      <i class="ki-duotone ki-arrow-right-left fs-1 me-2 text-primary">
+        <span class="path1"></span>
+        <span class="path2"></span>
+      </i>
+      Mover: {{ DOCUMENTO_SELECTED?.name }}
+    </h2>
+    <button type="button" class="btn btn-icon btn-sm btn-light-primary" (click)="modal.dismiss()">
+      <i class="ki-duotone ki-cross fs-1">
+        <span class="path1"></span>
+        <span class="path2"></span>
+      </i>
+    </button>
+  </div>
+
+  <!-- Modal Body -->
+  <div class="modal-body">
+    <!-- Información del elemento a mover -->
+    <div class="alert alert-light-info d-flex align-items-center mb-5">
+      <i class="ki-duotone fs-2x text-info me-3"
+         [ngClass]="DOCUMENTO_SELECTED?.type === 'folder' ? 'ki-folder' : 'ki-file'">
+        <span class="path1"></span>
+        <span class="path2"></span>
+        <span *ngIf="DOCUMENTO_SELECTED?.type === 'folder'" class="path3"></span>
+      </i>
+      <div>
+        <div class="fw-bold">
+          {{ DOCUMENTO_SELECTED?.type === 'folder' ? 'Carpeta' : 'Archivo' }}: 
+          {{ DOCUMENTO_SELECTED?.name }}
+        </div>
+        <div class="text-muted fs-7" *ngIf="DOCUMENTO_SELECTED?.type === 'folder'">
+          Esta carpeta contiene {{ DOCUMENTO_SELECTED?.files_count || 0 }} archivo(s)
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="text-center py-10">
+      <div class="spinner-border text-primary mb-3" role="status"></div>
+      <p class="text-muted">Cargando carpetas...</p>
+    </div>
+
+    <!-- Selector de destino -->
+    <div *ngIf="!isLoading">
+      <label class="form-label fw-bold required">Seleccionar destino</label>
+      
+      <!-- Opción: Raíz -->
+      <div class="form-check form-check-custom form-check-solid mb-3 p-4 border rounded"
+           [class.border-primary]="selectedDestination === null"
+           [class.bg-light-primary]="selectedDestination === null">
+        <input 
+          class="form-check-input" 
+          type="radio" 
+          name="destination" 
+          id="root"
+          [value]="null"
+          [(ngModel)]="selectedDestination">
+        <label class="form-check-label fw-semibold ms-2" for="root">
+          <i class="ki-duotone ki-home fs-2 me-2 text-primary">
+            <span class="path1"></span>
+            <span class="path2"></span>
+          </i>
+          📁 Raíz (nivel principal)
+        </label>
+      </div>
+
+      <!-- Árbol de carpetas -->
+      <div class="border rounded p-4 bg-light" style="max-height: 400px; overflow-y: auto;">
+        <div *ngIf="folderTree.length === 0" class="text-center text-muted py-5">
+          <i class="ki-duotone ki-information-5 fs-3x mb-3">
+            <span class="path1"></span>
+            <span class="path2"></span>
+            <span class="path3"></span>
+          </i>
+          <p>No hay carpetas disponibles en esta sucursal</p>
+        </div>
+
+        <ng-container *ngFor="let folder of folderTree">
+          <ng-container *ngTemplateOutlet="folderItem; context: {folder: folder, level: 0}"></ng-container>
+        </ng-container>
+      </div>
+
+      <!-- Información adicional -->
+      <div class="alert alert-light-warning mt-4">
+        <i class="ki-duotone ki-information-5 fs-2x text-warning me-3">
+          <span class="path1"></span>
+          <span class="path2"></span>
+          <span class="path3"></span>
+        </i>
+        <div>
+          <strong>Nota:</strong> 
+          <span *ngIf="DOCUMENTO_SELECTED?.type === 'folder'">
+            Al mover esta carpeta, todo su contenido (archivos y subcarpetas) se moverá con ella.
+          </span>
+          <span *ngIf="DOCUMENTO_SELECTED?.type === 'file'">
+            Este archivo será movido a la ubicación seleccionada.
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Footer -->
+  <div class="modal-footer">
+    <button 
+      type="button" 
+      class="btn btn-light" 
+      (click)="modal.dismiss()"
+      [disabled]="isMoving">
+      Cancelar
+    </button>
+    <button 
+      type="button" 
+      class="btn btn-primary" 
+      (click)="moveDocument()"
+      [disabled]="isMoving || selectedDestination === undefined">
+      <span *ngIf="isMoving" class="spinner-border spinner-border-sm me-2"></span>
+      <i *ngIf="!isMoving" class="ki-duotone ki-check fs-2 me-1">
+        <span class="path1"></span>
+        <span class="path2"></span>
+      </i>
+      {{ isMoving ? 'Moviendo...' : 'Mover aquí' }}
+    </button>
+  </div>
+</div>
+
+<!-- Template recursivo para carpetas -->
+<ng-template #folderItem let-folder="folder" let-level="level">
+  <div class="mb-2" [style.margin-left.px]="level * 20">
+    <div class="form-check form-check-custom form-check-solid p-3 border rounded"
+         [class.border-primary]="selectedDestination === folder.id"
+         [class.bg-light-primary]="selectedDestination === folder.id"
+         [class.opacity-50]="folder.id === DOCUMENTO_SELECTED?.id || isDescendant(folder.id)">
+      <input 
+        class="form-check-input" 
+        type="radio" 
+        name="destination" 
+        [id]="'folder_' + folder.id"
+        [value]="folder.id"
+        [(ngModel)]="selectedDestination"
+        [disabled]="folder.id === DOCUMENTO_SELECTED?.id || isDescendant(folder.id)">
+      <label class="form-check-label fw-semibold ms-2" [for]="'folder_' + folder.id">
+        <i class="ki-duotone ki-folder fs-2 me-2 text-warning">
+          <span class="path1"></span>
+          <span class="path2"></span>
+        </i>
+        {{ '—'.repeat(level) }} 📁 {{ folder.name }}
+        <span *ngIf="folder.id === DOCUMENTO_SELECTED?.id" class="badge badge-light-danger ms-2">
+          No se puede mover aquí
+        </span>
+        <span *ngIf="isDescendant(folder.id) && folder.id !== DOCUMENTO_SELECTED?.id" 
+              class="badge badge-light-warning ms-2">
+          Subcarpeta del origen
+        </span>
+      </label>
+    </div>
+
+    <!-- Subcarpetas -->
+    <ng-container *ngIf="folder.children && folder.children.length > 0">
+      <ng-container *ngFor="let child of folder.children">
+        <ng-container *ngTemplateOutlet="folderItem; context: {folder: child, level: level + 1}"></ng-container>
+      </ng-container>
+    </ng-container>
+  </div>
+</ng-template>

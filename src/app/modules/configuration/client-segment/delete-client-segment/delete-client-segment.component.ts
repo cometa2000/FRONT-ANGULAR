@@ -32,7 +32,7 @@ export class DeleteClientSegmentComponent {
     this.clientSegmentService.deleteClientSegment(this.CLIENT_SEGMENT_SELECTED.id)
       .subscribe({
         next: (resp: any) => {
-          console.log(resp);
+          // console.log(resp);
 
           if (resp.message == 403) {
             Swal.fire({

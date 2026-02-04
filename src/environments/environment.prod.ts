@@ -9,14 +9,14 @@ export const environment = {
   isMockEnabled: false,
 
   // URL REAL DEL BACKEND (API Laravel)
-  apiUrl: 'https://api-crm.preubasbbm.com/api',
+  apiUrl: 'https://api-laravel.preubasbbm.com/api',
 
   // URLs adicionales (si tu proyecto las usa)
-  URL_BACKEND: 'https://api-crm.preubasbbm.com',
-  URL_SERVICIOS: 'https://api-crm.preubasbbm.com/api',
+  URL_BACKEND: 'https://api-laravel.preubasbbm.com',
+  URL_SERVICIOS: 'https://api-laravel.preubasbbm.com/api',
 
   // URL DEL FRONTEND (Angular)
-  URL_FRONTED: 'https://crmbbm.preubasbbm.com',
+  URL_FRONTED: 'https://crm-angular.preubasbbm.com',
 
   appThemeName: 'Metronic',
   appPurchaseUrl: 'https://1.envato.market/EA4JP',

@@ -41,9 +41,7 @@ export interface Tarea {
     enlaces: Enlace[];
     archivos: Archivo[];
   };
-  assigned_members?: any[];  // 🆕 AGREGADO: Miembros asignados a la tarea
-
-  
+  assigned_members?: any[];
 }
 
 @Component({
@@ -90,6 +88,10 @@ export class EditTareaComponent implements OnInit {
   editingCommentId: number | null = null;
   editingCommentContent: string = '';
 
+  // ✅ NUEVO: Propiedades para edición del nombre de la tarea
+  editingTaskName = false;
+  tempTaskName = '';
+
   // Propiedades para edición de fechas
   editingFechas = false;
   startDate: string = '';
@@ -114,6 +116,14 @@ export class EditTareaComponent implements OnInit {
     { name: 'Negro', value: '#344563' }
   ];
 
+  // ✅ NUEVO: Propiedades para edición de checklists
+  editingChecklistId: number | null = null;
+  editingChecklistName = '';
+
+  // ✅ NUEVO: Propiedades para edición de items de checklist
+  editingItemId: number | null = null;
+  editingItemName = '';
+  editingItemChecklistId: number | null = null;
 
   miembrosAsignados: any[] = [];
 
@@ -140,7 +150,7 @@ export class EditTareaComponent implements OnInit {
     private modalService: NgbModal,
     private grupoService: GrupoService,
     private toastr: ToastrService,      
-  private cdr: ChangeDetectorRef 
+    private cdr: ChangeDetectorRef 
   ) {}
 
   ngOnInit(): void {
@@ -172,6 +182,103 @@ export class EditTareaComponent implements OnInit {
     this.checkWritePermissions();
   }
 
+  // =============================
+  // ✅ NUEVO: EDICIÓN DEL NOMBRE DE LA TAREA
+  // =============================
+  
+  /**
+   * Activar modo de edición del nombre con doble click
+   */
+  startEditingTaskName(): void {
+    if (this.isReadOnly || !this.hasWriteAccess) {
+      this.toastr.warning('No tienes permisos para editar esta tarea', 'Permiso denegado');
+      return;
+    }
+    
+    if (!this.tarea) return;
+    
+    this.editingTaskName = true;
+    this.tempTaskName = this.tarea.name;
+    
+    // Enfocar el input después de que Angular lo renderice
+    setTimeout(() => {
+      const input = document.querySelector('.edit-task-name-input') as HTMLInputElement;
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 50);
+  }
+
+  /**
+   * Cancelar edición del nombre
+   */
+  cancelEditTaskName(): void {
+    this.editingTaskName = false;
+    this.tempTaskName = '';
+  }
+
+  /**
+   * Guardar el nuevo nombre de la tarea
+   */
+  saveTaskName(): void {
+    if (!this.tarea || !this.tempTaskName.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El nombre de la tarea no puede estar vacío',
+        timer: 3000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return;
+    }
+
+    const newName = this.tempTaskName.trim();
+    
+    if (newName === this.tarea.name) {
+      this.editingTaskName = false;
+      return;
+    }
+
+    this.tareaService.updateTarea(this.tareaId, { name: newName }).subscribe({
+      next: (resp: any) => {
+        if (this.tarea) {
+          this.tarea.name = newName;
+        }
+        
+        this.editingTaskName = false;
+        this.TareaE.emit(this.tarea);
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Nombre actualizado',
+          timer: 1500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+        
+        this.loadTimeline();
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('❌ Error al actualizar nombre:', error);
+        
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo actualizar el nombre de la tarea',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+      }
+    });
+  }
+
   toggleDescriptionEdit(): void {
     if (this.isReadOnly) {
       this.toastr.warning('No tienes permisos para editar esta tarea', 'Permiso denegado');
@@ -181,7 +288,6 @@ export class EditTareaComponent implements OnInit {
   }
 
   checkWritePermissions() {
-    // Verificar si tenemos grupo_id disponible
     if (!this.grupo_id) {
       console.warn('⚠️ No se proporcionó grupo_id al componente');
       this.hasWriteAccess = false;
@@ -202,7 +308,6 @@ export class EditTareaComponent implements OnInit {
             permissionLevel: resp.permission_level
           });
           
-          // Si es solo lectura, mostrar mensaje
           if (!this.hasWriteAccess && !this.isOwner) {
             console.log('👁️ Usuario tiene solo permisos de lectura');
           }
@@ -211,7 +316,6 @@ export class EditTareaComponent implements OnInit {
       error: (err) => {
         console.error('❌ Error al verificar permisos:', err);
         this.hasWriteAccess = false;
-        // No mostrar toast aquí para no molestar al usuario
       }
     });
   }
@@ -234,20 +338,18 @@ export class EditTareaComponent implements OnInit {
    * Callback cuando se actualizan las fechas
    */
   onFechasActualizadas(tarea: any): void {
-    console.log('📅 Fechas actualizadas, refrescando tarea:', tarea);
+    console.log('📅 Fechas actualizadas, refrescando tarea completa:', tarea);
     
-    if (this.tarea && tarea) {
-      this.tarea.start_date = tarea.start_date;
-      this.tarea.due_date = tarea.due_date;
-      this.tarea.notifications_enabled = tarea.notifications_enabled;
-      this.tarea.notification_days_before = tarea.notification_days_before;
-      this.tarea.is_overdue = tarea.is_overdue;
-      this.tarea.is_due_soon = tarea.is_due_soon;
-      this.cdr.detectChanges();
-    }
+    this.loadTarea();
+    
+    setTimeout(() => {
+      if (this.fechasComponent) {
+        console.log('🔄 Refrescando componente fechas hijo...');
+        this.fechasComponent.loadFechas();
+      }
+    }, 300);
     
     this.loadTimeline();
-    this.TareaE.emit(this.tarea);
   }
 
   /**
@@ -302,16 +404,19 @@ export class EditTareaComponent implements OnInit {
         if (resp.message === 200 && resp.tarea) {
           this.tarea = resp.tarea;
           
-          // ⭐ AGREGAR ESTA LÍNEA
+          // ✅ CORREGIR: Calcular progreso de checklists
+          if (this.tarea && this.tarea.checklists && Array.isArray(this.tarea.checklists)) {
+            this.tarea.checklists = this.tarea.checklists.map(checklist => {
+              const progress = this.calculateChecklistProgress(checklist);
+              return { ...checklist, progress };
+            });
+          }
+          
           this.loadAdjuntos();
-          
-          // Cargar miembros asignados
           this.loadMiembrosAsignados();
-          
-          // Cargar timeline
           this.loadTimeline();
           
-          // Forzar detección de cambios
+          this.TareaE.emit(this.tarea);
           this.cdr.detectChanges();
           
           console.log('📋 Tarea completa:', this.tarea);
@@ -321,6 +426,34 @@ export class EditTareaComponent implements OnInit {
         console.error('❌ Error al cargar tarea:', error);
       }
     });
+  }
+
+  // =============================
+  // ✅ NUEVO: FUNCIONES PARA CALCULAR PROGRESO DE CHECKLISTS
+  // =============================
+  
+  /**
+   * Calcular el progreso de un checklist basado en sus items completados
+   */
+  calculateChecklistProgress(checklist: any): number {
+    if (!checklist.items || !Array.isArray(checklist.items) || checklist.items.length === 0) {
+      return 0;
+    }
+    
+    const completedItems = checklist.items.filter((item: any) => item.completed).length;
+    const totalItems = checklist.items.length;
+    
+    return Math.round((completedItems / totalItems) * 100);
+  }
+
+  /**
+   * Obtener el número de items completados de un checklist
+   */
+  getCompletedChecklistItems(checklist: any): number {
+    if (!checklist.items || !Array.isArray(checklist.items)) {
+      return 0;
+    }
+    return checklist.items.filter((item: any) => item.completed).length;
   }
 
   // =============================
@@ -421,7 +554,6 @@ export class EditTareaComponent implements OnInit {
   toggleEditFechas(): void {
     this.editingFechas = true;
     
-    // Convertir fechas del backend (ISO 8601) a formato datetime-local (YYYY-MM-DDTHH:mm)
     if (this.tarea?.start_date) {
       this.startDate = this.convertirFechaParaInput(this.tarea.start_date);
     }
@@ -437,7 +569,6 @@ export class EditTareaComponent implements OnInit {
 
   /**
    * Convierte una fecha ISO 8601 a formato datetime-local
-   * Ejemplo: "2024-11-15T14:30:00.000000Z" → "2024-11-15T14:30"
    */
   convertirFechaParaInput(fecha: string): string {
     if (!fecha) return '';
@@ -445,14 +576,12 @@ export class EditTareaComponent implements OnInit {
     try {
       const date = new Date(fecha);
       
-      // Obtener componentes de la fecha en zona horaria local
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
       const hours = String(date.getHours()).padStart(2, '0');
       const minutes = String(date.getMinutes()).padStart(2, '0');
       
-      // Formato datetime-local: "YYYY-MM-DDTHH:mm"
       return `${year}-${month}-${day}T${hours}:${minutes}`;
     } catch (error) {
       console.error('❌ Error al convertir fecha:', error);
@@ -598,19 +727,20 @@ export class EditTareaComponent implements OnInit {
     this.selectedColor = color;
   }
 
-  updateEtiqueta(): void {
-    if (!this.etiquetaName.trim() || !this.editingEtiqueta?.id) return;
+  saveEtiqueta(): void {
+    if (!this.editingEtiqueta || !this.etiquetaName.trim()) {
+      return;
+    }
 
-    const data = {
+    const etiquetaData: Etiqueta = {
       name: this.etiquetaName.trim(),
       color: this.selectedColor
     };
 
-    this.etiquetasService.updateEtiqueta(this.tareaId, this.editingEtiqueta.id, data).subscribe({
+    this.etiquetasService.updateEtiqueta(this.tareaId, this.editingEtiqueta.id!, etiquetaData).subscribe({
       next: () => {
         this.closeEtiquetaModal();
         this.loadTarea();
-        this.TareaE.emit(this.tarea);
 
         Swal.fire({
           icon: 'success',
@@ -639,8 +769,16 @@ export class EditTareaComponent implements OnInit {
     });
   }
 
+  /**
+   * ✅ Alias para compatibilidad con HTML
+   */
+  updateEtiqueta(): void {
+    this.saveEtiqueta();
+  }
 
   deleteEtiqueta(etiqueta: Etiqueta): void {
+    if (!etiqueta.id) return;
+
     Swal.fire({
       icon: 'warning',
       title: '¿Eliminar etiqueta?',
@@ -652,12 +790,11 @@ export class EditTareaComponent implements OnInit {
       cancelButtonColor: '#6c757d'
     }).then(result => {
 
-      if (result.isConfirmed && typeof etiqueta.id === 'number') {
+      if (result.isConfirmed && etiqueta.id) {
 
         this.etiquetasService.deleteEtiqueta(this.tareaId, etiqueta.id).subscribe({
           next: () => {
             this.loadTarea();
-            this.TareaE.emit(this.tarea);
 
             Swal.fire({
               icon: 'success',
@@ -690,108 +827,119 @@ export class EditTareaComponent implements OnInit {
     });
   }
 
-
   getEtiquetaColorClass(color: string): string {
     const colorMap: { [key: string]: string } = {
-      '#61BD4F': 'green',
-      '#F2D600': 'yellow',
-      '#FF9F1A': 'orange',
-      '#EB5A46': 'red',
-      '#C377E0': 'purple',
-      '#0079BF': 'blue',
-      '#00C2E0': 'sky',
-      '#51E898': 'lime',
-      '#FF78CB': 'pink',
-      '#B3BAC5': 'gray',
-      '#344563': 'black'
+      '#61BD4F': 'etiqueta-verde',
+      '#F2D600': 'etiqueta-amarillo',
+      '#FF9F1A': 'etiqueta-naranja',
+      '#EB5A46': 'etiqueta-rojo',
+      '#C377E0': 'etiqueta-morado',
+      '#0079BF': 'etiqueta-azul',
+      '#00C2E0': 'etiqueta-celeste',
+      '#51E898': 'etiqueta-lima',
+      '#FF78CB': 'etiqueta-rosa',
+      '#B3BAC5': 'etiqueta-gris',
+      '#344563': 'etiqueta-negro'
     };
-    return colorMap[color] || 'green';
+    
+    return colorMap[color] || 'etiqueta-default';
   }
 
   // =============================
-  // ✅ CHECKLISTS - CORRECCIÓN APLICADA
+  // ✅ NUEVO: EDICIÓN DE CHECKLISTS
   // =============================
   
-  getChecklistProgress(checklist: any): number {
-    if (!checklist || !checklist.items || checklist.items.length === 0) {
-      return 0;
+  /**
+   * Iniciar edición del nombre del checklist
+   */
+  startEditingChecklist(checklist: any): void {
+    if (this.isReadOnly || !this.hasWriteAccess) {
+      this.toastr.warning('No tienes permisos para editar', 'Permiso denegado');
+      return;
     }
     
-    const completedItems = checklist.items.filter((item: any) => item.completed).length;
-    const totalItems = checklist.items.length;
+    this.editingChecklistId = checklist.id;
+    this.editingChecklistName = checklist.name;
     
-    return Math.round((completedItems / totalItems) * 100);
+    setTimeout(() => {
+      const input = document.querySelector(`.edit-checklist-input-${checklist.id}`) as HTMLInputElement;
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 50);
   }
 
   /**
-   * 🔧 CORRECCIÓN 2: Arreglar el toggle de checkbox
-   * Cambiar para que reciba solo IDs y obtenga el item correctamente
+   * Cancelar edición del checklist
    */
-  toggleChecklistItem(checklistId: number, itemId: number): void {
-    console.log('🔄 Cambiando estado de item:', { checklistId, itemId });
-    
-    // Encontrar el checklist
-    const checklist = this.tarea?.checklists?.find((c: any) => c.id === checklistId);
-    if (!checklist) {
-      console.error('❌ Checklist no encontrado');
+  cancelEditChecklist(): void {
+    this.editingChecklistId = null;
+    this.editingChecklistName = '';
+  }
+
+  /**
+   * Guardar el nombre del checklist
+   */
+  saveChecklistName(checklistId: number): void {
+    if (!this.editingChecklistName.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El nombre del checklist no puede estar vacío',
+        timer: 3000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
       return;
     }
 
-    // Encontrar el item dentro del checklist
-    const item = checklist.items?.find((i: any) => i.id === itemId);
-    if (!item) {
-      console.error('❌ Item no encontrado');
-      return;
-    }
+    const checklistData = {
+      name: this.editingChecklistName.trim()
+    };
 
-    // Guardar el estado actual antes de cambiar
-    const estadoActual = item.completed;
-    const nuevoEstado = !estadoActual;
-    
-    console.log('🔄 Estado actual:', estadoActual, '→ Nuevo estado:', nuevoEstado);
-    
-    // Actualizar en el servidor
-    this.checklistsService.updateItem(this.tareaId, checklistId, itemId, {
-      completed: nuevoEstado
-    }).subscribe({
-      next: (resp) => {
-        console.log('✅ Item actualizado correctamente:', resp);
+    this.checklistsService.updateChecklist(this.tareaId, checklistId, checklistData).subscribe({
+      next: (resp: any) => {
+        this.editingChecklistId = null;
+        this.editingChecklistName = '';
         
-        // Actualizar el estado local del item
-        item.completed = nuevoEstado;
+        this.loadTarea();
         
-        // Recalcular el progreso del checklist
-        if (checklist.items && checklist.items.length > 0) {
-          const completed = checklist.items.filter((i: any) => i.completed).length;
-          checklist.progress = Math.round((completed / checklist.items.length) * 100);
-        }
+        Swal.fire({
+          icon: 'success',
+          title: 'Checklist actualizado',
+          timer: 1500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
         
-        // Emitir evento de cambio
-        this.TareaE.emit(this.tarea);
-        
-        // Recargar timeline para registrar la actividad
         this.loadTimeline();
       },
-      error: (error: any) => {
-        console.error('❌ Error al actualizar item:', error);
-        
-        // Revertir el cambio visual si falló
-        item.completed = estadoActual;
+      error: (error) => {
+        console.error('❌ Error al actualizar checklist:', error);
         
         Swal.fire({
           icon: 'error',
           title: 'Error',
-          text: 'No se pudo actualizar el elemento'
+          text: 'No se pudo actualizar el checklist',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
         });
       }
     });
   }
 
   deleteChecklist(checklistId: number): void {
+    if (!checklistId) return;
+
     Swal.fire({
       icon: 'warning',
       title: '¿Eliminar checklist?',
-      text: 'Se eliminarán todos los elementos del checklist',
+      text: 'Se eliminará el checklist y todos sus items',
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
@@ -804,7 +952,6 @@ export class EditTareaComponent implements OnInit {
         this.checklistsService.deleteChecklist(this.tareaId, checklistId).subscribe({
           next: () => {
             this.loadTarea();
-            this.TareaE.emit(this.tarea);
 
             Swal.fire({
               icon: 'success',
@@ -825,9 +972,9 @@ export class EditTareaComponent implements OnInit {
               title: 'Error',
               text: 'No se pudo eliminar el checklist',
               timer: 3500,
+              showConfirmButton: false,
               toast: true,
-              position: 'top-end',
-              showConfirmButton: false
+              position: 'top-end'
             });
           }
         });
@@ -837,12 +984,244 @@ export class EditTareaComponent implements OnInit {
     });
   }
 
+  // =============================
+  // ✅ NUEVO: AGREGAR ITEMS A CHECKLIST
+  // =============================
+  
+  /**
+   * Mostrar el input para agregar un nuevo item
+   */
+  showAddItemInput(checklist: any): void {
+    if (this.isReadOnly || !this.hasWriteAccess) {
+      this.toastr.warning('No tienes permisos para agregar items', 'Permiso denegado');
+      return;
+    }
+    
+    checklist.addingItem = true;
+    checklist.newItemName = '';
+    
+    setTimeout(() => {
+      const input = document.querySelector('.add-item-input') as HTMLInputElement;
+      if (input) {
+        input.focus();
+      }
+    }, 50);
+  }
+
+  /**
+   * Agregar un nuevo item al checklist
+   */
+  addChecklistItem(checklist: any): void {
+    if (!checklist.newItemName || !checklist.newItemName.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El nombre del item no puede estar vacío',
+        timer: 3000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return;
+    }
+
+    const itemData = {
+      name: checklist.newItemName.trim(),
+      completed: false
+    };
+
+    this.checklistsService.addItem(this.tareaId, checklist.id, itemData).subscribe({
+      next: (resp: any) => {
+        console.log('✅ Item añadido:', resp);
+        
+        // Limpiar y ocultar el input
+        checklist.newItemName = '';
+        checklist.addingItem = false;
+        
+        // Recargar la tarea para actualizar el progreso
+        this.loadTarea();
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Item añadido',
+          timer: 1500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+        
+        this.loadTimeline();
+      },
+      error: (error) => {
+        console.error('❌ Error al añadir item:', error);
+        
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo añadir el item',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+      }
+    });
+  }
+
+  /**
+   * Cancelar la adición de un item
+   */
+  cancelAddItem(checklist: any): void {
+    checklist.addingItem = false;
+    checklist.newItemName = '';
+  }
+
+  // =============================
+  // ✅ NUEVO: EDICIÓN DE ITEMS DE CHECKLIST
+  // =============================
+  
+  /**
+   * Iniciar edición del nombre del item
+   */
+  startEditingItem(checklistId: number, item: any): void {
+    if (this.isReadOnly || !this.hasWriteAccess) {
+      this.toastr.warning('No tienes permisos para editar', 'Permiso denegado');
+      return;
+    }
+    
+    this.editingItemId = item.id;
+    this.editingItemChecklistId = checklistId;
+    this.editingItemName = item.name;
+    
+    setTimeout(() => {
+      const input = document.querySelector(`.edit-item-input-${item.id}`) as HTMLInputElement;
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 50);
+  }
+
+  /**
+   * Cancelar edición del item
+   */
+  cancelEditItem(): void {
+    this.editingItemId = null;
+    this.editingItemChecklistId = null;
+    this.editingItemName = '';
+  }
+
+  /**
+   * Guardar el nombre del item
+   */
+  saveItemName(checklistId: number, itemId: number): void {
+    if (!this.editingItemName.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'El nombre del item no puede estar vacío',
+        timer: 3000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return;
+    }
+
+    const itemData = {
+      name: this.editingItemName.trim()
+    };
+
+    this.checklistsService.updateItem(this.tareaId, checklistId, itemId, itemData).subscribe({
+      next: (resp: any) => {
+        this.editingItemId = null;
+        this.editingItemChecklistId = null;
+        this.editingItemName = '';
+        
+        this.loadTarea();
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Item actualizado',
+          timer: 1500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+        
+        this.loadTimeline();
+      },
+      error: (error) => {
+        console.error('❌ Error al actualizar item:', error);
+        
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo actualizar el item',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+      }
+    });
+  }
+
+  /**
+   * Alternar el estado de completado de un item del checklist
+   */
+  toggleChecklistItem(checklistId: number, itemId: number): void {
+    if (this.isReadOnly || !this.hasWriteAccess) {
+      this.toastr.warning('No tienes permisos para editar', 'Permiso denegado');
+      return;
+    }
+
+    // Encontrar el checklist y el item
+    const checklist = this.tarea?.checklists?.find((c: any) => c.id === checklistId);
+    if (!checklist) return;
+    
+    const item = checklist.items?.find((i: any) => i.id === itemId);
+    if (!item) return;
+
+    // Invertir el estado completed
+    const newCompletedState = !item.completed;
+
+    this.checklistsService.updateItem(this.tareaId, checklistId, itemId, { completed: newCompletedState }).subscribe({
+      next: (resp: any) => {
+        // Actualizar localmente
+        item.completed = newCompletedState;
+        
+        // Recalcular el progreso del checklist
+        checklist.progress = this.calculateChecklistProgress(checklist);
+        
+        this.cdr.detectChanges();
+        this.loadTimeline();
+        
+        console.log('✅ Item actualizado, progreso:', checklist.progress);
+      },
+      error: (error) => {
+        console.error('❌ Error al actualizar item:', error);
+        
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo actualizar el item',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+      }
+    });
+  }
 
   deleteChecklistItem(checklistId: number, itemId: number): void {
+    if (!checklistId || !itemId) return;
+
     Swal.fire({
       icon: 'warning',
-      title: '¿Eliminar elemento?',
-      text: 'Esta acción no se puede deshacer',
+      title: '¿Eliminar item?',
+      text: 'Se eliminará este item del checklist',
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
@@ -855,11 +1234,10 @@ export class EditTareaComponent implements OnInit {
         this.checklistsService.deleteItem(this.tareaId, checklistId, itemId).subscribe({
           next: () => {
             this.loadTarea();
-            this.TareaE.emit(this.tarea);
 
             Swal.fire({
               icon: 'success',
-              title: 'Elemento eliminado',
+              title: 'Item eliminado',
               timer: 1500,
               showConfirmButton: false,
               toast: true,
@@ -874,299 +1252,36 @@ export class EditTareaComponent implements OnInit {
             Swal.fire({
               icon: 'error',
               title: 'Error',
-              text: 'No se pudo eliminar el elemento',
+              text: 'No se pudo eliminar el item',
               timer: 3500,
+              showConfirmButton: false,
               toast: true,
-              position: 'top-end',
-              showConfirmButton: false
+              position: 'top-end'
             });
           }
         });
 
       }
+
     });
   }
-
-
-  showAddItemInput(checklist: any): void {
-    checklist.addingItem = true;
-    checklist.newItemName = '';
-  }
-
-  cancelAddItem(checklist: any): void {
-    checklist.addingItem = false;
-    checklist.newItemName = '';
-  }
-
-  addChecklistItem(checklist: any): void {
-    if (!checklist.newItemName || !checklist.newItemName.trim()) return;
-
-    this.checklistsService.addItem(this.tareaId, checklist.id, {
-      name: checklist.newItemName.trim(),
-      completed: false
-    }).subscribe({
-      next: () => {
-        checklist.addingItem = false;
-        checklist.newItemName = '';
-        this.loadTarea();
-        this.TareaE.emit(this.tarea);
-
-        Swal.fire({
-          icon: 'success',
-          title: 'Elemento agregado',
-          timer: 1200,
-          toast: true,
-          position: 'top-end',
-          showConfirmButton: false
-        });
-
-        this.loadTimeline();
-      },
-      error: (error) => {
-        console.error('❌ Error al agregar item:', error);
-
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudo agregar el elemento',
-          toast: true,
-          position: 'top-end'
-        });
-      }
-    });
-  }
-
 
   // =============================
-  // 📎 ADJUNTOS - CORRECCIÓN APLICADA
+  // 💬 COMENTARIOS / TIMELINE
   // =============================
   
-  abrirModalAdjuntar(): void {
-    const modalRef = this.modalService.open(AdjuntarModalComponent, {
-      centered: true,
-      size: 'lg'
-    });
-
-    modalRef.componentInstance.adjuntosExistentes = this.adjuntos;
-
-    modalRef.componentInstance.adjuntoAgregado.subscribe((resultado: { enlaces: Enlace[], archivos: Archivo[] }) => {
-      if (resultado.enlaces.length > 0) {
-        this.guardarEnlace(resultado.enlaces[0]);
-      }
-      if (resultado.archivos.length > 0) {
-        this.guardarArchivo(resultado.archivos[0]);
-      }
-    });
-  }
-
-  /**
-   * 🔧 CORRECCIÓN 4: Mejorar la subida de archivos (especialmente imágenes)
-   */
-  guardarArchivo(archivo: Archivo): void {
-    if (!archivo.file) {
-      console.error('❌ No hay archivo para subir');
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('tipo', 'archivo');
-    formData.append('file', archivo.file);
-
-    this.tareaService.addAdjunto(this.tareaId, formData).subscribe({
-      next: (resp: any) => {
-        this.loadAdjuntos();
-        this.loadTimeline();
-        
-        Swal.fire({
-          icon: 'success',
-          title: 'Archivo subido',
-          timer: 2000,
-          showConfirmButton: false,
-          toast: true,
-          position: 'top-end'
-        });
-      },
-      error: (error) => {
-        console.error('❌ Error al subir archivo:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudo subir el archivo',
-          timer: 3500,
-          toast: true,
-          position: 'top-end'
-        });
-      }
-    });
-  }
-
-
-
-  guardarEnlace(enlace: Enlace): void {
-    const data = {
-      tipo: 'enlace',
-      nombre: enlace.nombre,
-      url: enlace.url
-    };
-
-    this.tareaService.addAdjunto(this.tareaId, data).subscribe({
-      next: (resp: any) => {
-        this.loadAdjuntos();
-        this.loadTimeline();
-        
-        Swal.fire({
-          icon: 'success',
-          title: 'Enlace agregado',
-          timer: 2000,
-          showConfirmButton: false,
-          toast: true,
-          position: 'top-end'
-        });
-      },
-      error: (error) => {
-        console.error('❌ Error al guardar enlace:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudo guardar el enlace',
-          timer: 3500,
-          toast: true,
-          position: 'top-end'
-        });
-      }
-    });
-  }
-
-
-  /**
-   * 🔧 CORRECCIÓN 3: Agregar método para descargar archivos
-   */
-  descargarArchivo(archivo: Archivo): void {
-    if (archivo.file_url) {
-      window.open(archivo.file_url, '_blank');
-    }
-  }
-
-  abrirEnlace(url: string): void {
-    window.open(url, '_blank');
-  }
-
-  eliminarEnlace(enlaceId: number): void {
-    Swal.fire({
-      icon: 'warning',
-      title: '¿Eliminar enlace?',
-      text: 'Esta acción no se puede deshacer',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#6c757d'
-    }).then(result => {
-      if (result.isConfirmed) {
-        this.tareaService.deleteAdjunto(this.tareaId, enlaceId).subscribe({
-          next: () => {
-            this.loadAdjuntos();
-            this.loadTimeline();
-            
-            Swal.fire({
-              icon: 'success',
-              title: 'Enlace eliminado',
-              timer: 2000,
-              showConfirmButton: false,
-              toast: true,
-              position: 'top-end'
-            });
-          },
-          error: (error) => {
-            console.error('❌ Error al eliminar enlace:', error);
-          }
-        });
-      }
-    });
-  }
-
-  eliminarArchivo(archivoId: number): void {
-    Swal.fire({
-      icon: 'warning',
-      title: '¿Eliminar archivo?',
-      text: 'Esta acción no se puede deshacer',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#6c757d'
-    }).then(result => {
-      if (result.isConfirmed) {
-        this.tareaService.deleteAdjunto(this.tareaId, archivoId).subscribe({
-          next: () => {
-            this.loadAdjuntos();
-            this.loadTimeline();
-            
-            Swal.fire({
-              icon: 'success',
-              title: 'Archivo eliminado',
-              timer: 2000,
-              showConfirmButton: false,
-              toast: true,
-              position: 'top-end'
-            });
-          },
-          error: (error) => {
-            console.error('❌ Error al eliminar archivo:', error);
-          }
-        });
-      }
-    });
-  }
-
-
-  obtenerIconoArchivo(tipo: string): string {
-    if (!tipo) return 'fa-file';
-    
-    if (tipo.startsWith('image/')) return 'fa-file-image';
-    if (tipo === 'application/pdf') return 'fa-file-pdf';
-    if (tipo.includes('word') || tipo.includes('document')) return 'fa-file-word';
-    if (tipo.includes('excel') || tipo.includes('spreadsheet')) return 'fa-file-excel';
-    if (tipo.includes('powerpoint') || tipo.includes('presentation')) return 'fa-file-powerpoint';
-    if (tipo === 'text/plain') return 'fa-file-alt';
-    if (tipo === 'text/csv') return 'fa-file-csv';
-    
-    return 'fa-file';
-  }
-
-  /**
-   * 🔧 CORRECCIÓN: Verificar si un archivo puede ser visualizado
-   */
-  esArchivoVisualizable(archivo: Archivo): boolean {
-    if (!archivo.tipo) return false;
-    
-    const tiposVisualizables = [
-      'image/',
-      'application/pdf'
-    ];
-    
-    return tiposVisualizables.some(tipo => archivo.tipo.startsWith(tipo));
-  }
-
-  /**
-   * 🔧 CORRECCIÓN: Visualizar archivo en modal o nueva ventana
-   */
-  visualizarArchivo(archivo: Archivo): void {
-    if (archivo.file_url) {
-      window.open(archivo.file_url, '_blank');
-    }
-  }
-
-  // =============================
-  // 💬 COMENTARIOS Y TIMELINE
-  // =============================
   loadTimeline(): void {
-    console.log('📜 Cargando timeline para tarea:', this.tareaId);
+    console.log('🔄 Cargando timeline de la tarea:', this.tareaId);
     
     this.tareaService.getTimeline(this.tareaId).subscribe({
-      next: (resp) => {
+      next: (resp: any) => {
         console.log('✅ Timeline cargado:', resp);
-        this.timeline = resp?.timeline || [];
+        
+        if (resp.message === 200 && resp.timeline) {
+          this.timeline = resp.timeline;
+          console.log('📋 Timeline completo:', this.timeline);
+          this.cdr.detectChanges();
+        }
       },
       error: (error: any) => {
         console.error('❌ Error al cargar timeline:', error);
@@ -1176,190 +1291,177 @@ export class EditTareaComponent implements OnInit {
   }
 
   addComment(): void {
-    if (!this.newComment.trim()) return;
+    if (!this.newComment.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Validación',
+        text: 'Escribe un comentario antes de enviarlo',
+        timer: 3000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return;
+    }
 
-    this.tareaService.addComment(this.tareaId, this.newComment).subscribe({
-      next: () => {
+    const commentContent = this.newComment.trim();
+
+    this.tareaService.addComment(this.tareaId, commentContent).subscribe({
+      next: (resp: any) => {
+        console.log('✅ Comentario agregado:', resp);
+        
         this.newComment = '';
         this.loadTimeline();
-
+        
         Swal.fire({
           icon: 'success',
           title: 'Comentario agregado',
           timer: 1500,
+          showConfirmButton: false,
           toast: true,
-          position: 'top-end',
-          showConfirmButton: false
+          position: 'top-end'
         });
       },
-
       error: (error) => {
         console.error('❌ Error al agregar comentario:', error);
-
+        
         Swal.fire({
           icon: 'error',
           title: 'Error',
           text: 'No se pudo agregar el comentario',
           timer: 3500,
+          showConfirmButton: false,
           toast: true,
-          position: 'top-end',
-          showConfirmButton: false
+          position: 'top-end'
         });
       }
     });
   }
 
   /**
-   * ✅ NUEVO: Verificar si un comentario pertenece al usuario actual
+   * ✅ Verificar si un comentario pertenece al usuario actual
    */
-  isOwnComment(comment: any): boolean {
-    if (!comment || !comment.user || !comment.user.id) {
-      return false;
-    }
-    
-    // Obtener el ID del usuario autenticado
+  isOwnComment(item: any): boolean {
+    // Obtener el ID del usuario actual desde authService
     const currentUserId = this.tareaService.authservice.user?.id;
-    
-    if (!currentUserId) {
-      return false;
-    }
-    
-    return comment.user.id === currentUserId;
+    return item.user_id === currentUserId;
   }
 
   /**
-   * ✅ NUEVO: Verificar si un comentario está en modo de edición
+   * ✅ Verificar si un comentario está en modo edición
    */
   isEditingComment(commentId: number): boolean {
     return this.editingCommentId === commentId;
   }
 
   /**
-   * ✅ NUEVO: Iniciar edición de un comentario
-   * Activa el modo de edición inline para el comentario seleccionado
+   * ✅ Iniciar edición de un comentario
    */
-  editComment(commentId: number): void {
-    console.log('✏️ Iniciando edición de comentario:', commentId);
-    
-    // Buscar el comentario en el timeline
-    const comment = this.timeline.find(item => item.id === commentId && item.type === 'comentario');
-    
-    if (!comment) {
-      console.error('❌ Comentario no encontrado en el timeline');
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'No se pudo encontrar el comentario',
-        timer: 2000,
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false
-      });
+  editComment(comentarioId: number): void {
+    if (this.isReadOnly || !this.hasWriteAccess) {
+      this.toastr.warning('No tienes permisos para editar comentarios', 'Permiso denegado');
       return;
     }
     
-    // Verificar que sea el propietario
-    if (!this.isOwnComment(comment)) {
-      console.warn('⚠️ Intento de editar comentario ajeno');
-      Swal.fire({
-        icon: 'warning',
-        title: 'Permiso denegado',
-        text: 'Solo puedes editar tus propios comentarios',
-        timer: 2000,
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false
-      });
-      return;
-    }
+    // Encontrar el comentario en el timeline
+    const comentario = this.timeline.find(item => item.id === comentarioId);
+    if (!comentario) return;
     
-    // Activar modo de edición
-    this.editingCommentId = commentId;
-    this.editingCommentContent = comment.content;
+    this.editingCommentId = comentarioId;
+    this.editingCommentContent = comentario.content;
     
-    console.log('📝 Modo de edición activado para comentario:', commentId);
+    setTimeout(() => {
+      const textarea = document.querySelector('.comment-edit-textarea') as HTMLTextAreaElement;
+      if (textarea) {
+        textarea.focus();
+        textarea.select();
+      }
+    }, 50);
   }
 
   /**
-   * ✅ NUEVO: Guardar los cambios de un comentario editado
+   * ✅ Alias para mantener compatibilidad con HTML
    */
-  saveCommentEdit(commentId: number): void {
-    console.log('💾 Guardando edición de comentario:', commentId);
-    
-    // Validar contenido
-    if (!this.editingCommentContent || !this.editingCommentContent.trim()) {
+  startEditingComment(comentario: any): void {
+    this.editComment(comentario.id);
+  }
+
+  /**
+   * ✅ Cancelar edición de comentario
+   */
+  cancelCommentEdit(): void {
+    this.editingCommentId = null;
+    this.editingCommentContent = '';
+  }
+
+  /**
+   * ✅ Alias para mantener compatibilidad
+   */
+  cancelEditComment(): void {
+    this.cancelCommentEdit();
+  }
+
+  /**
+   * ✅ Guardar comentario editado
+   */
+  saveCommentEdit(comentarioId: number): void {
+    if (!this.editingCommentContent.trim()) {
       Swal.fire({
         icon: 'warning',
-        title: 'Contenido vacío',
+        title: 'Validación',
         text: 'El comentario no puede estar vacío',
-        timer: 2000,
+        timer: 3000,
+        showConfirmButton: false,
         toast: true,
-        position: 'top-end',
-        showConfirmButton: false
+        position: 'top-end'
       });
       return;
     }
-    
-    // Llamar al servicio para actualizar
-    this.tareaService.updateComment(this.tareaId, commentId, this.editingCommentContent.trim()).subscribe({
+
+    const commentContent = this.editingCommentContent.trim();
+
+    this.tareaService.updateComment(this.tareaId, comentarioId, commentContent).subscribe({
       next: (resp: any) => {
-        console.log('✅ Comentario actualizado:', resp);
+        this.editingCommentId = null;
+        this.editingCommentContent = '';
         
-        if (resp.message === 200 && resp.comentario) {
-          // Actualizar el comentario en el timeline local
-          const commentIndex = this.timeline.findIndex(item => item.id === commentId);
-          if (commentIndex !== -1) {
-            this.timeline[commentIndex] = {
-              ...this.timeline[commentIndex],
-              content: resp.comentario.content,
-              updated_at: resp.comentario.updated_at,
-              is_edited: resp.comentario.is_edited || true
-            };
-          }
-          
-          // Desactivar modo de edición
-          this.cancelCommentEdit();
-          
-          // Mostrar mensaje de éxito
-          Swal.fire({
-            icon: 'success',
-            title: 'Comentario actualizado',
-            timer: 1500,
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false
-          });
-          
-          // Recargar timeline para asegurar sincronización
-          this.loadTimeline();
-        }
+        this.loadTimeline();
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Comentario actualizado',
+          timer: 1500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error('❌ Error al actualizar comentario:', error);
         
         Swal.fire({
           icon: 'error',
           title: 'Error',
-          text: error?.userMessage || 'No se pudo actualizar el comentario',
+          text: 'No se pudo actualizar el comentario',
           timer: 3500,
+          showConfirmButton: false,
           toast: true,
-          position: 'top-end',
-          showConfirmButton: false
+          position: 'top-end'
         });
       }
     });
   }
 
   /**
-   * ✅ NUEVO: Cancelar edición de comentario
+   * ✅ Alias para mantener compatibilidad
    */
-  cancelCommentEdit(): void {
-    console.log('🚫 Cancelando edición de comentario');
-    this.editingCommentId = null;
-    this.editingCommentContent = '';
+  saveEditedComment(comentarioId: number): void {
+    this.saveCommentEdit(comentarioId);
   }
 
-  deleteComment(commentId: number): void {
+  deleteComment(comentarioId: number): void {
+    if (!comentarioId) return;
+
     Swal.fire({
       icon: 'warning',
       title: '¿Eliminar comentario?',
@@ -1373,7 +1475,7 @@ export class EditTareaComponent implements OnInit {
 
       if (result.isConfirmed) {
 
-        this.tareaService.deleteComment(this.tareaId, commentId).subscribe({
+        this.tareaService.deleteComment(this.tareaId, comentarioId).subscribe({
           next: () => {
             this.loadTimeline();
 
@@ -1381,12 +1483,11 @@ export class EditTareaComponent implements OnInit {
               icon: 'success',
               title: 'Comentario eliminado',
               timer: 1500,
+              showConfirmButton: false,
               toast: true,
-              position: 'top-end',
-              showConfirmButton: false
+              position: 'top-end'
             });
           },
-
           error: (error) => {
             console.error('❌ Error al eliminar comentario:', error);
 
@@ -1395,9 +1496,9 @@ export class EditTareaComponent implements OnInit {
               title: 'Error',
               text: 'No se pudo eliminar el comentario',
               timer: 3500,
+              showConfirmButton: false,
               toast: true,
-              position: 'top-end',
-              showConfirmButton: false
+              position: 'top-end'
             });
           }
         });
@@ -1407,148 +1508,348 @@ export class EditTareaComponent implements OnInit {
     });
   }
 
-
-  getUserAvatar(user: any): string {
-    if (user?.avatar) {
-      return this.getAvatarUrl(user.avatar);
-    }
-    return this.defaultAvatar;
-  }
-
-  getUserName(user: any): string {
-    if (!user) return 'Usuario desconocido';
-    return user.name || user.email || 'Usuario';
-  }
-
-  tiempoRelativo(fecha: string): string {
+  getTiempoRelativo(fecha: string): string {
     if (!fecha) return '';
     
     const ahora = new Date();
-    const entonces = new Date(fecha);
-    const diff = ahora.getTime() - entonces.getTime();
+    const fechaComentario = new Date(fecha);
+    const diff = ahora.getTime() - fechaComentario.getTime();
     
     const segundos = Math.floor(diff / 1000);
     const minutos = Math.floor(segundos / 60);
     const horas = Math.floor(minutos / 60);
     const dias = Math.floor(horas / 24);
     
-    if (segundos < 60) return 'Hace unos segundos';
-    if (minutos < 60) return `Hace ${minutos} minuto${minutos > 1 ? 's' : ''}`;
-    if (horas < 24) return `Hace ${horas} hora${horas > 1 ? 's' : ''}`;
-    return `Hace ${dias} día${dias > 1 ? 's' : ''}`;
+    if (dias > 0) return `hace ${dias} día${dias > 1 ? 's' : ''}`;
+    if (horas > 0) return `hace ${horas} hora${horas > 1 ? 's' : ''}`;
+    if (minutos > 0) return `hace ${minutos} minuto${minutos > 1 ? 's' : ''}`;
+    return 'hace un momento';
   }
 
   // =============================
-  // 🖼️ MANEJO DE AVATARES
+  // 📎 ADJUNTOS
   // =============================
   
-  /**
-   * 🔧 Helper genérico para construir la URL del avatar
-   * Maneja los formatos: "1.png", "2.png", URLs completas, y rutas storage
-   */
-  private getAvatarUrl(avatarValue: string): string {
-    if (!avatarValue) {
-      return this.defaultAvatar;
-    }
-    
-    console.log('🔍 getAvatarUrl - Procesando avatar:', avatarValue);
-    
-    // Si ya es solo el nombre del archivo (ejemplo: "3.png")
-    if (avatarValue.match(/^\d+\.png$/)) {
-      const url = `assets/media/avatars/${avatarValue}`;
-      console.log('✅ Formato nuevo detectado:', url);
-      return url;
-    }
-    
-    // Si contiene la ruta completa, usarla tal cual (retrocompatibilidad)
-    if (avatarValue.includes('http') || avatarValue.includes('storage')) {
-      console.log('✅ URL completa detectada:', avatarValue);
-      return avatarValue;
-    }
-    
-    // Si no coincide con ningún patrón, intentar construir la ruta
-    const url = `assets/media/avatars/${avatarValue}`;
-    console.log('✅ Construyendo ruta genérica:', url);
-    return url;
+  abrirModalAdjuntar(): void {
+    const modalRef = this.modalService.open(AdjuntarModalComponent, {
+      centered: true,
+      size: 'lg',
+      backdrop: 'static'
+    });
+
+    modalRef.componentInstance.adjuntosExistentes = this.adjuntos;
+
+    modalRef.result.then(
+      (result: any) => {
+        if (result && result.type) {
+          
+          if (result.type === 'archivo' && result.data.file) {
+            const formData = new FormData();
+            formData.append('tipo', 'archivo');
+            formData.append('archivo', result.data.file);
+
+            this.tareaService.addAdjunto(this.tareaId, formData).subscribe({
+              next: (resp: any) => {
+                console.log('✅ Archivo subido:', resp);
+                this.loadAdjuntos();
+                this.loadTimeline();
+                
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Archivo adjuntado',
+                  timer: 2000,
+                  showConfirmButton: false,
+                  toast: true,
+                  position: 'top-end'
+                });
+              },
+              error: (error) => {
+                console.error('❌ Error al subir archivo:', error);
+                
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Error',
+                  text: 'No se pudo subir el archivo',
+                  timer: 3500,
+                  showConfirmButton: false,
+                  toast: true,
+                  position: 'top-end'
+                });
+              }
+            });
+          } else if (result.type === 'enlace' && result.data) {
+            const enlaceData = {
+              tipo: 'enlace',
+              nombre: result.data.nombre,
+              url: result.data.url
+            };
+
+            this.tareaService.addAdjunto(this.tareaId, enlaceData).subscribe({
+              next: (resp: any) => {
+                console.log('✅ Enlace agregado:', resp);
+                this.loadAdjuntos();
+                this.loadTimeline();
+                
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Enlace agregado',
+                  timer: 2000,
+                  showConfirmButton: false,
+                  toast: true,
+                  position: 'top-end'
+                });
+              },
+              error: (error) => {
+                console.error('❌ Error al agregar enlace:', error);
+                
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Error',
+                  text: 'No se pudo agregar el enlace',
+                  timer: 3500,
+                  showConfirmButton: false,
+                  toast: true,
+                  position: 'top-end'
+                });
+              }
+            });
+          }
+        }
+      },
+      () => {}
+    );
   }
 
-  onAvatarError(event: any): void {
-    event.target.src = this.defaultAvatar;
+  abrirEnlace(url: string): void {
+    if (url) {
+      window.open(url, '_blank');
+    }
   }
 
-  loadMiembrosAsignados() {
-    console.log('🔄 Cargando miembros asignados...');
+  eliminarEnlace(enlaceId: number): void {
+    if (!enlaceId) return;
+
+    Swal.fire({
+      icon: 'warning',
+      title: '¿Eliminar enlace?',
+      text: 'Esta acción no se puede deshacer',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d'
+    }).then(result => {
+
+      if (result.isConfirmed) {
+
+        this.tareaService.deleteAdjunto(this.tareaId, enlaceId).subscribe({
+          next: () => {
+            this.loadAdjuntos();
+            this.loadTimeline();
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Enlace eliminado',
+              timer: 1500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+          },
+          error: (error) => {
+            console.error('❌ Error al eliminar enlace:', error);
+
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'No se pudo eliminar el enlace',
+              timer: 3500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+          }
+        });
+
+      }
+
+    });
+  }
+
+  obtenerIconoArchivo(tipo: string): string {
+    if (!tipo) return 'fa-file';
+    
+    if (tipo.startsWith('image/')) return 'fa-file-image';
+    if (tipo === 'application/pdf') return 'fa-file-pdf';
+    if (tipo.includes('word') || tipo.includes('document')) return 'fa-file-word';
+    if (tipo.includes('excel') || tipo.includes('spreadsheet')) return 'fa-file-excel';
+    if (tipo.includes('powerpoint') || tipo.includes('presentation')) return 'fa-file-powerpoint';
+    
+    return 'fa-file';
+  }
+
+  esArchivoVisualizable(archivo: any): boolean {
+    if (!archivo.tipo) return false;
+    
+    return archivo.tipo.startsWith('image/') || archivo.tipo === 'application/pdf';
+  }
+
+  visualizarArchivo(archivo: any): void {
+    if (archivo.file_url) {
+      window.open(archivo.file_url, '_blank');
+    }
+  }
+
+  descargarArchivo(archivo: any): void {
+    if (archivo.file_url) {
+      // Si tiene URL directa, abrir en nueva pestaña para descarga
+      const link = document.createElement('a');
+      link.href = archivo.file_url;
+      link.download = archivo.nombre || 'archivo';
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else if (archivo.id) {
+      // Si no tiene URL pero tiene ID, intentar descargar vía API
+      Swal.fire({
+        icon: 'info',
+        title: 'Descargando...',
+        text: 'Preparando el archivo para descarga',
+        timer: 2000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      
+      // Abrir la URL de descarga en nueva pestaña
+      window.open(`/api/tareas/${this.tareaId}/adjuntos/${archivo.id}/download`, '_blank');
+    } else {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se puede descargar este archivo',
+        timer: 3500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+    }
+  }
+
+  eliminarArchivo(archivoId: number): void {
+    if (!archivoId) return;
+
+    Swal.fire({
+      icon: 'warning',
+      title: '¿Eliminar archivo?',
+      text: 'Esta acción no se puede deshacer',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d'
+    }).then(result => {
+
+      if (result.isConfirmed) {
+
+        this.tareaService.deleteAdjunto(this.tareaId, archivoId).subscribe({
+          next: () => {
+            this.loadAdjuntos();
+            this.loadTimeline();
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Archivo eliminado',
+              timer: 1500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+          },
+          error: (error) => {
+            console.error('❌ Error al eliminar archivo:', error);
+
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'No se pudo eliminar el archivo',
+              timer: 3500,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+          }
+        });
+
+      }
+
+    });
+  }
+
+  tiempoRelativo(fecha: string): string {
+    if (!fecha) return '';
+    
+    const ahora = new Date();
+    const fechaArchivo = new Date(fecha);
+    const diff = ahora.getTime() - fechaArchivo.getTime();
+    
+    const segundos = Math.floor(diff / 1000);
+    const minutos = Math.floor(segundos / 60);
+    const horas = Math.floor(minutos / 60);
+    const dias = Math.floor(horas / 24);
+    
+    if (dias > 0) return `hace ${dias} día${dias > 1 ? 's' : ''}`;
+    if (horas > 0) return `hace ${horas} hora${horas > 1 ? 's' : ''}`;
+    if (minutos > 0) return `hace ${minutos} minuto${minutos > 1 ? 's' : ''}`;
+    return 'hace un momento';
+  }
+
+  // =============================
+  // 👥 MIEMBROS ASIGNADOS
+  // =============================
+  
+  loadMiembrosAsignados(): void {
+    console.log('👥 Cargando miembros asignados de la tarea:', this.tareaId);
     
     this.tareaService.getAssignedMembers(this.tareaId).subscribe({
       next: (resp: any) => {
-        console.log('✅ Miembros asignados:', resp);
-        this.miembrosAsignados = resp.members || [];
+        console.log('✅ Respuesta de miembros asignados:', resp);
+        
+        if (resp.message === 200) {
+          this.miembrosAsignados = resp.members || [];
+          
+          if (this.tarea) {
+            this.tarea.assigned_members = this.miembrosAsignados;
+          }
+          
+          console.log('👥 Miembros asignados cargados:', this.miembrosAsignados.length);
+          this.cdr.detectChanges();
+        }
       },
-      error: (error: any) => {
-        console.error('❌ Error al cargar miembros:', error);
+      error: (error) => {
+        console.error('❌ Error al cargar miembros asignados:', error);
         this.miembrosAsignados = [];
       }
     });
   }
 
-  /**
-   * Abrir modal para asignar miembros
-   */
-  abrirModalMiembros() {
-    
-    // Intentar obtener el grupo_id de múltiples formas
-    let grupoId = null;
-    
-    // Opción 1: Desde tarea.grupo.id
-    if (this.tarea?.grupo?.id) {
-      grupoId = this.tarea.grupo.id;
-    }
-    // Opción 2: Desde tarea.grupo_id
-    else if (this.tarea?.grupo_id) {
-      grupoId = this.tarea.grupo_id;
-    }
-    // Opción 3: Desde lista.grupo.id
-    else if (this.tarea?.lista?.grupo?.id) {
-      grupoId = this.tarea.lista.grupo.id;
-    }
-    // Opción 4: Desde lista.grupo_id
-    else if (this.tarea?.lista?.grupo_id) {
-      grupoId = this.tarea.lista.grupo_id;
-    }
-    
-    if (!grupoId) {
-      
-      Swal.fire({
-        icon: 'warning',
-        title: 'Advertencia',
-        text: 'No se puede asignar miembros sin un grupo asociado. Verifica la consola para más detalles.'
-      });
-      return;
-    }
-
-    
-
+  abrirModalMiembros(): void {
     const modalRef = this.modalService.open(AssignMembersTareaComponent, {
       centered: true,
-      size: 'lg'
+      size: 'lg',
+      backdrop: 'static'
     });
-    
+
     modalRef.componentInstance.TAREA_SELECTED = this.tarea;
-    modalRef.componentInstance.GRUPO_ID = grupoId;
-    
+    modalRef.componentInstance.GRUPO_ID = this.grupo_id;
+
     modalRef.componentInstance.MembersAssigned.subscribe((tareaActualizada: any) => {
+      console.log('✅ Miembros asignados desde modal:', tareaActualizada);
       
-      // 🆕 SOLUCIÓN: Actualizar los miembros asignados localmente de inmediato
       this.loadMiembrosAsignados();
       this.loadTimeline();
       
-      // 🆕 Si la tarea actualizada incluye assigned_members, actualizarlos localmente
-      if (tareaActualizada && tareaActualizada.assigned_members && this.tarea) {
-        this.tarea = { ...this.tarea, assigned_members: tareaActualizada.assigned_members };
-        this.cdr.detectChanges();
-      }
-      
-      // Emitir cambios al componente padre
       this.TareaE.emit(tareaActualizada || this.tarea);
     });
   }
@@ -1622,7 +1923,6 @@ export class EditTareaComponent implements OnInit {
   abrirModalEditarFechasInline(): void {
     if (!this.tarea) return;
     
-    // Cargar valores actuales
     this.editFechasStartDate = this.tarea.start_date || '';
     this.editFechasDueDate = this.tarea.due_date || '';
     this.editFechasEnableNotifications = this.tarea.notifications_enabled || false;
@@ -1644,7 +1944,6 @@ export class EditTareaComponent implements OnInit {
   guardarFechasInline(): void {
     if (!this.tarea) return;
     
-    // Validación
     if (this.editFechasEnableNotifications && !this.editFechasDueDate) {
       Swal.fire({
         icon: 'warning',
@@ -1669,7 +1968,6 @@ export class EditTareaComponent implements OnInit {
       next: (resp: any) => {
         console.log('✅ Fechas actualizadas:', resp);
         
-        // Actualizar la tarea localmente
         if (this.tarea && resp.tarea) {
           this.tarea.start_date = resp.tarea.start_date;
           this.tarea.due_date = resp.tarea.due_date;
@@ -1679,16 +1977,9 @@ export class EditTareaComponent implements OnInit {
           this.tarea.is_due_soon = resp.tarea.is_due_soon;
         }
         
-        // Cerrar modal
         this.cerrarModalEditarFechas();
-        
-        // Recargar timeline
         this.loadTimeline();
-        
-        // Forzar detección de cambios
         this.cdr.detectChanges();
-        
-        // Emitir cambio al padre
         this.TareaE.emit(this.tarea);
 
         let successMessage = 'Fechas actualizadas correctamente';
@@ -1773,7 +2064,6 @@ export class EditTareaComponent implements OnInit {
           next: (resp: any) => {
             console.log('✅ Fechas eliminadas:', resp);
             
-            // Actualizar la tarea localmente
             if (this.tarea) {
               this.tarea.start_date = null;
               this.tarea.due_date = null;
@@ -1783,13 +2073,8 @@ export class EditTareaComponent implements OnInit {
               this.tarea.is_due_soon = false;
             }
             
-            // Recargar timeline
             this.loadTimeline();
-            
-            // Forzar detección de cambios
             this.cdr.detectChanges();
-            
-            // Emitir cambio al padre
             this.TareaE.emit(this.tarea);
 
             Swal.fire({
@@ -1819,4 +2104,40 @@ export class EditTareaComponent implements OnInit {
     });
   }
 
+  /**
+   * 🎨 Obtener la ruta correcta del avatar de un usuario
+   */
+  getUserAvatar(user: any): string {
+    if (user?.avatar) {
+      return this.getAvatarUrl(user.avatar);
+    }
+    return this.defaultAvatar;
+  }
+
+  /**
+   * 🔧 Helper genérico para construir la URL del avatar
+   */
+  private getAvatarUrl(avatarValue: string): string {
+    if (!avatarValue) {
+      return this.defaultAvatar;
+    }
+    
+    if (avatarValue.match(/^\d+\.png$/)) {
+      return `assets/media/avatars/${avatarValue}`;
+    }
+    
+    if (avatarValue.includes('http') || avatarValue.includes('storage')) {
+      return avatarValue;
+    }
+    
+    return `assets/media/avatars/${avatarValue}`;
+  }
+
+  /**
+   * 🖼️ Manejo de error al cargar avatar
+   */
+  onAvatarError(event: any): void {
+    console.error('❌ Error al cargar avatar, usando fallback');
+    event.target.src = this.defaultAvatar;
+  }
 }

@@ -1,76 +1,118 @@
-
 <div class="d-flex flex-column min-vh-100">
-    <!-- <ng-container *ngIf="(roles$ | async) as roles"> -->
-        <!-- <ng-container *ngFor="let role of roles.data"> -->
-            <!--begin::Col-->
-    
-        <!--begin::Card title-->
     <span class="spinner-border spinner-border-sm align-middle ms-2" *ngIf="isLoading$ | async"></span>
+    
     <div class="flex-grow-1">
         <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-5 g-xl-9">
             
-            <div class="ol-md-4">
-                <!--begin::Card-->
+            <!-- Botón Agregar Documento -->
+            <div class="col-md-4">
                 <div class="card h-md-100">
-                    <!--begin::Card body-->
                     <div class="card-body d-flex flex-center">
-                        <!--begin::Button-->
-                        <button type="button" class="btn btn-clear d-flex flex-column flex-center" data-action="create">
-                            <!--begin::Illustration-->
+                        <button type="button" class="btn btn-clear d-flex flex-column flex-center">
                             <img src="assets/media/illustrations/sketchy-1/4.png" alt="" class="mw-100 mh-150px mb-7" />
-                            <!--end::Illustration-->
-                            <!--begin::Label-->
-                            <button type="button" class="btn" (click)="createDocumento()">
-                                <div class="fw-bold fs-3 text-gray-600 text-hover-primary">Agregar documento</div>
+                            <button type="button" class="btn btn-primary" (click)="createDocumento()">
+                                <i class="ki-duotone ki-file-up fs-2 me-2">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
+                                </i>
+                                Subir Documento(s)
                             </button>
-                            <!--end::Label-->
                         </button>
-                        <!--begin::Button-->
                     </div>
-                    <!--begin::Card body-->
                 </div>
-                <!--begin::Card-->
             </div>
             
+            <!-- Tarjetas de Sucursales -->
             <ng-container *ngFor="let sucursal of paginatedSucursales">
-                <div class="col-md-4">
-                    <!--begin::Card-->
+                <!-- Solo mostrar si es admin (role_id = 1) o si es la sucursal del usuario -->
+                <div class="col-md-4" *ngIf="isAdmin || sucursal.id === currentUser?.sucursale_id">
                     <div class="card card-flush h-md-100">
-                    <!--begin::Card header-->
-                    <div class="card-header">
-                        <div class="card-title">
-                        <h2>Sucursal: {{ sucursal.name }}</h2>
+                        <!-- Card header -->
+                        <div class="card-header">
+                            <div class="card-title">
+                                <h2>
+                                    <i class="ki-duotone ki-shop fs-2 me-2 text-primary">
+                                        <span class="path1"></span>
+                                        <span class="path2"></span>
+                                    </i>
+                                    {{ sucursal.name }}
+                                </h2>
+                            </div>
+                        </div>
+        
+                        <!-- Card body -->
+                        <div class="card-body pt-1">
+                            <div class="d-flex align-items-center mb-5">
+                                <i class="ki-duotone ki-files fs-2x text-info me-3">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
+                                </i>
+                                <div>
+                                    <div class="fw-bold text-gray-800 fs-4">{{ sucursal.totalDocs }}</div>
+                                    <div class="text-gray-600 fs-7">Documentos totales</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Información adicional -->
+                            <div class="separator separator-dashed my-4"></div>
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-gray-600 fs-7">
+                                    <i class="ki-duotone ki-folder fs-6 me-1 text-warning">
+                                        <span class="path1"></span>
+                                        <span class="path2"></span>
+                                    </i>
+                                    Carpetas: <span class="fw-bold">{{ sucursal.totalFolders || 0 }}</span>
+                                </span>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-gray-600 fs-7">
+                                    <i class="ki-duotone ki-document fs-6 me-1 text-success">
+                                        <span class="path1"></span>
+                                        <span class="path2"></span>
+                                    </i>
+                                    Archivos: <span class="fw-bold">{{ sucursal.totalFiles || 0 }}</span>
+                                </span>
+                            </div>
+                        </div>
+        
+                        <!-- Card footer -->
+                        <div class="card-footer flex-wrap pt-0">
+                            <a 
+                                class="btn btn-light-primary btn-active-primary my-1 me-2 w-100" 
+                                [routerLink]="['/documents/vista-documento/list', sucursal.id]">
+                                <i class="ki-duotone ki-eye fs-2 me-1">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
+                                    <span class="path3"></span>
+                                </i>
+                                Ver Documentos
+                            </a>
                         </div>
                     </div>
-                    <!--end::Card header-->
-        
-                    <!--begin::Card body-->
-                    <div class="card-body pt-1">
-                        <div class="fw-bold text-gray-600 mb-5">
-                        Total de documentos en la sucursal: {{ sucursal.totalDocs }}
-                        </div>
-                    </div>
-                    <!--end::Card body-->
-        
-                    <!--begin::Card footer-->
-                    <div class="card-footer flex-wrap pt-0">
-                        <a 
-                        class="btn btn-light btn-active-primary my-1 me-2" 
-                        [routerLink]="['/documents/vista-documento/list', sucursal.id]">
-                            Ver Documentos
-                        </a>
-                    </div>
-                    <!--end::Card footer-->
-                    </div>
-                    <!--end::Card-->
                 </div>
-            </ng-container>  
+            </ng-container>
+            
+            <!-- Mensaje si no hay sucursales visibles -->
+            <div class="col-12" *ngIf="paginatedSucursales.length === 0">
+                <div class="card">
+                    <div class="card-body text-center py-10">
+                        <i class="ki-duotone ki-information-5 fs-5x text-gray-400 mb-5">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                            <span class="path3"></span>
+                        </i>
+                        <h3 class="text-gray-600">No hay sucursales disponibles</h3>
+                        <p class="text-muted">No se encontraron sucursales con documentos</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
-    
-    
-    <div class="pagination-container mt-auto pt-5 pb-3">
+    <!-- Paginación -->
+    <div class="pagination-container mt-auto pt-5 pb-3" *ngIf="sucursalesConDocs.length > pageSize">
         <div class="d-flex justify-content-center">
             <ngb-pagination
                 [collectionSize]="sucursalesConDocs.length"
@@ -79,13 +121,7 @@
                 [rotate]="true"
                 [boundaryLinks]="true"
                 (pageChange)="loadPage($event)">
-            ></ngb-pagination>
+            </ngb-pagination>
         </div>
     </div>
-    <!--begin::Add new card-->
 </div>
-
-
-
-
-                        

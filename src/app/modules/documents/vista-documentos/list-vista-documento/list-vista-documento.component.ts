@@ -1,11 +1,11 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { VistaDocumentoService } from '../service/vista-documento.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ViewVistaDocumentoComponent } from '../view-vista-documento/view-vista-documento.component';
 import { CreateFolderComponent } from '../../documentos/create-folder/create-folder.component';
-import { CdkDragEnd, CdkDragMove } from '@angular/cdk/drag-drop';
-import { forkJoin } from 'rxjs';
+import { CreateDocumentoComponent } from '../../documentos/create-documento/create-documento.component';
+import { MoveDocumentoComponent } from '../../documentos/move-documento/move-documento.component';
 import Swal from 'sweetalert2';
 
 interface BreadcrumbItem {
@@ -21,65 +21,67 @@ interface BreadcrumbItem {
 export class ListVistaDocumentoComponent implements OnInit {
   search: string = '';
   DOCUMENTOS: any[] = [];
+  sortedDocumentos: any[] = [];
   isLoading$: any;
 
   sucursalId!: number;
   currentFolderId: number | null = null;
   currentPage: number = 1;
+  
+  currentUser: any = null;
+  isAdmin: boolean = false;
 
-  // Breadcrumb para navegación
+  // Breadcrumb
   breadcrumb: BreadcrumbItem[] = [];
 
-  // Selección múltiple
-  selectedDocuments: any[] = [];
-
-  // Drag & Drop (CDK)
-  isDragging: boolean = false;
-  draggedItems: any[] = [];
-  dragPreviewVisible: boolean = false;
-  dragPreviewPosition = { x: 0, y: 0 };
-
-  hoverFolderId: number | null = null;
-  isOverRoot: boolean = false;
-
-  // Para evitar que un drop dispare el click (abrir doc/carpeta)
-  private dragEndedRecently: boolean = false;
-
-  @ViewChild('rootDropZone', { static: false }) rootDropZone?: ElementRef<HTMLDivElement>;
+  // Ordenamiento
+  sortColumn: string = 'name';
+  sortDirection: 'asc' | 'desc' = 'asc';
 
   constructor(
     public modalService: NgbModal,
-    public viewDocumentoService: VistaDocumentoService,
+    public vistaDocumentoService: VistaDocumentoService,
     private route: ActivatedRoute,
     private router: Router
   ) {}
 
   ngOnInit(): void {
-    this.isLoading$ = this.viewDocumentoService.isLoading$;
+    this.isLoading$ = this.vistaDocumentoService.isLoading$;
+    
+    // Obtener configuración para saber el usuario actual
+    this.vistaDocumentoService.getConfig().subscribe({
+      next: (resp: any) => {
+        this.currentUser = resp.user;
+        this.isAdmin = resp.user?.is_admin || resp.user?.role_id === 1;
+      },
+      error: (err) => console.error('Error loading config:', err)
+    });
     
     this.route.paramMap.subscribe(params => {
       this.sucursalId = Number(params.get('sucursalId'));
       this.currentFolderId = null;
       this.breadcrumb = [{ id: null, name: 'Raíz' }];
-      this.selectedDocuments = [];
       this.listDocumentos();
     });
   }
 
   /**
-   * Listar documentos de la ubicación actual
+   * Listar documentos
    */
   listDocumentos(page = 1) {
-    this.viewDocumentoService.listViewDocumentos(
+    this.vistaDocumentoService.listViewDocumentos(
       page,
       this.search,
       this.sucursalId,
       this.currentFolderId
     ).subscribe({
       next: (resp: any) => {
-        this.DOCUMENTOS = resp.documentos;
+        this.DOCUMENTOS = resp.documentos || [];
         this.currentPage = page;
-        this.selectedDocuments = [];
+        this.applySorting();
+        
+        // Marcar como visto después de un delay
+        this.markNewDocumentsAsViewed();
       },
       error: (err) => {
         console.error('Error loading documents:', err);
@@ -93,7 +95,28 @@ export class ListVistaDocumentoComponent implements OnInit {
   }
 
   /**
-   * Abrir carpeta y navegar a su contenido
+   * Marcar documentos nuevos como vistos después de 2 segundos
+   */
+  private markNewDocumentsAsViewed() {
+    setTimeout(() => {
+      const newDocs = this.DOCUMENTOS.filter(d => d.is_new && d.type === 'file');
+      
+      newDocs.forEach(doc => {
+        this.vistaDocumentoService.markAsViewed(doc.id).subscribe({
+          next: () => {
+            // Actualizar localmente
+            doc.is_new = false;
+          },
+          error: (err) => console.error('Error marking as viewed:', err)
+        });
+      });
+    }, 2000);
+  }
+
+  // ========== NAVEGACIÓN ==========
+
+  /**
+   * Abrir carpeta
    */
   openFolder(folder: any) {
     if (folder.type !== 'folder') return;
@@ -103,33 +126,89 @@ export class ListVistaDocumentoComponent implements OnInit {
       id: folder.id,
       name: folder.name
     });
-    this.selectedDocuments = [];
     this.listDocumentos();
   }
 
   /**
-   * Navegar a una ubicación del breadcrumb
+   * Navegar a breadcrumb
    */
   navigateToBreadcrumb(index: number) {
     const item = this.breadcrumb[index];
     this.currentFolderId = item.id;
     this.breadcrumb = this.breadcrumb.slice(0, index + 1);
-    this.selectedDocuments = [];
     this.listDocumentos();
   }
 
   /**
-   * Volver a la carpeta padre
+   * Volver atrás
    */
   goBack() {
     if (this.breadcrumb.length > 1) {
       this.breadcrumb.pop();
       const parent = this.breadcrumb[this.breadcrumb.length - 1];
       this.currentFolderId = parent.id;
-      this.selectedDocuments = [];
       this.listDocumentos();
     }
   }
+
+  // ========== ORDENAMIENTO ==========
+
+  /**
+   * Ordenar por columna
+   */
+  sortBy(column: string) {
+    if (this.sortColumn === column) {
+      // Cambiar dirección
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      // Nueva columna
+      this.sortColumn = column;
+      this.sortDirection = 'asc';
+    }
+
+    this.applySorting();
+  }
+
+  /**
+   * Aplicar ordenamiento
+   */
+  private applySorting() {
+    this.sortedDocumentos = [...this.DOCUMENTOS].sort((a, b) => {
+      // Siempre mostrar carpetas primero
+      if (a.type === 'folder' && b.type === 'file') return -1;
+      if (a.type === 'file' && b.type === 'folder') return 1;
+
+      let comparison = 0;
+
+      switch (this.sortColumn) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+
+        case 'user':
+          const userA = `${a.user?.name || ''} ${a.user?.surname || ''}`.trim();
+          const userB = `${b.user?.name || ''} ${b.user?.surname || ''}`.trim();
+          comparison = userA.localeCompare(userB);
+          break;
+
+        case 'updated_at':
+          const dateA = new Date(a.updated_at || 0).getTime();
+          const dateB = new Date(b.updated_at || 0).getTime();
+          comparison = dateA - dateB;
+          break;
+
+        case 'size':
+          const sizeA = a.type === 'file' ? (parseInt(a.size) || 0) : 0;
+          const sizeB = b.type === 'file' ? (parseInt(b.size) || 0) : 0;
+          comparison = sizeA - sizeB;
+          break;
+      }
+
+      return this.sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }
+
+  // ========== ACCIONES ==========
 
   /**
    * Crear nueva carpeta
@@ -146,6 +225,8 @@ export class ListVistaDocumentoComponent implements OnInit {
 
     modalRef.componentInstance.FolderCreated.subscribe((folder: any) => {
       this.DOCUMENTOS.unshift(folder);
+      this.applySorting();
+      
       Swal.fire({
         icon: 'success',
         title: 'Carpeta creada',
@@ -156,12 +237,47 @@ export class ListVistaDocumentoComponent implements OnInit {
     });
   }
 
-  // ========== VISUALIZACIÓN Y DESCARGA ==========
+  /**
+   * Subir documento(s)
+   */
+  uploadDocumento() {
+    const modalRef = this.modalService.open(CreateDocumentoComponent, {
+      centered: true,
+      size: 'lg',
+      backdrop: 'static'
+    });
 
+    // Pasar contexto actual
+    modalRef.componentInstance.sucursale_id = this.sucursalId;
+    modalRef.componentInstance.parent_id = this.currentFolderId;
+
+    modalRef.componentInstance.DocumentosCreated.subscribe((documentos: any[]) => {
+      if (Array.isArray(documentos)) {
+        this.DOCUMENTOS.unshift(...documentos);
+      } else {
+        this.DOCUMENTOS.unshift(documentos);
+      }
+      
+      this.applySorting();
+    });
+  }
+
+  /**
+   * Ver documento o abrir carpeta
+   */
   viewDocumento(DOCUMENTO: any) {
     if (DOCUMENTO.type === 'folder') {
       this.openFolder(DOCUMENTO);
     } else {
+      // Marcar como visto
+      if (DOCUMENTO.is_new) {
+        this.vistaDocumentoService.markAsViewed(DOCUMENTO.id).subscribe({
+          next: () => {
+            DOCUMENTO.is_new = false;
+          }
+        });
+      }
+
       const modalRef = this.modalService.open(ViewVistaDocumentoComponent, {
         centered: true,
         size: 'xl'
@@ -170,56 +286,56 @@ export class ListVistaDocumentoComponent implements OnInit {
     }
   }
 
-  downloadDocument(DOCUMENTO: any) {
-    if (DOCUMENTO.type === 'folder') {
-      Swal.fire({
-        icon: 'warning',
-        title: 'No se puede descargar',
-        text: 'No es posible descargar carpetas',
-        timer: 2000,
-        showConfirmButton: false
-      });
-      return;
-    }
+  /**
+   * Mover documento o carpeta
+   */
+  moveDocumento(DOCUMENTO: any) {
+    const modalRef = this.modalService.open(MoveDocumentoComponent, {
+      centered: true,
+      size: 'lg'
+    });
 
-    this.viewDocumentoService.downloadDocument(DOCUMENTO.id).subscribe({
-      next: (blob: Blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = DOCUMENTO.name;
-        link.click();
-        window.URL.revokeObjectURL(url);
-        
-        Swal.fire({
-          icon: 'success',
-          title: 'Descarga iniciada',
-          text: `${DOCUMENTO.name}`,
-          timer: 2000,
-          showConfirmButton: false,
-          toast: true,
-          position: 'top-end'
-        });
-      },
-      error: (err) => {
-        console.error('Error downloading:', err);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudo descargar el archivo'
-        });
-      }
+    modalRef.componentInstance.DOCUMENTO_SELECTED = DOCUMENTO;
+    modalRef.componentInstance.sucursale_id = this.sucursalId;
+    modalRef.componentInstance.current_parent_id = this.currentFolderId;
+
+    modalRef.componentInstance.DocumentoMoved.subscribe(() => {
+      // Recargar la lista para reflejar los cambios
+      this.listDocumentos();
     });
   }
 
   /**
-   * Eliminar documento o carpeta
+   * Verificar si el usuario puede eliminar un documento
+   */
+  canDelete(DOCUMENTO: any): boolean {
+    // Admin puede eliminar todo
+    if (this.isAdmin) {
+      return true;
+    }
+
+    // Usuario normal solo puede eliminar lo que él creó
+    if (this.currentUser && DOCUMENTO.user_id === this.currentUser.id) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Eliminar documento
    */
   deleteDocumento(DOCUMENTO: any) {
     const type = DOCUMENTO.type === 'folder' ? 'carpeta' : 'documento';
-    const warningMessage = DOCUMENTO.type === 'folder'
-      ? `¿Estás seguro de eliminar la carpeta "${DOCUMENTO.name}"? Se eliminarán todos los archivos y subcarpetas dentro de ella.`
+    
+    let warningMessage = DOCUMENTO.type === 'folder'
+      ? `¿Estás seguro de eliminar la carpeta "${DOCUMENTO.name}"?`
       : `¿Estás seguro de eliminar el documento "${DOCUMENTO.name}"?`;
+
+    // Si es una carpeta con contenido, agregar advertencia
+    if (DOCUMENTO.type === 'folder' && (DOCUMENTO.files_count > 0 || DOCUMENTO.children_count > 0)) {
+      warningMessage += `\n\nEsta carpeta contiene ${DOCUMENTO.files_count} archivo(s). Al eliminarla, su contenido se moverá a la raíz.`;
+    }
 
     Swal.fire({
       icon: 'warning',
@@ -231,20 +347,29 @@ export class ListVistaDocumentoComponent implements OnInit {
       confirmButtonColor: '#d33'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.viewDocumentoService.deleteDocument(DOCUMENTO.id).subscribe({
+        this.vistaDocumentoService.deleteDocument(DOCUMENTO.id).subscribe({
           next: (resp: any) => {
             if (resp.message === 200) {
               const INDEX = this.DOCUMENTOS.findIndex((d: any) => d.id === DOCUMENTO.id);
               if (INDEX !== -1) {
                 this.DOCUMENTOS.splice(INDEX, 1);
+                this.applySorting();
               }
-              this.selectedDocuments = this.selectedDocuments.filter(d => d.id !== DOCUMENTO.id);
+              
+              let successMessage = `${type.charAt(0).toUpperCase() + type.slice(1)} eliminado exitosamente`;
+              
+              if (resp.moved_children) {
+                successMessage = resp.message_text;
+                // Recargar para mostrar los elementos movidos
+                this.listDocumentos();
+              }
+              
               Swal.fire({
                 icon: 'success',
                 title: 'Eliminado',
-                text: `${type.charAt(0).toUpperCase() + type.slice(1)} eliminado exitosamente`,
-                timer: 2000,
-                showConfirmButton: false
+                text: successMessage,
+                timer: resp.moved_children ? 3500 : 2000,
+                showConfirmButton: resp.moved_children
               });
             }
           },
@@ -261,207 +386,57 @@ export class ListVistaDocumentoComponent implements OnInit {
     });
   }
 
-  // ========== SELECCIÓN MÚLTIPLE ==========
-
-  isSelected(documento: any): boolean {
-    return this.selectedDocuments.some(d => d.id === documento.id);
-  }
-
-  toggleSelection(documento: any, event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const checked = input.checked;
-
-    if (checked) {
-      if (!this.isSelected(documento)) {
-        this.selectedDocuments.push(documento);
-      }
-    } else {
-      this.selectedDocuments = this.selectedDocuments.filter(d => d.id !== documento.id);
-    }
-  }
-
-  // Click en la tarjeta (separado del drag)
-  onCardClick(documento: any, event: MouseEvent): void {
-    // Si venimos de un drag, NO abrir nada
-    if (this.isDragging || this.dragEndedRecently) {
-      event.stopPropagation();
-      return;
-    }
-    this.viewDocumento(documento);
-  }
-
-  // ========== DRAG & DROP (CDK) ==========
-
-  onDragStarted(item: any) {
-    this.isDragging = true;
-    this.hoverFolderId = null;
-    this.isOverRoot = false;
-
-    // Si hay selección múltiple y el item está seleccionado -> arrastramos grupo
-    if (this.selectedDocuments.length > 0 && this.isSelected(item)) {
-      this.draggedItems = [...this.selectedDocuments];
-    } else {
-      this.draggedItems = [item];
-    }
-
-    this.dragPreviewVisible = true;
-    this.dragEndedRecently = false;
-  }
-
-  onDragMoved(event: CdkDragMove<any>) {
-    const { x, y } = event.pointerPosition;
-    // Mover el badge flotante un poco desfasado del cursor
-    this.dragPreviewPosition = { x: x + 18, y: y + 18 };
-
-    this.hoverFolderId = null;
-    this.isOverRoot = false;
-
-    // Detectar carpeta debajo del cursor
-    const element = document.elementFromPoint(x, y) as HTMLElement | null;
-    if (element) {
-      const folderCard = element.closest('.documento-card.is-folder') as HTMLElement | null;
-      if (folderCard) {
-        const idAttr = folderCard.getAttribute('data-id');
-        if (idAttr) {
-          const idNum = Number(idAttr);
-          if (!isNaN(idNum)) {
-            this.hoverFolderId = idNum;
-          }
-        }
-      }
-    }
-
-    // Detectar si está sobre la zona raíz
-    if (this.rootDropZone && this.rootDropZone.nativeElement) {
-      const rect = this.rootDropZone.nativeElement.getBoundingClientRect();
-      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-        this.isOverRoot = true;
-        this.hoverFolderId = null;
-      }
-    }
-  }
-
-  onDragEnded(event: CdkDragEnd<any>) {
-    this.isDragging = false;
-    this.dragPreviewVisible = false;
-    this.dragEndedRecently = true;
-
-    const itemsToMove = [...this.draggedItems];
-
-    // El elemento visual vuelve a su sitio original (CDK)
-    event.source.reset();
-
-    // Determinar destino
-    const targetFolderId = this.hoverFolderId;
-    const moveToRootZone = this.isOverRoot;
-
-    // Limpiar estados de hover
-    this.hoverFolderId = null;
-    this.isOverRoot = false;
-    this.draggedItems = [];
-
-    // Pequeño timeout para que el drop no dispare click
-    setTimeout(() => {
-      this.dragEndedRecently = false;
-    }, 150);
-
-    // Si no hay elementos, no hacemos nada
-    if (!itemsToMove.length) {
-      return;
-    }
-
-    // Drop sobre carpeta
-    if (targetFolderId !== null) {
-      const targetFolder = this.DOCUMENTOS.find(
-        d => d.id === targetFolderId && d.type === 'folder'
-      );
-      if (targetFolder) {
-        this.moveDocumentsGroup(itemsToMove, targetFolder.id);
-      }
-      return;
-    }
-
-    // Drop en zona raíz (nivel actual / raíz)
-    if (moveToRootZone) {
-      // Siempre mover a raíz real
-      this.moveDocumentsGroup(itemsToMove, null);
-    }
-
-  }
+  // ========== HELPERS ==========
 
   /**
-   * Mover grupo de documentos/carpeta a nueva ubicación
+   * Obtener iniciales del usuario
    */
-  moveDocumentsGroup(items: any[], targetParentId: number | null) {
-    if (!items || items.length === 0) return;
-
-    const requests = items.map(item => {
-      const data = { parent_id: targetParentId };
-      return this.viewDocumentoService.moveDocument(item.id, data);
-    });
-
-    forkJoin(requests).subscribe({
-      next: () => {
-        // Eliminar del listado actual
-        items.forEach(item => {
-          const INDEX = this.DOCUMENTOS.findIndex((d: any) => d.id === item.id);
-          if (INDEX !== -1) {
-            this.DOCUMENTOS.splice(INDEX, 1);
-          }
-        });
-
-        // Eliminar de la selección
-        const ids = items.map(i => i.id);
-        this.selectedDocuments = this.selectedDocuments.filter(d => !ids.includes(d.id));
-
-        const msg = items.length === 1
-          ? `"${items[0].name}" El cambio fue exitoso`
-          : `${items.length} elementos han sido movidos exitosamente`;
-
-        Swal.fire({
-          icon: 'success',
-          title: 'Movido',
-          text: msg,
-          timer: 2000,
-          showConfirmButton: false
-        });
-      },
-      error: (err) => {
-        console.error('Error moving documents:', err);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: err.error?.message_text || 'Error al mover los elementos'
-        });
-      }
-    });
+  getInitials(name: string, surname: string): string {
+    const n = name ? name.charAt(0).toUpperCase() : '';
+    const s = surname ? surname.charAt(0).toUpperCase() : '';
+    return n + s || 'U';
   }
 
   /**
-   * Obtener icono según tipo de archivo
+   * Obtener ícono según tipo de archivo
    */
   getFileIcon(documento: any): string {
     if (documento.type === 'folder') {
-      return 'ki-folder';
+      return 'ki-duotone ki-folder';
     }
 
     const mimeType = documento.mime_type?.toLowerCase() || '';
     
-    if (mimeType.includes('pdf')) return 'ki-file-pdf';
-    if (mimeType.includes('image')) return 'ki-file-jpg';
-    if (mimeType.includes('word') || mimeType.includes('document')) return 'ki-file-word';
-    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'ki-file-excel';
-    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'ki-file-powerpoint';
-    if (mimeType.includes('text')) return 'ki-file-text';
-    if (mimeType.includes('zip') || mimeType.includes('rar')) return 'ki-file-zip';
+    if (mimeType.includes('pdf')) return 'ki-duotone ki-file-pdf';
+    if (mimeType.includes('image')) return 'ki-duotone ki-file-jpg';
+    if (mimeType.includes('word') || mimeType.includes('document')) return 'ki-duotone ki-file-word';
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'ki-duotone ki-file-excel';
+    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'ki-duotone ki-file-powerpoint';
+    if (mimeType.includes('text')) return 'ki-duotone ki-file-text';
     
-    return 'ki-file';
+    return 'ki-duotone ki-file';
   }
 
   /**
-   * Obtener clase de color según tipo
+   * Obtener clase de fondo del ícono
    */
   getFileIconClass(documento: any): string {
+    const mimeType = documento.mime_type?.toLowerCase() || '';
+    
+    if (mimeType.includes('pdf')) return 'bg-light-danger';
+    if (mimeType.includes('image')) return 'bg-light-success';
+    if (mimeType.includes('word')) return 'bg-light-primary';
+    if (mimeType.includes('excel')) return 'bg-light-success';
+    if (mimeType.includes('powerpoint')) return 'bg-light-warning';
+    if (mimeType.includes('text')) return 'bg-light-info';
+    
+    return 'bg-light-secondary';
+  }
+
+  /**
+   * Obtener color del ícono
+   */
+  getFileIconColor(documento: any): string {
     if (documento.type === 'folder') {
       return 'text-warning';
     }
@@ -472,6 +447,7 @@ export class ListVistaDocumentoComponent implements OnInit {
     if (mimeType.includes('image')) return 'text-success';
     if (mimeType.includes('word')) return 'text-primary';
     if (mimeType.includes('excel')) return 'text-success';
+    if (mimeType.includes('powerpoint')) return 'text-warning';
     
     return 'text-gray-600';
   }

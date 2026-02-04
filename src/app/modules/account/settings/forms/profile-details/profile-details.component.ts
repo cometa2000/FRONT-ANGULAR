@@ -54,7 +54,7 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    console.log('📄 ProfileDetailsComponent inicializado');
+    // console.log('📄 ProfileDetailsComponent inicializado');
     this.loadConfig();
     this.loadUserData();
   }
@@ -63,21 +63,21 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
    * Cargar configuración (roles y sucursales)
    */
   loadConfig(): void {
-    console.log('📡 Cargando configuración (roles y sucursales)...');
+    // console.log('📡 Cargando configuración (roles y sucursales)...');
     
     this.profileService.getConfig().subscribe({
       next: (resp: any) => {
-        console.log('✅ Configuración cargada:', resp);
+        // console.log('✅ Configuración cargada:', resp);
         this.roles = resp.roles || [];
         this.sucursales = resp.sucursales || [];
         
-        console.log('📋 Roles disponibles:', this.roles);
-        console.log('🏢 Sucursales disponibles:', this.sucursales);
+        // console.log('📋 Roles disponibles:', this.roles);
+        // console.log('🏢 Sucursales disponibles:', this.sucursales);
         
         this.cdr.detectChanges();
       },
       error: (error) => {
-        console.error('❌ Error al cargar configuración:', error);
+        // console.error('❌ Error al cargar configuración:', error);
       }
     });
   }
@@ -86,26 +86,26 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
    * Cargar los datos del usuario
    */
   loadUserData(): void {
-    console.log('📡 Cargando datos del usuario...');
+    // console.log('📡 Cargando datos del usuario...');
     
     const userSub = this.profileService.currentUser$.subscribe({
       next: (user) => {
-        console.log('👤 Usuario recibido en ProfileDetailsComponent:', user);
+        // console.log('👤 Usuario recibido en ProfileDetailsComponent:', user);
         
         if (user) {
           this.currentUser = user;
           this.initializeFormFields();
         } else {
-          console.log('⚠️ Usuario no disponible, cargando desde servidor...');
+          // console.log('⚠️ Usuario no disponible, cargando desde servidor...');
           this.profileService.getProfile().subscribe({
             next: (resp: any) => {
-              console.log('✅ Usuario cargado desde servidor:', resp);
+              // console.log('✅ Usuario cargado desde servidor:', resp);
               this.currentUser = resp;
               this.profileService.setCurrentUser(resp);
               this.initializeFormFields();
             },
             error: (error) => {
-              console.error('❌ Error al cargar usuario:', error);
+              // console.error('❌ Error al cargar usuario:', error);
             }
           });
         }
@@ -120,7 +120,7 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
    */
   initializeFormFields(): void {
     if (this.currentUser) {
-      console.log('📝 Inicializando campos del formulario con:', this.currentUser);
+      // console.log('📝 Inicializando campos del formulario con:', this.currentUser);
       
       this.name = this.currentUser.name || '';
       this.surname = this.currentUser.surname || '';
@@ -155,7 +155,7 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
       this.password = '';
       this.password_repit = '';
       
-      console.log('✅ Campos inicializados');
+      // console.log('✅ Campos inicializados');
       this.cdr.detectChanges();
     }
   }
@@ -172,7 +172,7 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
    */
   selectAvatar(avatarName: string): void {
     this.selectedAvatar = avatarName;
-    console.log('🎨 Avatar seleccionado:', avatarName);
+    // console.log('🎨 Avatar seleccionado:', avatarName);
   }
 
   /**
@@ -201,7 +201,7 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
    * Guardar los cambios del perfil
    */
   saveSettings(): void {
-    console.log('💾 Iniciando guardado de perfil...');
+    // console.log('💾 Iniciando guardado de perfil...');
     
     // --- Validación de nombre ---
     if (!this.name) {
@@ -342,14 +342,14 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
     // ✅ Enviar el avatar seleccionado
     formData.append("avatar", this.selectedAvatar);
 
-    console.log('📦 FormData preparado para enviar');
+    // console.log('📦 FormData preparado para enviar');
 
     // --- Llamada al servicio ---
     this.isLoading$.next(true);
     
     this.profileService.updateProfile(formData).subscribe({
       next: (resp: any) => {
-        console.log('✅ Respuesta de actualización:', resp);
+        // console.log('✅ Respuesta de actualización:', resp);
         
         if (resp.message == 403) {
           Swal.fire({
@@ -391,7 +391,7 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error('❌ Error al actualizar perfil:', error);
+        // console.error('❌ Error al actualizar perfil:', error);
         Swal.fire({
           icon: 'error',
           title: 'Error',
@@ -407,7 +407,7 @@ export class ProfileDetailsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    console.log('📚 ProfileDetailsComponent destruido');
+    // console.log('📚 ProfileDetailsComponent destruido');
     this.unsubscribe.forEach((sb) => sb.unsubscribe());
   }
 }

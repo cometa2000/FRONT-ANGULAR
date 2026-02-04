@@ -34,7 +34,7 @@ export class ListSegmentClientComissionComponent {
 
   listSegmentClientComision(page = 1){
     this.segmentClientComissionService.listSegmentClientComision(page,this.search).subscribe((resp:any) => {
-      console.log(resp);
+      // console.log(resp);
       this.CLIENTE_SEGMENT_COMISSIONS = resp.client_segment_commissions;
       this.client_segments = resp.client_segments;
       this.totalPages = resp.total;

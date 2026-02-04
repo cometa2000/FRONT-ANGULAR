@@ -40,8 +40,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    console.log('🔵 ProfileComponent - Inicializando');
-    console.log('👤 Usuario actual:', this.authService.user);
+    // console.log('🔵 ProfileComponent - Inicializando');
+    // console.log('👤 Usuario actual:', this.authService.user);
     
     // ✅ IMPORTANTE: Invalidar caché al entrar al perfil
     // Esto asegura que siempre se carguen datos frescos
@@ -55,7 +55,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.routerSubscription = this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event: any) => {
-      console.log('🔄 Ruta cambiada:', event.url);
+      // console.log('🔄 Ruta cambiada:', event.url);
       // Recargar stats solo si volvemos a /profile desde otra ruta
       if (event.url.includes('/profile') && !event.url.includes('/profile/')) {
         this.loadUserStats();
@@ -75,10 +75,10 @@ export class ProfileComponent implements OnInit, OnDestroy {
    */
   redirectToDefaultTab(): void {
     const currentUrl = this.router.url;
-    console.log('🔍 URL actual:', currentUrl);
+    // console.log('🔍 URL actual:', currentUrl);
     
     if (currentUrl === '/profile' || currentUrl === '/profile/') {
-      console.log('↪️ Redirigiendo a /profile/projects');
+      // console.log('↪️ Redirigiendo a /profile/projects');
       this.router.navigate(['./projects'], { relativeTo: this.route });
     }
   }
@@ -90,15 +90,9 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.user = this.authService.user;
     this.currentUser = this.authService.user; // ✅ Asignar también a currentUser
     
-    console.log('👤 Usuario cargado:', {
-      id: this.user?.id,
-      name: this.user?.name,
-      email: this.user?.email,
-      avatar: this.user?.avatar
-    });
     
     if (!this.user) {
-      console.warn('⚠️ No hay usuario autenticado');
+      // console.warn('⚠️ No hay usuario autenticado');
       this.hasError = true;
       this.errorMessage = 'No se pudo cargar la información del usuario';
     }
@@ -110,7 +104,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
    * ✅ OPTIMIZADO: Cargar estadísticas con manejo de errores y detección de cambios
    */
   loadUserStats(): void {
-    console.log('📊 Cargando estadísticas...');
+    // console.log('📊 Cargando estadísticas...');
     this.isLoading = true;
     this.hasError = false;
     
@@ -119,7 +113,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
     // ✅ Forzar refresh sin usar caché
     this.profileService.getUserStats(true).subscribe({
       next: (response) => {
-        console.log('✅ Estadísticas recibidas:', response);
+        // console.log('✅ Estadísticas recibidas:', response);
         
         if (response.message === 200 && response.stats) {
           // ✅ Actualizar stats de forma explícita
@@ -138,22 +132,22 @@ export class ProfileComponent implements OnInit, OnDestroy {
             success_rate: response.stats.success_rate || 0
           };
           
-          console.log('📊 Stats actualizados:', this.stats);
+          // console.log('📊 Stats actualizados:', this.stats);
         } else {
-          console.warn('⚠️ Respuesta sin stats válidos:', response);
+          // console.warn('⚠️ Respuesta sin stats válidos:', response);
         }
         
         this.isLoading = false;
         this.cdr.detectChanges();
-        console.log('✅ Detección de cambios forzada');
+        // console.log('✅ Detección de cambios forzada');
       },
       error: (error) => {
-        console.error('❌ Error al cargar estadísticas:', error);
-        console.error('📋 Detalles del error:', {
-          status: error.status,
-          message: error.message,
-          statusText: error.statusText
-        });
+        // console.error('❌ Error al cargar estadísticas:', error);
+        // console.error('📋 Detalles del error:', {
+        //   status: error.status,
+        //   message: error.message,
+        //   statusText: error.statusText
+        // });
         
         this.hasError = true;
         
@@ -178,7 +172,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
    * ✅ NUEVO: Método para recargar stats manualmente
    */
   reloadStats(): void {
-    console.log('🔄 Recargando estadísticas manualmente...');
+    // console.log('🔄 Recargando estadísticas manualmente...');
     this.profileService.invalidateCache();
     this.loadUserStats();
   }

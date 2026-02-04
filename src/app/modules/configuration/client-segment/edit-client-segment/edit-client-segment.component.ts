@@ -58,7 +58,7 @@ export class EditClientSegmentComponent {
     this.clientsegmentService.updateClientSegment(this.CLIENT_SEGMENT_SELECTED.id, data)
       .subscribe({
         next: (resp: any) => {
-          console.log(resp);
+          // console.log(resp);
 
           if (resp.message == 403) {
             Swal.fire({

@@ -24,8 +24,8 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    console.log('🔵 ProjectsComponent - Inicializando');
-    console.log('📊 Estado inicial - tareas:', this.tareas.length);
+    // console.log('🔵 ProjectsComponent - Inicializando');
+    // console.log('📊 Estado inicial - tareas:', this.tareas.length);
     this.loadTareas();
   }
 
@@ -38,7 +38,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
    * Cargar las tareas del usuario
    */
   loadTareas(forceRefresh: boolean = false): void {
-    console.log('📋 Iniciando carga de tareas... (forceRefresh:', forceRefresh, ')');
+    // console.log('📋 Iniciando carga de tareas... (forceRefresh:', forceRefresh, ')');
     this.isLoading = true;
     this.hasError = false;
     this.tareas = []; // ✅ Limpiar array antes de cargar
@@ -46,34 +46,34 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     
     const sub = this.profileService.getUserTareas(forceRefresh).subscribe({
       next: (response) => {
-        console.log('✅ Respuesta completa recibida:', response);
-        console.log('📋 Tipo de respuesta:', typeof response);
-        console.log('📋 Keys de respuesta:', Object.keys(response));
+        // console.log('✅ Respuesta completa recibida:', response);
+        // console.log('📋 Tipo de respuesta:', typeof response);
+        // console.log('📋 Keys de respuesta:', Object.keys(response));
         
         // ✅ Validación más robusta
         if (response && response.message === 200) {
           if (response.tareas && Array.isArray(response.tareas)) {
             this.tareas = response.tareas;
-            console.log('✅ Tareas asignadas exitosamente:', this.tareas.length);
-            console.log('📋 Primera tarea (si existe):', this.tareas[0]);
+            // console.log('✅ Tareas asignadas exitosamente:', this.tareas.length);
+            // console.log('📋 Primera tarea (si existe):', this.tareas[0]);
           } else {
-            console.warn('⚠️ response.tareas no es un array válido:', response.tareas);
+            // console.warn('⚠️ response.tareas no es un array válido:', response.tareas);
             this.tareas = [];
           }
         } else {
-          console.warn('⚠️ Respuesta con message !== 200:', response.message);
+          // console.warn('⚠️ Respuesta con message !== 200:', response.message);
           this.tareas = [];
         }
         
         this.isLoading = false;
         this.cdr.detectChanges();
-        console.log('✅ Estado final - tareas:', this.tareas.length, 'isLoading:', this.isLoading);
+        // console.log('✅ Estado final - tareas:', this.tareas.length, 'isLoading:', this.isLoading);
       },
       error: (error) => {
-        console.error('❌ Error al cargar tareas:', error);
-        console.error('❌ Error status:', error.status);
-        console.error('❌ Error message:', error.message);
-        console.error('❌ Error completo:', JSON.stringify(error));
+        // console.error('❌ Error al cargar tareas:', error);
+        // console.error('❌ Error status:', error.status);
+        // console.error('❌ Error message:', error.message);
+        // console.error('❌ Error completo:', JSON.stringify(error));
         
         this.tareas = [];
         this.isLoading = false;
@@ -101,7 +101,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
    * Refrescar tareas manualmente
    */
   refreshTareas(): void {
-    console.log('🔄 Refrescando tareas (invalidando caché)...');
+    // console.log('🔄 Refrescando tareas (invalidando caché)...');
     this.profileService.invalidateCache();
     this.loadTareas(true);
   }
@@ -110,14 +110,14 @@ export class ProjectsComponent implements OnInit, OnDestroy {
    * Filtrar tareas por estado
    */
   get filteredTareas(): any[] {
-    console.log('🔍 Filtrando tareas. Total:', this.tareas.length, 'Filtro:', this.filterStatus);
+    // console.log('🔍 Filtrando tareas. Total:', this.tareas.length, 'Filtro:', this.filterStatus);
     
     if (this.filterStatus === 'all') {
       return this.tareas;
     }
     
     const filtered = this.tareas.filter(tarea => tarea.status === this.filterStatus);
-    console.log('🔍 Tareas filtradas:', filtered.length);
+    // console.log('🔍 Tareas filtradas:', filtered.length);
     return filtered;
   }
 
@@ -126,8 +126,8 @@ export class ProjectsComponent implements OnInit, OnDestroy {
    */
   onFilterChange(event: any): void {
     this.filterStatus = event.target.value;
-    console.log('🔍 Filtro cambiado a:', this.filterStatus);
-    console.log('🔍 Tareas después de filtro:', this.filteredTareas.length);
+    // console.log('🔍 Filtro cambiado a:', this.filterStatus);
+    // console.log('🔍 Tareas después de filtro:', this.filteredTareas.length);
     this.cdr.detectChanges();
   }
 
@@ -135,7 +135,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
    * Ver detalle de la tarea (modo solo lectura)
    */
   viewTarea(tarea: any): void {
-    console.log('👁️ Ver tarea:', tarea);
+    // console.log('👁️ Ver tarea:', tarea);
     this.router.navigate(['/tasks/tareas/edit', tarea.id], {
       queryParams: { readonly: true }
     });

@@ -33,7 +33,7 @@ export class ListPositionComissionComponent {
 
   listPositionComisions(page = 1){
     this.positionComisionService.listPositionComisions(page,this.search).subscribe((resp:any) => {
-      console.log(resp);
+      // console.log(resp);
       this.POSITION_COMISSIONS = resp.position_commissions;
       this.totalPages = resp.total;
       this.currentPage = page;

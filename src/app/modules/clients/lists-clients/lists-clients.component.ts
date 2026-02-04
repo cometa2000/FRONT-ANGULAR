@@ -52,7 +52,7 @@ export class ListsClientsComponent {
       asesor_id: this.asesor_id,
     }
     this.clientsService.listClients(page,data).subscribe((resp:any) => {
-      console.log(resp);
+      // console.log(resp);
       this.CLIENTS = resp.clients.data;
       this.totalPages = resp.total;
       this.currentPage = page;
@@ -67,7 +67,7 @@ export class ListsClientsComponent {
   }
   listConfig(){
     this.clientsService.listConfig().subscribe((resp:any) => {
-      console.log(resp);
+      // console.log(resp);
       this.client_segments = resp.client_segments;
       this.asesores = resp.asesores;
     })
