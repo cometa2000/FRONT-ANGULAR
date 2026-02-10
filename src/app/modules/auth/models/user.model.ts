@@ -55,7 +55,7 @@ export class UserModel extends AuthModel {
     this.password = user.password || '';
     this.fullname = user.fullname || '';
     this.email = user.email || '';
-    this.pic = user.pic || './assets/media/avatars/blank.png';
+    this.pic = user.pic || './assets/media/avatars/1.png';
     this.roles = user.roles || [];
     this.occupation = user.occupation || '';
     this.companyName = user.companyName || '';

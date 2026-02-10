@@ -488,7 +488,7 @@ export class ListGrupoComponent implements OnInit, OnDestroy {
 
   getAvatarUrl(avatar: string): string {
     if (!avatar) {
-      return 'assets/media/avatars/blank.png';
+      return 'assets/media/avatars/1.png';
     }
     
     if (avatar.match(/^\d+\.png$/)) {

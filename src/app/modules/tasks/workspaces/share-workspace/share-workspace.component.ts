@@ -231,7 +231,7 @@ export class ShareWorkspaceComponent implements OnInit {
       return this.resolveAvatarPath(userToCheck.avatar);
     }
     
-    return 'assets/media/avatars/blank.png';
+    return 'assets/media/avatars/1.png';
   }
 
   /**
@@ -242,7 +242,7 @@ export class ShareWorkspaceComponent implements OnInit {
       return this.resolveAvatarPath(member.avatar);
     }
     
-    return 'assets/media/avatars/blank.png';
+    return 'assets/media/avatars/1.png';
   }
 
   /**
@@ -250,7 +250,7 @@ export class ShareWorkspaceComponent implements OnInit {
    */
   private resolveAvatarPath(avatar: string): string {
     if (!avatar) {
-      return 'assets/media/avatars/blank.png';
+      return 'assets/media/avatars/1.png';
     }
 
     if (/^\d+$/.test(avatar)) {
@@ -376,7 +376,7 @@ export class ShareWorkspaceComponent implements OnInit {
    */
   getAvatarUrl(avatar: string): string {
     if (!avatar) {
-      return 'assets/media/avatars/blank.png';
+      return 'assets/media/avatars/1.png';
     }
     
     if (avatar.match(/^\d+\.png$/)) {

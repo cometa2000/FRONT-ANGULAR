@@ -23,7 +23,7 @@ export class AssignMembersTareaComponent implements OnInit {
   assignedMembers: any[] = [];
   isLoading: any;
   searchPerformed: boolean = false;
-  defaultAvatar = 'assets/media/avatars/blank.png';
+  defaultAvatar = 'assets/media/avatars/1.png';
 
   private searchSubject = new Subject<string>();
 

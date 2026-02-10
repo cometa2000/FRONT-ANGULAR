@@ -78,7 +78,7 @@
                <app-fechas [tareaId]="tarea.id" (fechasActualizadas)="onFechasActualizadas($event)"></app-fechas>
           </div>
           <div class="mb-3">
-               <app-checklists [tareaId]="tarea.id" (checklistsChanged)="onChecklistsChanged()"></app-checklists>
+               <app-checklists [tareaId]="tarea.id" [grupoId]="tarea.grupo_id" (checklistsChanged)="onChecklistsChanged()"></app-checklists>
           </div>
           <div class="mb-3">
               <button class="btn-light" (click)="abrirModalAdjuntar()">
@@ -401,8 +401,13 @@
                 <span class="progress-text">{{ checklist.progress || 0 }}%</span>
               </div>
 
+              
               <div class="checklist-items">
-                <div *ngFor="let item of checklist.items" class="checklist-item">
+                <div 
+                  *ngFor="let item of checklist.items" 
+                  class="checklist-item"
+                  [class.item-overdue]="item.is_overdue"
+                  [class.item-due-soon]="item.is_due_soon">
 
                   <!-- ✅ Checkbox solo editable si tiene permisos -->
                   <input 
@@ -432,7 +437,7 @@
                         (keyup.escape)="cancelEditItem()"
                         maxlength="255"
                         placeholder="Nombre del elemento">
-                      <div class="checklist-actions">
+                      <div class="item-actions-inline">
                         <button 
                           class="btn btn-xs btn-success" 
                           (click)="saveItemName(checklist.id, item.id)" 
@@ -448,40 +453,262 @@
                       </div>
                     </div>
 
+                    <!-- 🆕 METADATA DEL ITEM (Fecha y Miembros) -->
+                    <div class="item-metadata" *ngIf="item.due_date || (item.assigned_users && item.assigned_users.length > 0)">
+                      
+                      <!-- ✅ Fecha de vencimiento -->
+                      <div 
+                        *ngIf="item.due_date" 
+                        class="item-date-badge"
+                        [class.badge-overdue]="item.is_overdue"
+                        [class.badge-due-soon]="item.is_due_soon && !item.is_overdue">
+                        <i class="far fa-clock"></i>
+                        <span>{{ formatDateBadge(item.due_date) }}</span>
+                      </div>
+
+                      <!-- ✅ Miembros asignados - VERSIÓN CORREGIDA -->
+                      <div *ngIf="item.assigned_users && item.assigned_users.length > 0" class="item-members-container">
+                        
+                        <!-- CASO 1: 1-2 miembros → Mostrar avatar + nombre -->
+                        <div *ngIf="item.assigned_users.length <= 2" class="item-members-full">
+                          <div 
+                            *ngFor="let user of item.assigned_users"
+                            class="item-member-card"
+                            [title]="user.name + (user.surname ? ' ' + user.surname : '')">
+                            <div class="item-member-avatar-full">
+                              <!-- ✅ CORRECCIÓN CRÍTICA: Usar getAvatarUrl() -->
+                              <img 
+                                [src]="getAvatarUrl(user.avatar)" 
+                                [alt]="user.name"
+                                (error)="handleImageError($event)">
+                            </div>
+                            <span class="item-member-name">
+                              {{ user.name }}{{ user.surname ? ' ' + user.surname : '' }}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <!-- CASO 2: 3+ miembros → Solo avatares con tooltip -->
+                        <div *ngIf="item.assigned_users.length > 2" class="item-members-compact">
+                          <div 
+                            *ngFor="let user of item.assigned_users; let i = index"
+                            class="item-member-avatar-compact"
+                            [title]="user.name + (user.surname ? ' ' + user.surname : '')"
+                            [style.z-index]="item.assigned_users.length - i">
+                            <!-- ✅ CORRECCIÓN CRÍTICA: Usar getAvatarUrl() -->
+                            <img 
+                              [src]="getAvatarUrl(user.avatar)" 
+                              [alt]="user.name"
+                              (error)="handleImageError($event)">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <!-- ✅ Solo mostrar acciones si tiene permisos y no está editando -->
                     <div class="item-actions" *ngIf="hasWriteAccess && editingItemId !== item.id">
+                      <!-- Botón para asignar fecha -->
+                      <button 
+                        class="btn-icon-xs"
+                        (click)="openItemDatePicker(checklist.id, item)"
+                        [title]="item.due_date ? 'Cambiar fecha' : 'Asignar fecha'">
+                        <i class="far fa-calendar"></i>
+                      </button>
+                      
+                      <!-- Botón para asignar miembros -->
+                      <button 
+                        class="btn-icon-xs"
+                        (click)="openItemMembersModal(checklist.id, item)"
+                        title="Asignar miembros">
+                        <i class="far fa-user"></i>
+                      </button>
+                      
+                      <!-- Botón para editar item -->
                       <button 
                         class="btn-icon-xs"
                         (click)="startEditingItem(checklist.id, item)"
-                        title="Editar">
+                        title="Editar elemento">
                         <i class="fa-solid fa-pen"></i>
                       </button>
+                      
+                      <!-- Botón para eliminar item -->
                       <button 
                         class="btn-icon-xs btn-danger-icon"
                         (click)="deleteChecklistItem(checklist.id, item.id)"
-                        title="Eliminar">
+                        title="Eliminar elemento">
                         <i class="fa-solid fa-trash"></i>
                       </button>
                     </div>
                   </div>
-
                 </div>
+
               </div>
 
-              <!-- ✅ Solo permitir agregar items si tiene permisos -->
-              <div class="add-item-container" *ngIf="hasWriteAccess && checklist.addingItem">
-                <input type="text" [(ngModel)]="checklist.newItemName" (keyup.enter)="addChecklistItem(checklist)" placeholder="Añadir un elemento" class="add-item-input">
+                <!-- ✅ Solo permitir agregar items si tiene permisos -->
+                <div class="add-item-container" *ngIf="hasWriteAccess && checklist.addingItem">
+                  <input 
+                    type="text" 
+                    #addItemInput
+                    placeholder="Añadir un elemento" 
+                    class="add-item-input"
+                    (keyup.enter)="addChecklistItem(checklist.id, addItemInput.value); addItemInput.value = ''; checklist.addingItem = false"
+                    (keyup.escape)="cancelAddItem(checklist)">
 
-                <div class="item-actions">
-                  <button class="btn-blue" (click)="addChecklistItem(checklist)">Añadir</button>
-                  <button class="btn-light" (click)="cancelAddItem(checklist)">Cancelar</button>
+                  <div class="item-actions-inline">
+                    <button 
+                      class="btn-blue" 
+                      (click)="addChecklistItem(checklist.id, addItemInput.value); addItemInput.value = ''; checklist.addingItem = false">
+                      Añadir
+                    </button>
+                    <button 
+                      class="btn-light" 
+                      (click)="cancelAddItem(checklist)">
+                      Cancelar
+                    </button>
+                  </div>
                 </div>
-              </div>
 
               <button *ngIf="hasWriteAccess && !checklist.addingItem" class="add-checklist-btn" (click)="showAddItemInput(checklist)">
                 <i class="fa-solid fa-plus"></i> Añade un elemento
               </button>
 
+            </div>
+          </div>
+        </div>
+
+        <!-- 🆕 MODAL PARA ASIGNAR MIEMBROS A ITEM -->
+        <div class="modal-overlay" *ngIf="showItemMembersModal" (click)="closeItemMembersModal()">
+          <div class="modal-content modal-members" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>
+                <i class="far fa-user"></i>
+                Asignar Miembros al Elemento
+              </h3>
+              <button class="btn-close" (click)="closeItemMembersModal()">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            
+            <div class="modal-body">
+              <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input 
+                  type="text" 
+                  placeholder="Buscar miembros..."
+                  [(ngModel)]="searchItemMemberText"
+                  (input)="filterAvailableItemMembers()">
+              </div>
+
+              <div class="members-list">
+                <div 
+                  *ngFor="let user of filteredAvailableItemMembers"
+                  class="member-item"
+                  (click)="toggleItemMemberSelection(user)"
+                  [class.selected]="isItemMemberSelected(user.id)">
+                  <div class="member-info">
+                    <div class="member-avatar-small">
+                      <!-- ✅ CORRECCIÓN: Usar getAvatarUrl() para construir la ruta correcta -->
+                      <img 
+                        [src]="getAvatarUrl(user.avatar)" 
+                        [alt]="user.name"
+                        (error)="handleImageError($event)">
+                    </div>
+                    <div class="member-details">
+                      <span class="member-name">{{ user.name }} {{ user.surname || '' }}</span>
+                      <span class="member-email">{{ user.email }}</span>
+                    </div>
+                  </div>
+                  <div class="member-checkbox">
+                    <i *ngIf="isItemMemberSelected(user.id)" class="fas fa-check-circle"></i>
+                    <i *ngIf="!isItemMemberSelected(user.id)" class="far fa-circle"></i>
+                  </div>
+                </div>
+
+                <div *ngIf="filteredAvailableItemMembers.length === 0" class="no-results">
+                  <i class="fas fa-user-slash"></i>
+                  <p>No se encontraron miembros</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="modal-footer">
+              <button 
+                class="btn btn-secondary" 
+                (click)="closeItemMembersModal()">
+                Cancelar
+              </button>
+              <button 
+                class="btn btn-primary" 
+                (click)="saveItemMembers()">
+                <i class="fas fa-check"></i>
+                Asignar ({{ selectedItemMemberIds.length }})
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🆕 MODAL PARA ASIGNAR FECHA A ITEM -->
+        <div class="modal-overlay" *ngIf="showItemDatePicker" (click)="closeItemDatePicker()">
+          <div class="modal-content modal-date-picker" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>
+                <i class="far fa-calendar"></i>
+                Asignar Fecha al Elemento
+              </h3>
+              <button class="btn-close" (click)="closeItemDatePicker()">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            
+            <div class="modal-body">
+              <div class="form-group">
+                <label>Fecha de vencimiento:</label>
+                <input 
+                  type="date" 
+                  class="form-control"
+                  [(ngModel)]="selectedItemDate"
+                  [min]="getTodayDate()">
+              </div>
+
+              <div class="quick-dates">
+                <button 
+                  class="btn-quick-date"
+                  (click)="setItemQuickDate(1)">
+                  Mañana
+                </button>
+                <button 
+                  class="btn-quick-date"
+                  (click)="setItemQuickDate(7)">
+                  En 1 semana
+                </button>
+                <button 
+                  class="btn-quick-date"
+                  (click)="setItemQuickDate(30)">
+                  En 1 mes
+                </button>
+              </div>
+            </div>
+            
+            <div class="modal-footer">
+              <button 
+                *ngIf="editingItem?.due_date"
+                class="btn btn-danger" 
+                (click)="removeItemDate()">
+                <i class="fas fa-trash"></i>
+                Eliminar fecha
+              </button>
+              <button 
+                class="btn btn-secondary" 
+                (click)="closeItemDatePicker()">
+                Cancelar
+              </button>
+              <button 
+                class="btn btn-primary" 
+                (click)="saveItemDate()"
+                [disabled]="!selectedItemDate">
+                <i class="fas fa-check"></i>
+                Guardar
+              </button>
             </div>
           </div>
         </div>

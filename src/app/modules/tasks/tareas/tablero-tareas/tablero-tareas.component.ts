@@ -847,8 +847,8 @@ export class TableroTareasComponent implements OnInit {
       url_fallida: failedUrl,
       elemento: event.target
     });
-    console.log('   → Cambiando a blank.png');
-    event.target.src = 'assets/media/avatars/blank.png';
+    console.log('   → Cambiando a 1.png');
+    event.target.src = 'assets/media/avatars/1.png';
   }
 
   /**
@@ -869,8 +869,8 @@ export class TableroTareasComponent implements OnInit {
       return url;
     }
 
-    console.log('   ⚠️ Sin avatar, usando blank.png');
-    return 'assets/media/avatars/blank.png';
+    console.log('   ⚠️ Sin avatar, usando 1.png');
+    return 'assets/media/avatars/1.png';
   }
 
 
@@ -886,8 +886,8 @@ export class TableroTareasComponent implements OnInit {
     });
     
     if (!avatarValue) {
-      console.log('   → Retornando blank.png (valor vacío)');
-      return 'assets/media/avatars/blank.png';
+      console.log('   → Retornando 1.png (valor vacío)');
+      return 'assets/media/avatars/1.png';
     }
 
     // 🆕 Caso: solo el número sin extensión (ej. "3")
@@ -926,7 +926,7 @@ export class TableroTareasComponent implements OnInit {
       return this.getAvatarUrl(userToCheck.avatar);
     }
     
-    return 'assets/media/avatars/blank.png';
+    return 'assets/media/avatars/1.png';
   }
 
 }

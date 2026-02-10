@@ -148,7 +148,7 @@ export class PermisosPersonalizadosModalComponent implements OnInit {
    */
   private getAvatarUrl(avatarValue: string): string {
     if (!avatarValue) {
-      return 'assets/media/avatars/blank.png';
+      return 'assets/media/avatars/1.png';
     }
     
     // Si ya es solo el nombre del archivo (ejemplo: "3.png")

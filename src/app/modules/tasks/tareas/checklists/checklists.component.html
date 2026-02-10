@@ -7,103 +7,9 @@
     <i class="fas fa-check-square"></i>
     Añadir checklist
   </button>
-
-  <!-- Lista de checklists -->
-  <!-- <div class="checklists-list">
-    <div 
-      *ngFor="let checklist of checklists"
-      class="checklist-card"
-    >
-      
-      <div class="checklist-header">
-        <div class="checklist-title">
-          <i class="fas fa-check-square"></i>
-          <h3>{{ checklist.name }}</h3>
-        </div>
-        <div class="checklist-actions">
-          <button 
-            class="btn-icon"
-            (click)="openModal(checklist)"
-            title="Editar"
-          >
-            <i class="fas fa-pencil-alt"></i>
-          </button>
-          <button 
-            class="btn-icon"
-            (click)="deleteChecklist(checklist)"
-            title="Eliminar"
-          >
-            <i class="fas fa-trash"></i>
-          </button>
-        </div>
-      </div>
-
-      
-      <div class="progress-section">
-        <div class="progress-info">
-          <span class="progress-text">{{ checklist.progress || 0 }}%</span>
-          <span class="progress-count">
-            {{ getCompletedCount(checklist) }} de {{ checklist.items?.length || 0 }}
-          </span>
-        </div>
-        <div class="progress-bar-container">
-          <div 
-            class="progress-bar"
-            [style.width.%]="checklist.progress || 0"
-            [class]="getProgressClass(checklist.progress || 0)"
-          ></div>
-        </div>
-      </div>
-
-      
-      <div class="items-list">
-        <div 
-          *ngFor="let item of checklist.items"
-          class="item-row"
-          [class.completed]="item.completed"
-        >
-          <label class="checkbox-label">
-            <input 
-              type="checkbox"
-              [checked]="item.completed"
-              (change)="toggleItem(checklist, item)"
-            >
-            <span class="checkbox-custom"></span>
-            <span class="item-name">{{ item.name }}</span>
-          </label>
-          <button 
-            class="btn-delete-item"
-            (click)="deleteItem(checklist, item)"
-            title="Eliminar"
-          >
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-      </div>
-
-      
-      <div class="add-item-section">
-        <input 
-          type="text"
-          class="add-item-input"
-          placeholder="Añadir un paso..."
-          [(ngModel)]="newItemNames[checklist.id!]"
-          (keyup.enter)="addItem(checklist, $event)"
-        >
-        <button 
-          class="btn-add-item"
-          (click)="addItem(checklist, $event)"
-          [disabled]="!newItemNames[checklist.id!] || !newItemNames[checklist.id!].trim()"
-        >
-          <i class="fas fa-plus"></i>
-          Añadir
-        </button>
-      </div>
-    </div>
-  </div> -->
 </div>
 
-<!-- Modal para crear/editar checklist -->
+<!-- Modal para crear/editar/copiar checklist -->
 <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
@@ -117,6 +23,7 @@
     </div>
     
     <div class="modal-body">
+      <!-- Opción 1: Crear desde cero -->
       <div class="form-group">
         <label>Nombre del checklist:</label>
         <input 
@@ -126,11 +33,43 @@
           placeholder="Ej: Tareas pendientes, Pasos a seguir..."
           maxlength="100"
           (keyup.enter)="saveChecklist()"
+          [disabled]="isCopyMode"
           autofocus
         >
       </div>
 
-      <div class="info-box">
+      <!-- Separador visual -->
+      <div class="separator" *ngIf="!editingChecklist">
+        <span>O</span>
+      </div>
+
+      <!-- Opción 2: Copiar checklist existente -->
+      <div class="form-group" *ngIf="!editingChecklist">
+        <label>Copiar de un checklist existente:</label>
+        <select 
+          class="form-control"
+          [(ngModel)]="selectedChecklistToCopy"
+          (change)="onSelectChecklistToCopy()"
+          [disabled]="checklistName.trim().length > 0"
+        >
+          <option [value]="null">-- Seleccionar checklist --</option>
+          <option 
+            *ngFor="let cl of availableChecklists" 
+            [value]="cl.id">
+            {{ cl.display_name }}
+          </option>
+        </select>
+        <small class="form-text text-muted" *ngIf="selectedChecklistToCopy">
+          <i class="fas fa-info-circle"></i>
+          Se copiará el checklist con todos sus elementos (sin marcar como completados)
+        </small>
+        <small class="form-text text-muted" *ngIf="availableChecklists.length === 0 && !editingChecklist">
+          <i class="fas fa-info-circle"></i>
+          No hay checklists disponibles para copiar en este grupo
+        </small>
+      </div>
+
+      <div class="info-box" *ngIf="!selectedChecklistToCopy && !editingChecklist">
         <i class="fas fa-info-circle"></i>
         <p>Los checklists te ayudan a organizar tareas en pasos más pequeños y medibles.</p>
       </div>
@@ -146,10 +85,10 @@
       <button 
         class="btn btn-primary" 
         (click)="saveChecklist()"
-        [disabled]="!checklistName.trim()"
+        [disabled]="!canSaveChecklist()"
       >
         <i class="fas fa-save"></i>
-        {{ editingChecklist ? 'Actualizar' : 'Crear' }}
+        {{ editingChecklist ? 'Actualizar' : (selectedChecklistToCopy ? 'Copiar' : 'Crear') }}
       </button>
     </div>
   </div>

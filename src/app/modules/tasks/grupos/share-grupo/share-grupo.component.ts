@@ -355,7 +355,7 @@ export class ShareGrupoComponent implements OnInit {
    */
   resolveAvatarPath(avatar: string): string {
     if (!avatar) {
-      return 'assets/media/avatars/blank.png';
+      return 'assets/media/avatars/1.png';
     }
 
     // Si es "1.png", "23.jpg", etc.

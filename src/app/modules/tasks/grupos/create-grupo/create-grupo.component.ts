@@ -28,7 +28,12 @@ export class CreateGrupoComponent {
     { url: 'assets/media/fondos/fondo4.png', name: 'fondo4.png' },
     { url: 'assets/media/fondos/fondo5.png', name: 'fondo5.png' },
     { url: 'assets/media/fondos/fondo6.png', name: 'fondo6.png' },
-    { url: 'assets/media/fondos/fondo7.png', name: 'fondo7.png' },
+    { url: 'assets/media/fondos/fondo7.png', name: 'fondo7.png' }, 
+    { url: 'assets/media/fondos/fondo8.png', name: 'fondo8.png' },
+    { url: 'assets/media/fondos/fondo9.png', name: 'fondo9.png' },
+    { url: 'assets/media/fondos/fondo10.png', name: 'fondo10.png' },
+    { url: 'assets/media/fondos/fondo11.png', name: 'fondo11.png' },
+    { url: 'assets/media/fondos/fondo12.png', name: 'fondo12.png' },
   ];
   
   // ✅ Observable del servicio

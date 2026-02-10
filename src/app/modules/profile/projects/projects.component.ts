@@ -239,7 +239,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
    */
   public getAvatarUrl(avatarValue: string | null): string {
     if (!avatarValue) {
-      return 'assets/media/avatars/blank.png';
+      return 'assets/media/avatars/1.png';
     }
 
     // Caso: solo número "3"
@@ -267,7 +267,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
    */
   public getUserAvatar(user: any): string {
     if (!user || !user.avatar) {
-      return 'assets/media/avatars/blank.png';
+      return 'assets/media/avatars/1.png';
     }
 
     return this.getAvatarUrl(user.avatar);
@@ -277,7 +277,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
    * 🛠 Fallback en caso de error
    */
   public onAvatarError(event: any): void {
-    event.target.src = 'assets/media/avatars/blank.png';
+    event.target.src = 'assets/media/avatars/1.png';
   }
 
 }

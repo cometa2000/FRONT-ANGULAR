@@ -60,7 +60,7 @@ export class EditTareaComponent implements OnInit {
   tarea: Tarea | null = null;
 
   // UI helpers
-  defaultAvatar = 'assets/media/avatars/blank.png';
+  defaultAvatar = 'assets/media/avatars/1.png';
   sectionsOpen = {
     descripcion: true,
     etiquetas: true,
@@ -139,6 +139,21 @@ export class EditTareaComponent implements OnInit {
   editFechasDueDate: string = '';
   editFechasEnableNotifications: boolean = false;
   editFechasNotificationDays: number = 1;
+
+  // Miembros de item de checklist
+  showItemMembersModal = false;
+  editingItemForMembers: any = null;
+  editingChecklistForMembers: any = null;
+  availableItemMembers: any[] = [];
+  filteredAvailableItemMembers: any[] = [];
+  selectedItemMemberIds: number[] = [];
+  searchItemMemberText = '';
+
+  // Fechas de item de checklist
+  showItemDatePicker = false;
+  editingItem: any = null;
+  editingChecklistForDate: any = null;
+  selectedItemDate: string = '';
 
   constructor(
     public modal: NgbActiveModal,
@@ -1008,11 +1023,14 @@ export class EditTareaComponent implements OnInit {
     }, 50);
   }
 
+  
   /**
-   * Agregar un nuevo item al checklist
+   * Añadir un nuevo item al checklist
+   * @param checklistId - ID del checklist
+   * @param itemName - Nombre del nuevo item
    */
-  addChecklistItem(checklist: any): void {
-    if (!checklist.newItemName || !checklist.newItemName.trim()) {
+  addChecklistItem(checklistId: number, itemName: string): void {
+    if (!itemName || !itemName.trim()) {
       Swal.fire({
         icon: 'warning',
         title: 'Validación',
@@ -1026,17 +1044,13 @@ export class EditTareaComponent implements OnInit {
     }
 
     const itemData = {
-      name: checklist.newItemName.trim(),
+      name: itemName.trim(),
       completed: false
     };
 
-    this.checklistsService.addItem(this.tareaId, checklist.id, itemData).subscribe({
+    this.checklistsService.addItem(this.tareaId, checklistId, itemData).subscribe({
       next: (resp: any) => {
         console.log('✅ Item añadido:', resp);
-        
-        // Limpiar y ocultar el input
-        checklist.newItemName = '';
-        checklist.addingItem = false;
         
         // Recargar la tarea para actualizar el progreso
         this.loadTarea();
@@ -2114,24 +2128,7 @@ export class EditTareaComponent implements OnInit {
     return this.defaultAvatar;
   }
 
-  /**
-   * 🔧 Helper genérico para construir la URL del avatar
-   */
-  private getAvatarUrl(avatarValue: string): string {
-    if (!avatarValue) {
-      return this.defaultAvatar;
-    }
-    
-    if (avatarValue.match(/^\d+\.png$/)) {
-      return `assets/media/avatars/${avatarValue}`;
-    }
-    
-    if (avatarValue.includes('http') || avatarValue.includes('storage')) {
-      return avatarValue;
-    }
-    
-    return `assets/media/avatars/${avatarValue}`;
-  }
+  
 
   /**
    * 🖼️ Manejo de error al cargar avatar
@@ -2140,4 +2137,473 @@ export class EditTareaComponent implements OnInit {
     console.error('❌ Error al cargar avatar, usando fallback');
     event.target.src = this.defaultAvatar;
   }
+
+  
+  /**
+   * Abrir modal para asignar miembros a un item de checklist
+   */
+  openItemMembersModal(checklistId: number, item: any): void {
+    if (!this.hasWriteAccess) return;
+    
+    this.editingItemForMembers = item;
+    this.editingChecklistForMembers = this.tarea?.checklists?.find(c => c.id === checklistId);
+    
+    // Pre-seleccionar miembros ya asignados
+    this.selectedItemMemberIds = item.assigned_users?.map((u: any) => u.id) || [];
+    this.searchItemMemberText = '';
+    
+    // Cargar miembros disponibles (los de la tarea)
+    this.loadAvailableItemMembers();
+    
+    this.showItemMembersModal = true;
+  }
+
+    
+  /**
+   * Cerrar modal de miembros
+   */
+  closeItemMembersModal(): void {
+    this.showItemMembersModal = false;
+    this.editingItemForMembers = null;
+    this.editingChecklistForMembers = null;
+    this.selectedItemMemberIds = [];
+    this.searchItemMemberText = '';
+  }
+
+  /**
+   * Cargar miembros disponibles para asignar
+   */
+  
+
+  loadAvailableItemMembers(): void {
+    this.tareaService.getAssignedMembers(this.tareaId).subscribe({
+      next: (resp: any) => {
+        this.availableItemMembers = resp.members || [];
+        this.filteredAvailableItemMembers = [...this.availableItemMembers];
+        console.log('✅ Miembros disponibles cargados:', this.availableItemMembers);
+      },
+      error: (error: any) => {
+        console.error('❌ Error al cargar miembros:', error);
+      }
+    });
+  }
+
+  /**
+   * Filtrar miembros disponibles según búsqueda
+   */
+  filterAvailableItemMembers(): void {
+    const searchLower = this.searchItemMemberText.toLowerCase();
+    this.filteredAvailableItemMembers = this.availableItemMembers.filter(user => {
+      const fullName = `${user.name} ${user.surname || ''}`.toLowerCase();
+      return fullName.includes(searchLower) || user.email.toLowerCase().includes(searchLower);
+    });
+  }
+
+  /**
+   * Alternar selección de un miembro
+   */
+  toggleItemMemberSelection(user: any): void {
+    const index = this.selectedItemMemberIds.indexOf(user.id);
+    if (index > -1) {
+      this.selectedItemMemberIds.splice(index, 1);
+    } else {
+      this.selectedItemMemberIds.push(user.id);
+    }
+  }
+
+  /**
+   * Verificar si un miembro está seleccionado
+   */
+  isItemMemberSelected(userId: number): boolean {
+    return this.selectedItemMemberIds.includes(userId);
+  }
+
+  /**
+   * Guardar miembros asignados al item
+   */
+  saveItemMembers(): void {
+    if (!this.editingItemForMembers || !this.editingChecklistForMembers) {
+      console.error('❌ No hay item o checklist seleccionado para asignar miembros');
+      return;
+    }
+
+    console.log('💾 Guardando miembros para item:', this.editingItemForMembers.id);
+    console.log('📋 Checklist ID:', this.editingChecklistForMembers.id);
+    console.log('👥 IDs de miembros seleccionados:', this.selectedItemMemberIds);
+
+    const updatedItem: any = {
+      assigned_users: this.selectedItemMemberIds
+    };
+
+    this.checklistsService.updateItem(
+      this.tareaId,
+      this.editingChecklistForMembers.id,
+      this.editingItemForMembers.id,
+      updatedItem
+    ).subscribe({
+      next: (resp: any) => {
+        console.log('✅ Respuesta completa del servidor:', resp);
+        
+        // ✅ CORRECCIÓN CRÍTICA: Actualizar el item local INMEDIATAMENTE
+        if (resp.item && resp.item.assigned_users) {
+          
+          // Encontrar el checklist en la tarea local
+          const checklistIndex = this.tarea?.checklists?.findIndex(c => c.id === this.editingChecklistForMembers.id);
+          
+          if (checklistIndex !== undefined && checklistIndex !== -1 && this.tarea?.checklists) {
+            const checklist = this.tarea.checklists[checklistIndex];
+            
+            // Encontrar el item dentro del checklist
+            const itemIndex = checklist.items?.findIndex((i: any) => i.id === this.editingItemForMembers.id);
+            
+            if (itemIndex !== undefined && itemIndex !== -1 && checklist.items) {
+              // ✅ Actualizar los usuarios asignados del item local
+              checklist.items[itemIndex].assigned_users = resp.item.assigned_users;
+              
+              console.log('✅ Item local actualizado exitosamente');
+              console.log('📋 Checklist actualizado:', checklist);
+              console.log('📝 Item actualizado:', checklist.items[itemIndex]);
+              console.log('👥 Miembros asignados:', checklist.items[itemIndex].assigned_users);
+            } else {
+              console.warn('⚠️ No se encontró el item en el checklist local');
+            }
+          } else {
+            console.warn('⚠️ No se encontró el checklist en la tarea local');
+          }
+        } else {
+          console.warn('⚠️ La respuesta no incluye item o assigned_users');
+        }
+        
+        // ✅ Forzar detección de cambios en Angular
+        this.cdr.detectChanges();
+        
+        const memberCount = this.selectedItemMemberIds.length;
+        const memberText = memberCount === 1 ? 'miembro' : 'miembros';
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Miembros asignados',
+          text: `${memberCount} ${memberText} asignado(s) exitosamente`,
+          timer: 2000,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+        
+        this.closeItemMembersModal();
+      },
+      error: (error: any) => {
+        console.error('❌ Error al asignar miembros:', error);
+        console.error('📍 Detalles completos del error:', {
+          status: error.status,
+          statusText: error.statusText,
+          message: error.message,
+          error: error.error,
+          url: error.url
+        });
+        
+        let errorMessage = 'No se pudieron asignar los miembros al elemento';
+        
+        if (error.status === 404) {
+          errorMessage = 'No se encontró el elemento del checklist';
+        } else if (error.status === 403) {
+          errorMessage = 'No tienes permisos para asignar miembros';
+        } else if (error.status === 500) {
+          errorMessage = 'Error interno del servidor. Verifica los logs del backend.';
+        }
+        
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMessage,
+          timer: 3000,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+      }
+    });
+  }
+
+  // ========================================
+  // MÉTODOS PARA FECHAS EN ITEMS
+  // ========================================
+
+  /**
+   * Abrir modal para asignar fecha a un item de checklist
+   */
+  openItemDatePicker(checklistId: number, item: any): void {
+    if (!this.hasWriteAccess) return;
+    
+    this.editingItem = item;
+    this.editingChecklistForDate = this.tarea?.checklists?.find(c => c.id === checklistId);
+    this.selectedItemDate = item.due_date || '';
+    this.showItemDatePicker = true;
+  }
+
+  /**
+   * Cerrar modal de fecha
+   */
+  closeItemDatePicker(): void {
+    this.showItemDatePicker = false;
+    this.editingItem = null;
+    this.editingChecklistForDate = null;
+    this.selectedItemDate = '';
+  }
+
+  /**
+   * Obtener fecha de hoy en formato YYYY-MM-DD
+   */
+  // getTodayDate(): string {
+  //   return new Date().toISOString().split('T')[0];
+  // }
+
+  /**
+   * Establecer fecha rápida (mañana, 1 semana, 1 mes)
+   */
+  setItemQuickDate(days: number): void {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    this.selectedItemDate = date.toISOString().split('T')[0];
+  }
+
+  /**
+   * Guardar fecha asignada al item
+   */
+  saveItemDate(): void {
+    if (!this.editingItem || !this.editingChecklistForDate) {
+      return;
+    }
+
+    if (!this.selectedItemDate) {
+      this.toastr.warning('Debes seleccionar una fecha', 'Validación');
+      return;
+    }
+
+    const updatedItem: any = {
+      due_date: this.selectedItemDate
+    };
+
+    this.checklistsService.updateItem(
+      this.tareaId,
+      this.editingChecklistForDate.id,
+      this.editingItem.id,
+      updatedItem
+    ).subscribe({
+      next: (resp: any) => {
+        this.toastr.success('Fecha asignada correctamente', 'Éxito');
+        this.loadTarea();
+        this.closeItemDatePicker();
+      },
+      error: (error: any) => {
+        console.error('❌ Error al asignar fecha:', error);
+        this.toastr.error('No se pudo asignar la fecha', 'Error');
+      }
+    });
+  }
+
+  /**
+   * Eliminar fecha del item
+   */
+  removeItemDate(): void {
+    if (!this.editingItem || !this.editingChecklistForDate) {
+      return;
+    }
+
+    const updatedItem: any = {
+      due_date: null
+    };
+
+    this.checklistsService.updateItem(
+      this.tareaId,
+      this.editingChecklistForDate.id,
+      this.editingItem.id,
+      updatedItem
+    ).subscribe({
+      next: (resp: any) => {
+        this.toastr.success('Fecha eliminada correctamente', 'Éxito');
+        this.loadTarea();
+        this.closeItemDatePicker();
+      },
+      error: (error: any) => {
+        console.error('❌ Error al eliminar fecha:', error);
+        this.toastr.error('No se pudo eliminar la fecha', 'Error');
+      }
+    });
+  }
+
+  // ========================================
+  // MÉTODOS AUXILIARES
+  // ========================================
+
+  /**
+   * 🔧 Formatear fecha para badge (Hoy, Mañana, fecha) - CORREGIDO
+   */
+  formatDateBadge(dateString: string | null | undefined): string {
+    if (!dateString) {
+      console.warn('⚠️ formatDateBadge: Fecha vacía o undefined');
+      return '';
+    }
+    
+    console.log('📅 formatDateBadge - Entrada:', dateString, typeof dateString);
+    
+    try {
+      let date: Date;
+      
+      // Intentar parsear diferentes formatos de fecha
+      if (dateString.includes('T')) {
+        // Formato ISO completo con hora (2025-02-09T00:00:00.000Z)
+        date = new Date(dateString);
+        console.log('📅 Parseado como ISO con hora');
+      } else if (dateString.includes('-')) {
+        // Formato YYYY-MM-DD
+        const parts = dateString.split('-');
+        if (parts.length === 3) {
+          const [year, month, day] = parts.map(Number);
+          date = new Date(year, month - 1, day);
+          console.log('📅 Parseado como YYYY-MM-DD');
+        } else {
+          throw new Error('Formato YYYY-MM-DD inválido');
+        }
+      } else if (dateString.includes('/')) {
+        // Formato DD/MM/YYYY o MM/DD/YYYY
+        const parts = dateString.split('/');
+        if (parts.length === 3) {
+          // Asumimos DD/MM/YYYY
+          const [day, month, year] = parts.map(Number);
+          date = new Date(year, month - 1, day);
+          console.log('📅 Parseado como DD/MM/YYYY');
+        } else {
+          throw new Error('Formato DD/MM/YYYY inválido');
+        }
+      } else {
+        console.warn('⚠️ Formato de fecha no reconocido:', dateString);
+        return dateString;
+      }
+      
+      // Validar que la fecha sea válida
+      if (isNaN(date.getTime())) {
+        console.error('❌ Fecha inválida después de parsear:', dateString);
+        return 'Fecha inválida';
+      }
+      
+      // Obtener fecha de hoy
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Obtener fecha de mañana
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      // Normalizar la fecha parseada para comparación (sin horas)
+      date.setHours(0, 0, 0, 0);
+      
+      console.log('📅 Fecha parseada:', date.toISOString());
+      console.log('📅 Hoy:', today.toISOString());
+      console.log('📅 Mañana:', tomorrow.toISOString());
+      
+      // Comparar fechas
+      if (date.getTime() === today.getTime()) {
+        console.log('✅ Resultado: Hoy');
+        return 'Hoy';
+      } else if (date.getTime() === tomorrow.getTime()) {
+        console.log('✅ Resultado: Mañana');
+        return 'Mañana';
+      } else {
+        // Formato: "12/03/2026" (DD/MM/YYYY)
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        const formatted = `${day}/${month}/${year}`;
+        console.log('✅ Resultado:', formatted);
+        return formatted;
+      }
+    } catch (error) {
+      console.error('❌ Error al formatear fecha:', error);
+      console.error('❌ Fecha que causó el error:', dateString);
+      return 'Error en fecha';
+    }
+  }
+
+  /**
+   * 🔧 Obtener iniciales de un usuario
+   */
+  getInitials(name: string, surname?: string): string {
+    if (!name) return '?';
+    const firstInitial = name.charAt(0).toUpperCase();
+    const lastInitial = surname ? surname.charAt(0).toUpperCase() : '';
+    return firstInitial + lastInitial;
+  }
+
+
+  /**
+   * 🆕 Manejar error de carga de imagen
+   */
+  handleImageError(event: Event): void {
+    const imgElement = event.target as HTMLImageElement;
+    if (imgElement) {
+      imgElement.src = 'assets/media/avatars/blank.png';
+    }
+  }
+
+  /**
+   * 🆕 Obtener fecha de hoy en formato YYYY-MM-DD
+   */
+  getTodayDate(): string {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  
+
+
+
+  // -------------------------------------------------------------
+
+  
+  /**
+   * 🔧 Construir la URL correcta del avatar - IGUAL QUE PROJECTS COMPONENT
+   */
+  public getAvatarUrl(avatarValue: string | null | undefined): string {
+    if (!avatarValue) {
+      return 'assets/media/avatars/blank.png';
+    }
+
+    // Caso: solo número "3"
+    if (/^\d+$/.test(avatarValue)) {
+      return `assets/media/avatars/${avatarValue}.png`;
+    }
+
+    // Caso: "3.png"
+    if (/^\d+\.png$/.test(avatarValue)) {
+      return `assets/media/avatars/${avatarValue}`;
+    }
+
+    // Caso: URL completa del backend (seguridad adicional)
+    if (avatarValue.includes('http://') || avatarValue.includes('https://') || avatarValue.includes('storage')) {
+      const file = avatarValue.split('/').pop();
+      return `assets/media/avatars/${file}`;
+    }
+
+    // Caso general: archivo con nombre
+    if (avatarValue.includes('.')) {
+      return `assets/media/avatars/${avatarValue}`;
+    }
+
+    // Caso: nombre sin extensión
+    return `assets/media/avatars/${avatarValue}.png`;
+  }
+
+  /**
+   * 🔧 REEMPLAZAR el método getAvatarPath() existente con esta versión mejorada
+   * Ubicación: Buscar el método getAvatarPath() y reemplazarlo con este
+   */
+  getAvatarPath(avatar: string | null | undefined): string {
+    // Usar el mismo método que projects.component
+    return this.getAvatarUrl(avatar);
+  }
+
 }
