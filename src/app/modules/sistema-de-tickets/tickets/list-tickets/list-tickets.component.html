@@ -1,0 +1,488 @@
+<!-- ============================================================
+     CENTRO DE SOLICITUDES — 2 columnas: Lista | Detalle
+     La navegación (vistas) vive en el app-sidebar-menu.
+     ============================================================ -->
+<div class="d-flex flex-row" style="min-height: 100vh; overflow: hidden;">
+
+  <!-- ════════════════════════════════════════════
+       COLUMNA 2: Lista de tickets
+  ════════════════════════════════════════════ -->
+  <div class="ticket-list d-flex flex-column bg-light border-end"
+       style="width: 380px; min-width: 300px; max-width: 420px; overflow-y: auto; flex-shrink: 0;">
+
+    <!-- Header: Título de la vista + botón Nuevo Ticket -->
+    <div class="px-5 py-4 bg-white border-bottom d-flex align-items-center justify-content-between sticky-top">
+      <div>
+        <h5 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+          {{ getVistaLabel() }}
+          <span class="badge badge-light-primary fs-8 fw-semibold">
+            {{ tickets.length }}
+          </span>
+        </h5>
+        <span *ngIf="metricas?.vencidos && metricas!.vencidos > 0"
+              class="badge badge-light-danger fs-9 mt-1">
+          {{ metricas!.vencidos }} vencidos
+        </span>
+      </div>
+      <!-- Botón crear: ahora aquí, NO en el sidebar -->
+      <button class="btn btn-primary btn-sm d-flex align-items-center gap-1"
+              (click)="createTicket()">
+        <i class="ki-duotone ki-plus fs-5">
+          <span class="path1"></span><span class="path2"></span>
+        </i>
+        Nuevo
+      </button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="px-4 py-3 bg-white border-bottom">
+      <div class="d-flex gap-2 align-items-center">
+        <div class="position-relative flex-grow-1">
+          <i class="ki-duotone ki-magnifier position-absolute fs-4 text-muted"
+             style="top:50%;left:10px;transform:translateY(-50%)">
+            <span class="path1"></span><span class="path2"></span>
+          </i>
+          <input type="text"
+                 class="form-control form-control-sm ps-9"
+                 placeholder="Buscar por folio o asunto..."
+                 [(ngModel)]="filtroSearch"
+                 (input)="cargarTickets()" />
+        </div>
+        <select class="form-select form-select-sm" style="width:110px"
+                [(ngModel)]="filtroPrioridad" (change)="cargarTickets()">
+          <option value="">Prioridad</option>
+          <option value="alta">Alta</option>
+          <option value="media">Media</option>
+          <option value="baja">Baja</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Lista -->
+    <div class="flex-grow-1">
+
+      <!-- Spinner -->
+      <div *ngIf="isLoading" class="d-flex justify-content-center align-items-center p-10">
+        <div class="spinner-border text-primary" role="status"></div>
+      </div>
+
+      <!-- Empty state -->
+      <div *ngIf="!isLoading && tickets.length === 0"
+           class="d-flex flex-column align-items-center justify-content-center p-10 text-center">
+        <i class="ki-duotone ki-message-text fs-3x text-muted mb-4">
+          <span class="path1"></span><span class="path2"></span>
+        </i>
+        <p class="text-muted fw-semibold mb-1">No hay tickets en esta sección</p>
+        <button class="btn btn-sm btn-light-primary mt-2" (click)="createTicket()">
+          <i class="ki-duotone ki-plus fs-5 me-1"></i>Crear ticket
+        </button>
+      </div>
+
+      <!-- Ticket cards -->
+      <div *ngFor="let ticket of tickets; trackBy: trackById"
+           class="ticket-item p-4 border-bottom bg-white"
+           [class.ticket-item--active]="ticketSeleccionado?.id === ticket.id"
+           [style.border-left]="ticketSeleccionado?.id === ticket.id ? '3px solid #3E97FF' : '3px solid transparent'"
+           (click)="seleccionarTicket(ticket)"
+           style="cursor:pointer; transition: background 0.15s;">
+
+        <!-- Fila 1: Folio + favorito + fecha -->
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <div class="d-flex align-items-center gap-2">
+            <span *ngIf="ticket.is_vencido" class="badge badge-light-danger fs-9">VENCIDO</span>
+            <span class="text-muted fs-8 fw-bold">{{ ticket.folio }}</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <i class="ki-duotone fs-5 cursor-pointer"
+               [class.ki-star]="ticket.es_favorito"
+               [class.ki-outline-star]="!ticket.es_favorito"
+               [class.text-warning]="ticket.es_favorito"
+               [class.text-muted]="!ticket.es_favorito"
+               (click)="toggleFavorito(ticket, $event)">
+              <span class="path1"></span><span class="path2"></span>
+            </i>
+            <span class="text-muted fs-9">{{ ticket.created_at | date:'dd/MM/yy' }}</span>
+          </div>
+        </div>
+
+        <!-- Asunto -->
+        <p class="mb-1 fw-bold text-dark fs-6 text-truncate lh-sm">{{ ticket.asunto }}</p>
+
+        <!-- Descripción (2 líneas) -->
+        <p class="mb-2 text-muted fs-8 lh-sm"
+           style="overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">
+          {{ ticket.descripcion }}
+        </p>
+
+        <!-- Fila 2: Estado + Prioridad + contador mensajes -->
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge badge-light-{{ getEstadoClass(ticket.estado) }} fs-9">
+              {{ getEstadoLabel(ticket.estado) }}
+            </span>
+            <span class="badge badge-light-{{ getPrioridadClass(ticket.prioridad) }} fs-9">
+              {{ ticket.prioridad | titlecase }}
+            </span>
+          </div>
+          <div class="d-flex align-items-center gap-1 text-muted fs-8">
+            <i class="ki-duotone ki-message-text fs-7"><span class="path1"></span><span class="path2"></span></i>
+            {{ ticket.messages_count }}
+          </div>
+        </div>
+
+        <!-- Fila 3: Destino + avatar asignado -->
+        <div class="mt-2 d-flex align-items-center gap-2">
+          <span class="text-muted fs-9 flex-grow-1">
+            <span *ngIf="ticket.tipo_destino === 'sucursal'">→ {{ ticket.sucursal_destino?.nombre ?? '—' }}</span>
+            <span *ngIf="ticket.tipo_destino === 'area_sede'">→ {{ ticket.rol_destino?.nombre ?? '—' }}</span>
+          </span>
+          <img *ngIf="ticket.asignado"
+               [src]="getAvatarUrl(ticket.asignado.avatar)"
+               class="rounded-circle"
+               style="width:20px;height:20px;object-fit:cover;"
+               [title]="ticket.asignado.nombre" />
+        </div>
+
+      </div>
+      <!-- fin loop tickets -->
+
+    </div>
+  </div>
+  <!-- FIN Columna 2 -->
+
+  <!-- ════════════════════════════════════════════
+       COLUMNA 3: Detalle + conversación
+  ════════════════════════════════════════════ -->
+  <div class="ticket-detail flex-grow-1 d-flex flex-column bg-white" style="overflow-y: auto;">
+
+    <!-- Empty state sin ticket -->
+    <div *ngIf="!ticketSeleccionado && !isLoadingDetalle"
+         class="flex-grow-1 d-flex flex-column align-items-center justify-content-center text-center p-10">
+      <i class="ki-duotone ki-message-edit fs-3x text-muted mb-4">
+        <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+      </i>
+      <h4 class="text-muted fw-semibold">Selecciona un ticket</h4>
+      <p class="text-muted fs-7">Haz clic en un ticket de la lista para ver su detalle y conversación.</p>
+    </div>
+
+    <!-- Spinner detalle -->
+    <div *ngIf="isLoadingDetalle" class="flex-grow-1 d-flex justify-content-center align-items-center">
+      <div class="spinner-border text-primary"></div>
+    </div>
+
+    <!-- ── Contenido del ticket ── -->
+    <ng-container *ngIf="ticketSeleccionado && !isLoadingDetalle">
+
+      <!-- Header del detalle (sticky) -->
+      <div class="px-6 py-4 border-bottom d-flex align-items-start justify-content-between bg-white sticky-top">
+        <div class="flex-grow-1 me-3">
+          <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+            <span class="text-muted fs-8 fw-bold">{{ ticketSeleccionado.folio }}</span>
+            <span class="badge badge-light-{{ getEstadoClass(ticketSeleccionado.estado) }} fw-bold">
+              {{ getEstadoLabel(ticketSeleccionado.estado) }}
+            </span>
+            <span class="badge badge-light-{{ getPrioridadClass(ticketSeleccionado.prioridad) }}">
+              {{ ticketSeleccionado.prioridad | titlecase }}
+            </span>
+            <span *ngIf="ticketSeleccionado.is_vencido" class="badge badge-danger">VENCIDO</span>
+          </div>
+          <h4 class="fw-bold text-dark mb-0 lh-sm">{{ ticketSeleccionado.asunto }}</h4>
+        </div>
+
+        <!-- Acciones del header -->
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+
+          <!-- Botón Estado:
+               SOLO visible si: puedeVerBotonEstado === true
+               (sede o franquiciatario asignado, y ticket no está cerrado/rechazado) -->
+          <button *ngIf="puedeVerBotonEstado"
+                  class="btn btn-sm btn-light-primary d-flex align-items-center gap-1"
+                  (click)="abrirPanelEstado()">
+            <i class="ki-duotone ki-arrows-circle fs-5">
+              <span class="path1"></span><span class="path2"></span>
+            </i>
+            Estado
+          </button>
+
+          <!-- Favorito -->
+          <button class="btn btn-sm btn-icon"
+                  [class.btn-light-warning]="ticketSeleccionado.es_favorito"
+                  [class.btn-light]="!ticketSeleccionado.es_favorito"
+                  (click)="toggleFavorito(ticketSeleccionado, $event)">
+            <i class="ki-duotone ki-star fs-5"
+               [class.text-warning]="ticketSeleccionado.es_favorito">
+              <span class="path1"></span><span class="path2"></span>
+            </i>
+          </button>
+
+          <!-- Archivar -->
+          <button class="btn btn-sm btn-icon btn-light"
+                  (click)="archivar(ticketSeleccionado, $event)"
+                  [title]="ticketSeleccionado.archivado ? 'Desarchivar' : 'Archivar'">
+            <i class="ki-duotone ki-archive fs-5 text-muted">
+              <span class="path1"></span><span class="path2"></span>
+            </i>
+          </button>
+
+          <!-- Menú de acciones -->
+          <div class="dropdown">
+            <button class="btn btn-sm btn-icon btn-light" data-bs-toggle="dropdown">
+              <i class="ki-duotone ki-dots-vertical fs-5">
+                <span class="path1"></span><span class="path2"></span>
+              </i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <a class="dropdown-item" (click)="editTicket(ticketSeleccionado, $event)">
+                  <i class="ki-duotone ki-pencil me-2 fs-5">
+                    <span class="path1"></span><span class="path2"></span>
+                  </i>
+                  Editar ticket
+                </a>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <a class="dropdown-item text-danger" (click)="deleteTicket(ticketSeleccionado, $event)">
+                  <i class="ki-duotone ki-trash me-2 fs-5">
+                    <span class="path1"></span><span class="path2"></span>
+                  </i>
+                  Eliminar ticket
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Cerrar detalle -->
+          <button class="btn btn-sm btn-icon btn-light" (click)="cerrarDetalle()">
+            <i class="ki-duotone ki-cross fs-5">
+              <span class="path1"></span><span class="path2"></span>
+            </i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Panel cambio de estado -->
+      <div *ngIf="showEstadoPanel"
+           class="mx-6 mt-4 p-4 rounded border border-dashed border-primary bg-light-primary">
+        <h6 class="fw-bold text-primary mb-3">
+          <i class="ki-duotone ki-arrows-circle fs-5 me-2">
+            <span class="path1"></span><span class="path2"></span>
+          </i>
+          Cambiar Estado del Ticket
+        </h6>
+        <div class="d-flex gap-2 flex-wrap mb-3">
+          <button *ngFor="let est of estadosDisponiblesParaUsuario"
+                  type="button"
+                  class="btn btn-sm"
+                  [class.btn-primary]="nuevoEstado === est.value"
+                  [class]="nuevoEstado !== est.value ? 'btn-light-' + est.class : ''"
+                  (click)="nuevoEstado = est.value">
+            {{ est.label }}
+          </button>
+        </div>
+        <textarea class="form-control form-control-sm mb-3"
+                  rows="2"
+                  placeholder="Comentario sobre el cambio (opcional)"
+                  [(ngModel)]="comentarioEstado"></textarea>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-primary"
+                  (click)="aplicarCambioEstado()"
+                  [disabled]="!nuevoEstado">
+            Confirmar
+          </button>
+          <button class="btn btn-sm btn-light" (click)="showEstadoPanel = false">Cancelar</button>
+        </div>
+      </div>
+
+      <!-- Metadata del ticket -->
+      <div class="px-6 py-4 border-bottom">
+        <div class="row g-4">
+          <div class="col-md-7">
+            <p class="text-muted fs-8 fw-semibold text-uppercase mb-1">Descripción</p>
+            <p class="text-dark fs-6 lh-lg" style="white-space:pre-wrap;">{{ ticketSeleccionado.descripcion }}</p>
+          </div>
+          <div class="col-md-5">
+            <div class="d-flex flex-column gap-3">
+              <div *ngIf="ticketSeleccionado.creador" class="d-flex align-items-center gap-2">
+                <span class="text-muted fs-8 fw-semibold" style="width:75px">Creador:</span>
+                <img [src]="getAvatarUrl(ticketSeleccionado.creador.avatar)"
+                     class="rounded-circle" style="width:24px;height:24px;object-fit:cover;" />
+                <span class="fs-7">{{ ticketSeleccionado.creador.nombre }}</span>
+              </div>
+              <div *ngIf="ticketSeleccionado.asignado" class="d-flex align-items-center gap-2">
+                <span class="text-muted fs-8 fw-semibold" style="width:75px">Asignado:</span>
+                <img [src]="getAvatarUrl(ticketSeleccionado.asignado.avatar)"
+                     class="rounded-circle" style="width:24px;height:24px;object-fit:cover;" />
+                <span class="fs-7">{{ ticketSeleccionado.asignado.nombre }}</span>
+              </div>
+              <div *ngIf="ticketSeleccionado.sucursal_destino" class="d-flex align-items-center gap-2">
+                <span class="text-muted fs-8 fw-semibold" style="width:75px">Para:</span>
+                <span class="fs-7">{{ ticketSeleccionado.sucursal_destino.nombre }}</span>
+              </div>
+              <div *ngIf="ticketSeleccionado.rol_destino" class="d-flex align-items-center gap-2">
+                <span class="text-muted fs-8 fw-semibold" style="width:75px">Área:</span>
+                <span class="fs-7 badge badge-light-secondary">{{ ticketSeleccionado.rol_destino.nombre }}</span>
+              </div>
+              <div *ngIf="ticketSeleccionado.fecha_limite" class="d-flex align-items-center gap-2">
+                <span class="text-muted fs-8 fw-semibold" style="width:75px">Límite:</span>
+                <span class="fs-7" [class.text-danger]="ticketSeleccionado.is_vencido">
+                  {{ ticketSeleccionado.fecha_limite | date:'dd/MM/yyyy' }}
+                </span>
+              </div>
+              <div *ngIf="ticketSeleccionado.categoria" class="d-flex align-items-center gap-2">
+                <span class="text-muted fs-8 fw-semibold" style="width:75px">Categoría:</span>
+                <span class="badge badge-light-secondary fs-8">{{ ticketSeleccionado.categoria }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Adjuntos del ticket principal -->
+      <div *ngIf="ticketSeleccionado.attachments && ticketSeleccionado.attachments.length > 0"
+           class="px-6 py-3 border-bottom">
+        <p class="text-muted fs-8 fw-semibold text-uppercase mb-2">Adjuntos</p>
+        <div class="d-flex flex-wrap gap-2">
+          <a *ngFor="let adj of ticketSeleccionado.attachments"
+             [href]="adj.file_url" target="_blank"
+             class="btn btn-sm btn-light d-flex align-items-center gap-2">
+            <i class="ki-duotone ki-file fs-5 text-primary">
+              <span class="path1"></span><span class="path2"></span>
+            </i>
+            <span class="text-truncate" style="max-width:130px;">{{ adj.nombre }}</span>
+            <span class="text-muted fs-9">{{ formatFileSize(adj.tamanio) }}</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Conversación -->
+      <div class="px-6 py-4 flex-grow-1">
+        <div class="d-flex align-items-center gap-2 mb-4">
+          <span class="text-muted fs-8 fw-semibold text-uppercase">
+            Conversación
+          </span>
+          <span class="badge badge-light-secondary fs-9">
+            {{ ticketSeleccionado.messages?.length || 0 }} mensajes
+          </span>
+        </div>
+
+        <!-- Sin mensajes -->
+        <div *ngIf="!ticketSeleccionado.messages || ticketSeleccionado.messages.length === 0"
+             class="text-center py-6">
+          <p class="text-muted fs-7">No hay mensajes aún. ¡Sé el primero en responder!</p>
+        </div>
+
+        <!-- Hilo de mensajes -->
+        <div class="d-flex flex-column gap-5">
+          <div *ngFor="let msg of ticketSeleccionado.messages"
+               class="d-flex align-items-start gap-3">
+            <img [src]="getAvatarUrl(msg.user?.avatar ?? null)"
+                 class="rounded-circle flex-shrink-0 mt-1"
+                 style="width:36px;height:36px;object-fit:cover;" />
+            <div class="flex-grow-1">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <strong class="text-dark fs-7">{{ msg.user?.nombre ?? 'Usuario' }}</strong>
+                <span *ngIf="msg.es_nota_interna" class="badge badge-light-warning fs-9">Nota Interna</span>
+                <span class="text-muted fs-8">{{ msg.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <div class="p-3 rounded lh-lg"
+                   [class.bg-light-warning]="msg.es_nota_interna"
+                   [class.bg-light]="!msg.es_nota_interna"
+                   style="white-space:pre-wrap; font-size:0.9rem;">
+                {{ msg.contenido }}
+              </div>
+              <div *ngIf="msg.adjuntos && msg.adjuntos.length > 0"
+                   class="mt-2 d-flex flex-wrap gap-2">
+                <a *ngFor="let adj of msg.adjuntos" [href]="adj.file_url" target="_blank"
+                   class="btn btn-xs btn-light d-flex align-items-center gap-1 py-1 px-2">
+                  <i class="ki-duotone ki-file fs-6 text-primary">
+                    <span class="path1"></span><span class="path2"></span>
+                  </i>
+                  <span class="fs-9">{{ adj.nombre }}</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Caja de respuesta -->
+      <div *ngIf="ticketSeleccionado.estado !== 'cerrado' && ticketSeleccionado.estado !== 'rechazado'"
+           class="px-6 pb-6 pt-3 border-top bg-white sticky-bottom">
+        <div class="border rounded p-3">
+          <textarea class="form-control border-0 p-0 resize-none"
+                    rows="3"
+                    placeholder="Escribe tu respuesta..."
+                    [(ngModel)]="nuevoMensaje"
+                    style="box-shadow:none;"></textarea>
+          <div class="d-flex align-items-center justify-content-between mt-2">
+            <div class="d-flex align-items-center gap-2">
+              <label class="btn btn-sm btn-icon btn-light cursor-pointer" title="Adjuntar">
+                <i class="ki-duotone ki-paper-clip fs-5">
+                  <span class="path1"></span><span class="path2"></span>
+                </i>
+                <input type="file" class="d-none" multiple (change)="onAdjuntoMensaje($event)" />
+              </label>
+              <span *ngIf="adjuntosNuevoMensaje.length > 0" class="text-muted fs-8">
+                {{ adjuntosNuevoMensaje.length }} archivo(s)
+              </span>
+            </div>
+            <button class="btn btn-primary btn-sm d-flex align-items-center gap-2"
+                    [disabled]="!nuevoMensaje.trim() || isSendingMessage"
+                    (click)="enviarMensaje()">
+              <span *ngIf="isSendingMessage" class="spinner-border spinner-border-sm"></span>
+              <i *ngIf="!isSendingMessage" class="ki-duotone ki-send fs-5">
+                <span class="path1"></span><span class="path2"></span>
+              </i>
+              Responder
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ticket cerrado/rechazado -->
+      <div *ngIf="ticketSeleccionado.estado === 'cerrado' || ticketSeleccionado.estado === 'rechazado'"
+           class="mx-6 my-4 p-4 rounded bg-light text-center text-muted fs-7">
+        <i class="ki-duotone ki-lock fs-2 me-2">
+          <span class="path1"></span><span class="path2"></span>
+        </i>
+        Este ticket está {{ ticketSeleccionado.estado }}. No se pueden agregar más mensajes.
+      </div>
+
+      <!-- Historial de estados (colapsable) -->
+      <div class="mx-6 mb-6 mt-2"
+           *ngIf="ticketSeleccionado.status_history && ticketSeleccionado.status_history.length > 0">
+        <details>
+          <summary class="text-muted fs-8 fw-bold cursor-pointer text-uppercase">
+            Historial de cambios ({{ ticketSeleccionado.status_history.length }})
+          </summary>
+          <div class="mt-3 d-flex flex-column gap-2">
+            <div *ngFor="let h of ticketSeleccionado.status_history"
+                 class="d-flex align-items-start gap-3 p-3 bg-light rounded">
+              <div class="flex-shrink-0 mt-1">
+                <span class="bullet bullet-dot bg-primary"></span>
+              </div>
+              <div>
+                <div class="fs-8 text-muted">{{ h.created_at | date:'dd/MM/yyyy HH:mm' }} · {{ h.usuario }}</div>
+                <div class="fs-7 fw-semibold">
+                  <span class="text-muted">{{ h.estado_anterior ?? '—' }}</span>
+                  <i class="ki-duotone ki-right mx-2 fs-8">
+                    <span class="path1"></span><span class="path2"></span>
+                  </i>
+                  <span class="text-dark">{{ getEstadoLabel(h.estado_nuevo) }}</span>
+                </div>
+                <div *ngIf="h.comentario" class="fs-8 text-muted mt-1">{{ h.comentario }}</div>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+
+    </ng-container>
+    <!-- FIN detalle -->
+
+  </div>
+  <!-- FIN Columna 3 -->
+
+</div>
+<!-- Los modales de create, edit y delete se abren via NgbModal desde el .ts -->

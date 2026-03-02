@@ -11,13 +11,15 @@ import { FilterPipe } from './filter.pipe';
 
 // ✅ Importar servicio
 import { GanttService } from './service/gantt.service';
+import { MaintenanceModalComponent } from './maintenance-modal/maintenance-modal.component';
 
 @NgModule({
   declarations: [
     DashboardComponent, 
     GanttChartComponent, 
     GanttFiltersModalComponent,
-    FilterPipe  // ✅ Agregar FilterPipe
+    FilterPipe,
+    MaintenanceModalComponent  // ✅ Agregar FilterPipe
   ],
   imports: [
     CommonModule,  // ✅ Esto provee AsyncPipe, NgIf, NgFor

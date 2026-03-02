@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subscription, Observable } from 'rxjs';
 import { first } from 'rxjs/operators';
@@ -12,19 +12,21 @@ import { ActivatedRoute, Router } from '@angular/router';
   styleUrls: ['./login.component.scss'],
 })
 export class LoginComponent implements OnInit, OnDestroy {
-  // KeenThemes mock, change it to:
   defaultAuth: any = {
     email: '',
     password: '',
   };
 
   loginForm: FormGroup;
-  hasError: boolean;
+  hasError: boolean = false;
   returnUrl: string;
   isLoading$: Observable<boolean>;
 
-  // private fields
-  private unsubscribe: Subscription[] = []; // Read more: => https://brianflove.com/2016/12/11/anguar-2-unsubscribe-observables/
+  // ✅ NUEVO: Flags para mostrar mensajes contextuales
+  sessionExpired: boolean = false;   // La sesión expiró por tiempo
+  sessionClosed: boolean = false;    // Cerró sesión desde otra pestaña
+
+  private unsubscribe: Subscription[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -33,7 +35,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     private router: Router
   ) {
     this.isLoading$ = this.authService.isLoading$;
-    // redirect to home if already logged in
+    // Redirigir si ya está logueado
     if (this.authService.currentUserValue) {
       this.router.navigate(['/']);
     }
@@ -41,12 +43,21 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.initForm();
-    // get return url from route parameters or default to '/'
-    this.returnUrl =
-      this.route.snapshot.queryParams['returnUrl'.toString()] || '/';
+
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
+
+    // ✅ NUEVO: Leer query params para mostrar mensajes apropiados
+    const queryParams = this.route.snapshot.queryParams;
+
+    if (queryParams['sessionExpired'] === 'true') {
+      this.sessionExpired = true;
+    }
+
+    if (queryParams['sessionClosed'] === 'true') {
+      this.sessionClosed = true;
+    }
   }
 
-  // convenience getter for easy access to form fields
   get f() {
     return this.loginForm.controls;
   }
@@ -54,7 +65,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   initForm() {
     this.loginForm = this.fb.group({
       email: [
-        '',
+        this.defaultAuth.email,
         Validators.compose([
           Validators.required,
           Validators.email,
@@ -63,7 +74,7 @@ export class LoginComponent implements OnInit, OnDestroy {
         ]),
       ],
       password: [
-        '',
+        this.defaultAuth.password,
         Validators.compose([
           Validators.required,
           Validators.minLength(3),
@@ -73,16 +84,17 @@ export class LoginComponent implements OnInit, OnDestroy {
     });
   }
 
-
   submit() {
     this.hasError = false;
+    // Limpiar mensajes de sesión al intentar nuevo login
+    this.sessionExpired = false;
+    this.sessionClosed = false;
+
     const loginSubscr = this.authService
-      .login(this.f.email.value, this.f.password.value)
+      .login(this.f['email'].value, this.f['password'].value)
       .pipe(first())
       .subscribe((user: any) => {
-        // console.log(user);
         if (user) {
-          // this.router.navigate([this.returnUrl]);
           document.location.reload();
         } else {
           this.hasError = true;

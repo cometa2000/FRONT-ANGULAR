@@ -81,6 +81,10 @@ const Routing: Routes = [
     loadChildren: () => import('../modules/cronograma-proformas/cronograma-proformas.module').then((m) => m.CronogramaProformasModule),
   },
   {
+    path: 'sistema-de-tickets',
+    loadChildren: () => import('../modules/sistema-de-tickets/sistema-de-tickets.module').then((m) => m.SistemaDeTicketsModule),
+  },
+  {
     path: '',
     redirectTo: '/dashboard',
     pathMatch: 'full',

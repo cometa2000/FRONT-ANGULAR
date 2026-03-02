@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angula
 import { Subject, takeUntil, timer, retry, catchError, of } from 'rxjs';
 import { AuthService } from 'src/app/modules/auth';
 import { WorkspaceService } from 'src/app/modules/tasks/workspaces/service/workspace.service';
+import { TicketsService, TicketMetricas } from 'src/app/modules/sistema-de-tickets/tickets/service/tickets.service';
 
 @Component({
   selector: 'app-sidebar-menu',
@@ -16,151 +17,134 @@ export class SidebarMenuComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private loadAttempts = 0;
   private maxRetries = 3;
-  
+
+  // Métricas de tickets para los badges del sidebar
+  ticketMetricas: TicketMetricas | null = null;
+
   constructor(
     public authService: AuthService,
     private workspaceService: WorkspaceService,
-    private cdr: ChangeDetectorRef,  // ✅ SOLUCIÓN: Inyectar ChangeDetectorRef
-    private ngZone: NgZone  // ✅ SOLUCIÓN: Inyectar NgZone
+    private ticketsService: TicketsService,
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone,
   ) { }
 
   ngOnInit(): void {
     this.user = this.authService.user;
-    
-    // ✅ SOLUCIÓN: Timer inicial más corto
-    timer(200).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(() => {
+
+    timer(200).pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.loadWorkspaces();
     });
 
-    // ✅ SOLUCIÓN: Suscribirse a cambios de workspaces
     this.workspaceService.workspacesChanged$.pipe(
       takeUntil(this.destroy$)
     ).subscribe(changed => {
       if (changed) {
-        console.log('🔔 Sidebar: Detectado cambio en workspaces, recargando...');
         this.loadWorkspaces();
       }
     });
+
+    // Cargar métricas de tickets si el usuario tiene permiso
+    if (this.showMenu(['register_ticket', 'edit_ticket'])) {
+      this.loadTicketMetricas();
+    }
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
-  
-  /**
-   * 📋 Cargar workspaces del usuario
-   * ✅ SOLUCIÓN: Forzar detección de cambios después de cargar
-   */
+
+  // ================================================================
+  // MÉTRICAS DE TICKETS (badges del sidebar)
+  // ================================================================
+  loadTicketMetricas(): void {
+    this.ticketsService.getMetricas().pipe(
+      catchError(() => of(null)),
+      takeUntil(this.destroy$)
+    ).subscribe((resp: any) => {
+      if (resp?.metricas) {
+        this.ngZone.run(() => {
+          this.ticketMetricas = resp.metricas;
+          this.cdr.detectChanges();
+        });
+      }
+    });
+  }
+
+  /** Devuelve el conteo de la vista indicada, 0 si no hay datos */
+  getTicketBadge(vista: string): number {
+    if (!this.ticketMetricas) return 0;
+    const map: Record<string, number> = {
+      bandeja:     this.ticketMetricas.bandeja     ?? 0,
+      enviados:    this.ticketMetricas.enviados    ?? 0,
+      en_proceso:  this.ticketMetricas.en_proceso  ?? 0,
+      finalizados: this.ticketMetricas.finalizados ?? 0,
+      archivados:  this.ticketMetricas.archivados  ?? 0,
+      favoritos:   this.ticketMetricas.favoritos   ?? 0,
+    };
+    return map[vista] ?? 0;
+  }
+
+  // ================================================================
+  // WORKSPACES
+  // ================================================================
   loadWorkspaces() {
-    if (!this.showMenu(['register_task', 'edit_task'])) {
-      return;
-    }
-    
+    if (!this.showMenu(['register_task', 'edit_task'])) return;
+
     this.loadingWorkspaces = true;
     this.loadAttempts++;
-    
-    console.log(`🔄 Sidebar - Intento ${this.loadAttempts} de cargar workspaces...`);
-    
+
     this.workspaceService.listWorkspaces().pipe(
-      retry({
-        count: 2,
-        delay: 1000
-      }),
-      catchError(error => {
-        console.error('❌ Sidebar - Error al cargar workspaces:', error);
-        return of({ message: 500, workspaces: [] });
-      }),
+      retry({ count: 2, delay: 1000 }),
+      catchError(() => of({ message: 500, workspaces: [] })),
       takeUntil(this.destroy$)
     ).subscribe({
       next: (resp: any) => {
-        console.log('📦 Sidebar - Respuesta recibida:', resp);
-        
         if (resp.message === 200 && resp.workspaces) {
-          // ✅ SOLUCIÓN CRÍTICA: Ejecutar dentro de NgZone para asegurar detección
           this.ngZone.run(() => {
-            this.workspaces = resp.workspaces || [];
-            
-            // Ordenar por fecha de creación (más recientes primero)
-            this.workspaces.sort((a, b) => {
-              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-            });
-            
-            console.log('✅ Sidebar - Workspaces cargados:', this.workspaces.length);
-            console.log('📋 Workspaces:', this.workspaces.map(w => w.name));
-            
+            this.workspaces = (resp.workspaces || []).sort((a: any, b: any) =>
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            );
             this.loadingWorkspaces = false;
             this.loadAttempts = 0;
-            
-            // ✅ SOLUCIÓN CRÍTICA: Forzar detección de cambios
             this.cdr.detectChanges();
-            console.log('🔄 Sidebar - Change detection forzada');
           });
-          
         } else if (this.loadAttempts < this.maxRetries) {
-          // Reintentar después de 2 segundos
-          console.log('🔄 Sidebar - Reintentando en 2 segundos...');
-          timer(2000).pipe(
-            takeUntil(this.destroy$)
-          ).subscribe(() => {
+          timer(2000).pipe(takeUntil(this.destroy$)).subscribe(() => {
             this.loadingWorkspaces = false;
             this.loadWorkspaces();
           });
         } else {
-          console.warn('⚠️ Sidebar - Máximo de reintentos alcanzado');
           this.loadingWorkspaces = false;
-          // ✅ Forzar detección incluso en caso de error
           this.cdr.detectChanges();
         }
       },
-      error: (error) => {
-        console.error('❌ Sidebar - Error en suscripción:', error);
-        
-        // ✅ SOLUCIÓN: Ejecutar en NgZone
+      error: () => {
         this.ngZone.run(() => {
           this.loadingWorkspaces = false;
           this.cdr.detectChanges();
         });
-        
-        // ✅ Reintentar automáticamente si no se ha alcanzado el máximo
         if (this.loadAttempts < this.maxRetries) {
-          timer(2000).pipe(
-            takeUntil(this.destroy$)
-          ).subscribe(() => {
-            this.loadWorkspaces();
-          });
+          timer(2000).pipe(takeUntil(this.destroy$)).subscribe(() => this.loadWorkspaces());
         }
       }
     });
   }
-  
-  /**
-   * 🔄 Método público para recargar workspaces
-   */
+
   reloadWorkspaces() {
-    console.log('🔄 Sidebar - Recarga manual solicitada');
     this.workspaces = [];
     this.loadAttempts = 0;
     this.loadWorkspaces();
   }
-  
+
   showMenu(permisos: any = []) {
-    if (this.isRole()) {
-      return true;
-    }
+    if (this.isRole()) return true;
     let permissions = this.user?.permissions || [];
-    var is_show = false;
-    permisos.forEach((permiso: any) => {
-      if (permissions.includes(permiso)) {
-        is_show = true;
-      }
-    });
-    return is_show;
+    return permisos.some((p: any) => permissions.includes(p));
   }
 
   isRole() {
-    return this.user?.role_name == 'Super-Admin' ? true : false;
+    return this.user?.role_name == 'Super-Admin';
   }
 }

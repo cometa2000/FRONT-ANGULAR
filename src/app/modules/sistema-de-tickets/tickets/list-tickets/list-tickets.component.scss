@@ -1,0 +1,63 @@
+// ============================================================
+// ESTILOS: Centro de Solicitudes
+// ============================================================
+
+// Ticket item en lista
+.ticket-item {
+  border-left: 3px solid transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background-color: #f5f8fa !important;
+  }
+
+  &--active {
+    background-color: #f0f6ff !important;
+    border-left-color: #009ef7 !important;
+  }
+}
+
+// Sidebar
+.ticket-sidebar {
+  .menu-link {
+    &:hover:not(.active) {
+      background-color: #f5f8fa;
+    }
+  }
+}
+
+// Panel detalle: área de respuesta pegada al fondo
+.sticky-bottom {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+// Historial colapsable
+details > summary {
+  list-style: none;
+  &::-webkit-details-marker { display: none; }
+  &::before {
+    content: '▸ ';
+    font-size: 0.7rem;
+  }
+}
+details[open] > summary::before {
+  content: '▾ ';
+}
+
+// Responsive
+@media (max-width: 1200px) {
+  .ticket-list {
+    width: 300px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .ticket-sidebar {
+    display: none !important;
+  }
+  .ticket-list {
+    width: 260px !important;
+  }
+}

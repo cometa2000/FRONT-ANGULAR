@@ -1,0 +1,159 @@
+<!-- ========================================
+     🔧 MODAL DE AVISO DE MANTENIMIENTO
+     ======================================== -->
+
+<!-- Backdrop oscuro -->
+<div class="maintenance-backdrop" 
+     *ngIf="showModal"
+     (click)="closeModal()">
+</div>
+
+<!-- Modal principal -->
+<div class="maintenance-modal-wrapper" 
+     *ngIf="showModal"
+     [@slideDown]>
+  
+  <div class="maintenance-modal">
+    
+    <!-- 🔝 Header con icono de advertencia -->
+    <div class="maintenance-header">
+      <div class="maintenance-icon-container">
+        <i class="ki-duotone ki-information-5 fs-5x text-warning">
+          <span class="path1"></span>
+          <span class="path2"></span>
+          <span class="path3"></span>
+        </i>
+      </div>
+      
+      <h2 class="maintenance-title">
+        {{ maintenanceInfo.title }}
+      </h2>
+      
+      <!-- Botón cerrar (X) -->
+      <button 
+        type="button" 
+        class="maintenance-close-btn" 
+        (click)="closeModal()"
+        aria-label="Cerrar"
+      >
+        <i class="ki-duotone ki-cross fs-2">
+          <span class="path1"></span>
+          <span class="path2"></span>
+        </i>
+      </button>
+    </div>
+
+    <!-- 📋 Cuerpo del modal -->
+    <div class="maintenance-body">
+      
+      <!-- Mensaje principal -->
+      <div class="alert alert-warning d-flex align-items-start mb-6">
+        <i class="ki-duotone ki-notification-bing fs-2x me-3 flex-shrink-0">
+          <span class="path1"></span>
+          <span class="path2"></span>
+          <span class="path3"></span>
+        </i>
+        <div>
+          <div class="fw-bold mb-1">Importante</div>
+          <div class="text-gray-700">{{ maintenanceInfo.message }}</div>
+        </div>
+      </div>
+
+      <!-- 📅 Información de fecha y hora -->
+      <div class="maintenance-schedule">
+        <div class="maintenance-schedule-item">
+          <i class="ki-duotone ki-calendar-8 fs-2 text-primary me-3">
+            <span class="path1"></span>
+            <span class="path2"></span>
+            <span class="path3"></span>
+            <span class="path4"></span>
+            <span class="path5"></span>
+            <span class="path6"></span>
+          </i>
+          <div>
+            <div class="text-muted fs-7 fw-semibold">Fecha de Mantenimiento</div>
+            <div class="fs-5 fw-bold text-gray-800">{{ maintenanceInfo.date }}</div>
+          </div>
+        </div>
+
+        <div class="maintenance-schedule-item">
+          <i class="ki-duotone ki-time fs-2 text-danger me-3">
+            <span class="path1"></span>
+            <span class="path2"></span>
+          </i>
+          <div>
+            <div class="text-muted fs-7 fw-semibold">Horario (No Disponible)</div>
+            <div class="fs-5 fw-bold text-danger">
+              {{ maintenanceInfo.startTime }} - {{ maintenanceInfo.endTime }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="separator my-6"></div>
+
+      <!-- ⚠️ Recomendaciones -->
+      <div class="mb-6">
+        <h4 class="mb-4">
+          <i class="ki-duotone ki-shield-tick fs-3 me-2 text-success">
+            <span class="path1"></span>
+            <span class="path2"></span>
+          </i>
+          Recomendaciones Importantes
+        </h4>
+
+        <ul class="maintenance-recommendations">
+          <li *ngFor="let recommendation of maintenanceInfo.recommendations">
+            <i class="ki-duotone ki-check-circle fs-5 text-success me-2">
+              <span class="path1"></span>
+              <span class="path2"></span>
+            </i>
+            <span>{{ recommendation }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 📞 Información de contacto -->
+      <div class="alert alert-light-info d-flex align-items-start">
+        <i class="ki-duotone ki-message-text-2 fs-2x me-3 text-info flex-shrink-0">
+          <span class="path1"></span>
+          <span class="path2"></span>
+          <span class="path3"></span>
+        </i>
+        <div>
+          <div class="fw-bold text-info mb-1">¿Experimentaste pérdida de información?</div>
+          <div class="text-gray-700 fs-7">
+            Si después de la actualización detectas alguna pérdida de información o 
+            comportamiento inusual, por favor comunícate inmediatamente con 
+            <span class="fw-bold">{{ maintenanceInfo.contactArea }}</span>.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 🔽 Footer con botones de acción -->
+    <div class="maintenance-footer">
+      <button 
+        type="button" 
+        class="btn btn-light btn-lg"
+        (click)="closeModal()"
+      >
+        Cerrar
+      </button>
+
+      <button 
+        type="button" 
+        class="btn btn-primary btn-lg"
+        (click)="acknowledgeAndClose()"
+      >
+        <i class="ki-duotone ki-check fs-5 me-2">
+          <span class="path1"></span>
+          <span class="path2"></span>
+        </i>
+        Entendido, No Mostrar Más
+      </button>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,159 @@
+<!-- MODAL: Crear Nuevo Ticket -->
+<div class="modal-header py-4">
+  <div>
+    <h4 class="modal-title fw-bold mb-0">
+      <i class="ki-duotone ki-message-add fs-2 me-2 text-primary">
+        <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+      </i>
+      Nuevo Ticket
+    </h4>
+    <span class="text-muted fs-7">Crea una nueva solicitud formal</span>
+  </div>
+  <button type="button" class="btn btn-sm btn-icon btn-light" (click)="modal.dismiss()">
+    <i class="ki-duotone ki-cross fs-3"><span class="path1"></span><span class="path2"></span></i>
+  </button>
+</div>
+
+<!-- Loading config -->
+<div *ngIf="isLoadingConfig" class="modal-body d-flex justify-content-center align-items-center py-10">
+  <div class="spinner-border text-primary me-3"></div>
+  <span class="text-muted">Cargando configuración...</span>
+</div>
+
+<!-- Error al cargar config -->
+<div *ngIf="!isLoadingConfig && errorConfig" class="modal-body py-6">
+  <div class="alert alert-danger d-flex align-items-center gap-3">
+    <i class="ki-duotone ki-information-5 fs-2x text-danger">
+      <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+    </i>
+    <div>
+      <p class="fw-bold mb-1">No se pudo cargar el formulario</p>
+      <p class="mb-2 fs-7">{{ errorConfig }}</p>
+      <button class="btn btn-sm btn-danger" (click)="cargarConfig()">
+        <i class="ki-duotone ki-arrows-circle fs-5 me-1"><span class="path1"></span><span class="path2"></span></i>
+        Reintentar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Formulario -->
+<form *ngIf="!isLoadingConfig && config" [formGroup]="form" (ngSubmit)="store()">
+  <div class="modal-body py-4">
+
+    <!-- Destinatario -->
+    <div class="mb-5">
+      <label class="form-label required fw-semibold fs-6">
+        <span *ngIf="config.tipo_usuario === 'sede'">Sucursal Destinataria</span>
+        <span *ngIf="config.tipo_usuario === 'sucursal'">Área de la Sede</span>
+      </label>
+      <select class="form-select form-select-solid"
+              formControlName="destino_id"
+              [class.is-invalid]="form.get('destino_id')?.invalid && form.get('destino_id')?.touched">
+        <option [ngValue]="null" disabled>
+          <span *ngIf="config.tipo_usuario === 'sede'">-- Selecciona una sucursal --</span>
+          <span *ngIf="config.tipo_usuario === 'sucursal'">-- Selecciona el área destino --</span>
+        </option>
+        <option *ngFor="let d of config.destinos" [value]="d.id">{{ d.name }}</option>
+      </select>
+      <div class="text-muted fs-8 mt-1">
+        <span *ngIf="config.tipo_usuario === 'sede'">
+          El ticket será asignado automáticamente al franquiciatario de la sucursal seleccionada.
+        </span>
+        <span *ngIf="config.tipo_usuario === 'sucursal'">
+          El ticket será asignado al responsable de ese departamento en la sede principal.
+        </span>
+      </div>
+    </div>
+
+    <!-- Asunto -->
+    <div class="mb-5">
+      <label class="form-label required fw-semibold fs-6">Asunto</label>
+      <input type="text"
+             class="form-control form-control-solid"
+             placeholder="Describe brevemente el motivo del ticket"
+             formControlName="asunto"
+             [class.is-invalid]="form.get('asunto')?.invalid && form.get('asunto')?.touched" />
+      <div class="invalid-feedback">El asunto es obligatorio (máx. 255 caracteres).</div>
+    </div>
+
+    <!-- Descripción -->
+    <div class="mb-5">
+      <label class="form-label required fw-semibold fs-6">Descripción</label>
+      <textarea class="form-control form-control-solid"
+                rows="5"
+                placeholder="Describe con detalle la solicitud, el problema o la petición..."
+                formControlName="descripcion"
+                [class.is-invalid]="form.get('descripcion')?.invalid && form.get('descripcion')?.touched"></textarea>
+      <div class="invalid-feedback">La descripción es obligatoria.</div>
+    </div>
+
+    <!-- Prioridad + Categoría + Fecha -->
+    <div class="row g-4 mb-5">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold fs-6">Prioridad</label>
+        <div class="d-flex gap-2">
+          <button *ngFor="let p of prioridades"
+                  type="button"
+                  class="btn btn-sm flex-grow-1"
+                  [class.btn-primary]="form.get('prioridad')?.value === p.value"
+                  [class]="form.get('prioridad')?.value !== p.value ? 'btn-light-' + p.class : ''"
+                  (click)="form.patchValue({ prioridad: p.value })">
+            {{ p.label }}
+          </button>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold fs-6">Categoría</label>
+        <select class="form-select form-select-solid" formControlName="categoria">
+          <option [ngValue]="null">Sin categoría</option>
+          <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold fs-6">Fecha Límite</label>
+        <input type="date" class="form-control form-control-solid" formControlName="fecha_limite" />
+      </div>
+    </div>
+
+    <!-- Adjuntos -->
+    <div class="mb-2">
+      <label class="form-label fw-semibold fs-6">Archivos Adjuntos</label>
+      <label class="d-flex flex-column align-items-center justify-content-center p-4 border border-dashed rounded cursor-pointer bg-light-primary border-primary">
+        <i class="ki-duotone ki-file-up fs-2x text-primary mb-2">
+          <span class="path1"></span><span class="path2"></span>
+        </i>
+        <span class="text-muted fs-7">Haz clic para seleccionar archivos o arrástralos aquí</span>
+        <input type="file" class="d-none" multiple (change)="onFileChange($event)" />
+      </label>
+      <div *ngIf="adjuntos.length > 0" class="mt-3 d-flex flex-column gap-2">
+        <div *ngFor="let f of adjuntos; let i = index"
+             class="d-flex align-items-center justify-content-between p-2 bg-light rounded">
+          <div class="d-flex align-items-center gap-2">
+            <i class="ki-duotone ki-file fs-4 text-primary"><span class="path1"></span><span class="path2"></span></i>
+            <span class="fs-7 text-truncate" style="max-width:300px;">{{ f.name }}</span>
+            <span class="text-muted fs-9">{{ formatFileSize(f.size) }}</span>
+          </div>
+          <button type="button" class="btn btn-xs btn-icon btn-light-danger" (click)="removeAdjunto(i)">
+            <i class="ki-duotone ki-cross fs-5"><span class="path1"></span><span class="path2"></span></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="modal-footer py-3">
+    <button type="button" class="btn btn-light" (click)="modal.dismiss()">Cancelar</button>
+    <button type="submit"
+            class="btn btn-primary d-flex align-items-center gap-2"
+            [disabled]="form.invalid || (ticketsService.isLoading$ | async)">
+      <span *ngIf="ticketsService.isLoading$ | async" class="spinner-border spinner-border-sm"></span>
+      <i *ngIf="!(ticketsService.isLoading$ | async)" class="ki-duotone ki-send fs-5">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+      {{ (ticketsService.isLoading$ | async) ? 'Creando...' : 'Crear Ticket' }}
+    </button>
+  </div>
+</form>

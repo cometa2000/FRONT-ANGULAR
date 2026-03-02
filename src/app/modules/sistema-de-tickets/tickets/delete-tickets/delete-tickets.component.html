@@ -1,0 +1,32 @@
+<div class="modal-body text-center py-8 px-6">
+
+  <!-- Ícono -->
+  <div class="mb-4 d-flex justify-content-center">
+    <div class="d-flex align-items-center justify-content-center w-75px h-75px rounded-circle bg-light-danger">
+      <i class="ki-duotone ki-trash fs-2x text-danger">
+        <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+        <span class="path4"></span><span class="path5"></span>
+      </i>
+    </div>
+  </div>
+
+  <h4 class="fw-bold text-dark mb-2">¿Eliminar ticket?</h4>
+  <p class="text-muted fs-6 mb-1">Esta acción no se puede deshacer.</p>
+  <div class="p-3 rounded bg-light mb-5">
+    <p class="mb-0 fw-semibold text-dark fs-7">{{ TICKET_SELECTED?.folio }}</p>
+    <p class="mb-0 text-muted fs-8">{{ TICKET_SELECTED?.asunto }}</p>
+  </div>
+
+  <div class="d-flex gap-3 justify-content-center">
+    <button class="btn btn-light px-6" (click)="modal.dismiss()">
+      Cancelar
+    </button>
+    <button class="btn btn-danger px-6 d-flex align-items-center gap-2" (click)="delete()">
+      <i class="ki-duotone ki-trash fs-5">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+      Eliminar
+    </button>
+  </div>
+
+</div>
