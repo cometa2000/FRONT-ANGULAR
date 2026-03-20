@@ -1,0 +1,74 @@
+// ============================================================
+// Modal Adjuntos Tickets — Estilos
+// ============================================================
+
+// ── Zona de arrastre ──
+.drop-zone {
+  border-color: #d0d5dd !important;
+  background-color: #fafafa;
+  transition: all 0.2s ease;
+  min-height: 130px;
+
+  &:hover,
+  &--active {
+    border-color: #009ef7 !important;
+    background-color: rgba(0, 158, 247, 0.05) !important;
+  }
+}
+
+// ── Item de archivo nuevo ──
+.archivo-item {
+  background-color: #fafafa;
+  transition: box-shadow 0.15s;
+
+  &:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+  }
+}
+
+// ── Explorador de documentos ──
+.doc-item {
+  background-color: #fff;
+  transition: background-color 0.15s, border-color 0.15s;
+
+  &:hover {
+    background-color: #f5f8ff;
+    border-color: #93c5fd !important;
+  }
+
+  &--seleccionado {
+    background-color: #f0fdf4 !important;
+    border-color: #4ade80 !important;
+  }
+
+  &--carpeta:hover {
+    background-color: #fffbeb;
+    border-color: #fbbf24 !important;
+  }
+}
+
+// ── Árbol de carpetas destino ──
+.carpeta-selector {
+  background-color: #fdfdfd;
+}
+
+.carpeta-nodo {
+  transition: background-color 0.1s;
+
+  &:hover {
+    background-color: #f5f8ff;
+  }
+
+  &--activa {
+    background-color: #e0f2fe !important;
+    font-weight: 600;
+  }
+}
+
+// ── Scrollbar sutil ──
+.modal-body,
+.carpeta-selector {
+  &::-webkit-scrollbar { width: 5px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background-color: #d0d5dd; border-radius: 10px; }
+}

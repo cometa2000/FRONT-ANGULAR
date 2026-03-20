@@ -8,7 +8,7 @@
       Notificaciones
       <span *ngIf="unreadCount > 0" class="badge badge-danger ms-2">{{ unreadCount }}</span>
     </h3>
-    
+
     <!-- Acciones -->
     <div class="d-flex">
       <button
@@ -19,15 +19,15 @@
       >
         <app-keenicon name="double-check" class="fs-3 text-white"></app-keenicon>
       </button>
-      
+
       <button
         class="btn btn-sm btn-icon btn-active-light-primary"
         (click)="refresh()"
         [disabled]="isLoading"
         title="Refrescar"
       >
-        <app-keenicon 
-          name="arrows-circle" 
+        <app-keenicon
+          name="arrows-circle"
           class="fs-3 text-white"
           [ngClass]="{'spinner-border spinner-border-sm': isLoading}"
         ></app-keenicon>
@@ -76,7 +76,10 @@
 </div>
 
 <div class="tab-content">
-  <!-- Tab 1: Todas las notificaciones -->
+
+  <!-- ================================================ -->
+  <!-- Tab 1: Todas las notificaciones                  -->
+  <!-- ================================================ -->
   <div
     class="tab-pane fade"
     id="kt_topbar_notifications_1"
@@ -103,55 +106,58 @@
 
     <!-- Lista de notificaciones -->
     <div *ngIf="!isLoading && notifications.length > 0" class="scroll-y mh-325px my-5 px-8">
-      <div 
-        *ngFor="let notification of notifications" 
-        class="d-flex flex-stack py-4 cursor-pointer hover-bg-light-primary rounded px-3"
+
+      <!-- 🔜 TODO: agregar (click)="goToTarea(notification)" y clase cursor-pointer cuando se integre redirección -->
+      <div
+        *ngFor="let notification of notifications"
+        class="d-flex flex-stack py-4 rounded px-3 mb-1"
         [ngClass]="{'bg-light-primary': !notification.is_read}"
-        (click)="goToTarea(notification)"
       >
         <div class="d-flex align-items-start flex-grow-1">
-          <!-- Icon -->
-          <div class="symbol symbol-40px me-4">
+
+          <!-- Ícono de tipo de notificación -->
+          <div class="symbol symbol-40px me-4 flex-shrink-0">
             <span class="symbol-label" [ngClass]="getIconClass(notification)">
-              <app-keenicon 
-                [name]="notification.icon" 
+              <app-keenicon
+                [name]="notification.icon"
                 class="fs-2"
                 [ngClass]="'text-' + notification.color"
               ></app-keenicon>
             </span>
           </div>
 
-          <!-- Content -->
+          <!-- Contenido -->
           <div class="mb-0 me-2 flex-grow-1">
             <div class="d-flex align-items-center mb-1">
               <span class="fs-6 text-gray-900 fw-bold me-2">{{ notification.title }}</span>
-              <span 
-                *ngIf="!notification.is_read" 
+              <span
+                *ngIf="!notification.is_read"
                 class="badge badge-circle badge-danger w-5px h-5px"
               ></span>
             </div>
-            
-            <div class="text-gray-700 fs-7 mb-2">{{ notification.message }}</div>
-            
-            <!-- User avatar (si existe) -->
-            <div *ngIf="notification.from_user" class="d-flex align-items-center">
-              <div class="symbol symbol-25px me-2">
-                <img [src]="getAvatar(notification.from_user?.avatar)" 
-                  [alt]="notification.from_user?.name" />
 
+            <div class="text-gray-700 fs-7 mb-2">{{ notification.message }}</div>
+
+            <!-- Avatar del usuario que generó la notificación -->
+            <div *ngIf="notification.from_user" class="d-flex align-items-center mb-1">
+              <div class="symbol symbol-25px me-2">
+                <img
+                  [src]="getAvatar(notification.from_user?.avatar)"
+                  [alt]="notification.from_user?.name"
+                />
               </div>
               <span class="text-gray-600 fs-8">{{ notification.from_user.name }}</span>
             </div>
-            
-            <!-- Time -->
+
+            <!-- Timestamp -->
             <div class="text-gray-500 fs-8 mt-1">
               <app-keenicon name="time" class="fs-7 me-1"></app-keenicon>
               {{ notification.created_at }}
             </div>
           </div>
 
-          <!-- Actions -->
-          <div class="d-flex flex-column align-items-end">
+          <!-- Botones de acción -->
+          <div class="d-flex flex-column align-items-end flex-shrink-0">
             <button
               *ngIf="!notification.is_read"
               class="btn btn-sm btn-icon btn-active-light-primary mb-2"
@@ -160,7 +166,7 @@
             >
               <app-keenicon name="check" class="fs-4"></app-keenicon>
             </button>
-            
+
             <button
               class="btn btn-sm btn-icon btn-active-light-danger"
               (click)="deleteNotification(notification.id, $event)"
@@ -169,14 +175,16 @@
               <app-keenicon name="trash" class="fs-4"></app-keenicon>
             </button>
           </div>
+
         </div>
       </div>
-    </div>
 
-    <!-- Footer -->
+    </div>
   </div>
 
-  <!-- Tab 2: No leídas -->
+  <!-- ================================================ -->
+  <!-- Tab 2: No leídas                                 -->
+  <!-- ================================================ -->
   <div
     class="tab-pane fade"
     id="kt_topbar_notifications_2"
@@ -192,22 +200,26 @@
 
     <!-- Lista de notificaciones no leídas -->
     <div *ngIf="unreadNotifications.length > 0" class="scroll-y mh-325px my-5 px-8">
-      <div 
-        *ngFor="let notification of unreadNotifications" 
-        class="d-flex flex-stack py-4 cursor-pointer hover-bg-light-primary rounded px-3 bg-light-primary"
-        (click)="goToTarea(notification)"
+
+      <!-- 🔜 TODO: agregar (click)="goToTarea(notification)" y clase cursor-pointer cuando se integre redirección -->
+      <div
+        *ngFor="let notification of unreadNotifications"
+        class="d-flex flex-stack py-4 rounded px-3 mb-1 bg-light-primary"
       >
         <div class="d-flex align-items-start flex-grow-1">
-          <div class="symbol symbol-40px me-4">
+
+          <!-- Ícono -->
+          <div class="symbol symbol-40px me-4 flex-shrink-0">
             <span class="symbol-label" [ngClass]="getIconClass(notification)">
-              <app-keenicon 
-                [name]="notification.icon" 
+              <app-keenicon
+                [name]="notification.icon"
                 class="fs-2"
                 [ngClass]="'text-' + notification.color"
               ></app-keenicon>
             </span>
           </div>
 
+          <!-- Contenido -->
           <div class="mb-0 me-2 flex-grow-1">
             <div class="d-flex align-items-center mb-1">
               <span class="fs-6 text-gray-900 fw-bold me-2">{{ notification.title }}</span>
@@ -220,22 +232,27 @@
             </div>
           </div>
 
-          <div class="d-flex flex-column">
+          <!-- Botones de acción -->
+          <div class="d-flex flex-column flex-shrink-0">
             <button
               class="btn btn-sm btn-icon btn-active-light-primary mb-2"
               (click)="markAsRead(notification, $event)"
+              title="Marcar como leída"
             >
               <app-keenicon name="check" class="fs-4"></app-keenicon>
             </button>
             <button
               class="btn btn-sm btn-icon btn-active-light-danger"
               (click)="deleteNotification(notification.id, $event)"
+              title="Eliminar"
             >
               <app-keenicon name="trash" class="fs-4"></app-keenicon>
             </button>
           </div>
+
         </div>
       </div>
+
     </div>
 
     <div *ngIf="unreadNotifications.length > 0" class="py-3 text-center border-top">
@@ -249,7 +266,9 @@
     </div>
   </div>
 
-  <!-- Tab 3: Leídas -->
+  <!-- ================================================ -->
+  <!-- Tab 3: Leídas                                    -->
+  <!-- ================================================ -->
   <div
     class="tab-pane fade"
     id="kt_topbar_notifications_3"
@@ -264,22 +283,26 @@
 
     <!-- Lista de notificaciones leídas -->
     <div *ngIf="readNotifications.length > 0" class="scroll-y mh-325px my-5 px-8">
-      <div 
-        *ngFor="let notification of readNotifications" 
-        class="d-flex flex-stack py-4 cursor-pointer hover-bg-light rounded px-3"
-        (click)="goToTarea(notification)"
+
+      <!-- 🔜 TODO: agregar (click)="goToTarea(notification)" y clase cursor-pointer cuando se integre redirección -->
+      <div
+        *ngFor="let notification of readNotifications"
+        class="d-flex flex-stack py-4 rounded px-3 mb-1"
       >
         <div class="d-flex align-items-start flex-grow-1">
-          <div class="symbol symbol-40px me-4">
+
+          <!-- Ícono -->
+          <div class="symbol symbol-40px me-4 flex-shrink-0">
             <span class="symbol-label bg-light-secondary">
-              <app-keenicon 
-                [name]="notification.icon" 
+              <app-keenicon
+                [name]="notification.icon"
                 class="fs-2"
                 [ngClass]="'text-' + notification.color"
               ></app-keenicon>
             </span>
           </div>
 
+          <!-- Contenido -->
           <div class="mb-0 me-2 flex-grow-1">
             <span class="fs-6 text-gray-700 fw-bold d-block mb-1">{{ notification.title }}</span>
             <div class="text-gray-600 fs-7 mb-2">{{ notification.message }}</div>
@@ -289,14 +312,18 @@
             </div>
           </div>
 
+          <!-- Botón eliminar -->
           <button
-            class="btn btn-sm btn-icon btn-active-light-danger"
+            class="btn btn-sm btn-icon btn-active-light-danger flex-shrink-0"
             (click)="deleteNotification(notification.id, $event)"
+            title="Eliminar"
           >
             <app-keenicon name="trash" class="fs-4"></app-keenicon>
           </button>
+
         </div>
       </div>
+
     </div>
 
     <div *ngIf="readNotifications.length > 0" class="py-3 text-center border-top">
@@ -309,4 +336,5 @@
       </button>
     </div>
   </div>
+
 </div>

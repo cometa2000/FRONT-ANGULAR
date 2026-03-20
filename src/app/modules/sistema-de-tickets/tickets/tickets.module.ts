@@ -12,6 +12,8 @@ import { HttpClientModule } from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgbModule, NgbModalModule, NgbPaginationModule } from '@ng-bootstrap/ng-bootstrap';
 import { InlineSVGModule } from 'ng-inline-svg-2';
+import { ModalAdjuntosTicketsComponent } from './modal-adjuntos-tickets/modal-adjuntos-tickets.component';
+import { ModalTareasTicketsComponent } from './modal-tareas-tickets/modal-tareas-tickets.component';
 
 @NgModule({
   declarations: [
@@ -19,7 +21,9 @@ import { InlineSVGModule } from 'ng-inline-svg-2';
     ListTicketsComponent,
     CreateTicketsComponent,
     EditTicketsComponent,
-    DeleteTicketsComponent
+    DeleteTicketsComponent,
+    ModalAdjuntosTicketsComponent,
+    ModalTareasTicketsComponent
   ],
   imports: [
     CommonModule,

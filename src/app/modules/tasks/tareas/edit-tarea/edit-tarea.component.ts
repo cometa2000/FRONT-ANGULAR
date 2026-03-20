@@ -387,10 +387,10 @@ export class EditTareaComponent implements OnInit {
   loadAdjuntos(): void {
     console.log('📎 Cargando adjuntos de la tarea:', this.tareaId);
     
-    this.tareaService.show(this.tareaId.toString()).subscribe({
+    this.tareaService.getAdjuntos(this.tareaId).subscribe({
       next: (resp: any) => {
-        if (resp.message === 200 && resp.tarea?.adjuntos) {
-          this.adjuntos = resp.tarea.adjuntos;
+        if (resp.message === 200 && resp.adjuntos) {
+          this.adjuntos = resp.adjuntos;
           console.log('✅ Adjuntos cargados:', this.adjuntos);
           this.cdr.detectChanges();
         }
@@ -1560,7 +1560,7 @@ export class EditTareaComponent implements OnInit {
           if (result.type === 'archivo' && result.data.file) {
             const formData = new FormData();
             formData.append('tipo', 'archivo');
-            formData.append('archivo', result.data.file);
+            formData.append('file', result.data.file);
 
             this.tareaService.addAdjunto(this.tareaId, formData).subscribe({
               next: (resp: any) => {

@@ -438,6 +438,14 @@ export class TareaService {
     );
   }
 
+  getAdjuntos(tareaId: number): Observable<any> {
+    const URL = `${URL_SERVICIOS}/tareas/${tareaId}/adjuntos`;
+    return this.http.get(URL, { headers: this.getHeaders() }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  
 
   // =============================
   // 👥 MÉTODOS PARA MIEMBROS DE TAREAS

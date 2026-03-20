@@ -31,13 +31,13 @@ export class TableroTareasComponent implements OnInit {
   users: any = [];
 
   openMenuId: number | null = null;
-  
+
   // 🆕 Control del menú de configuración del grupo
   grupoMenuOpen: boolean = false;
 
   // ✅ CAMBIO: Inicializar como false por seguridad hasta verificar permisos
   hasWriteAccess: boolean = false;
-  isOwner: boolean = false; 
+  isOwner: boolean = false;
   // ✅ NUEVO: Flag para saber si ya se cargaron los permisos
   permissionsLoaded: boolean = false;
 
@@ -46,7 +46,7 @@ export class TableroTareasComponent implements OnInit {
   miembrosGrupo: any[] = [];
   loadingMiembros: boolean = false;
 
-  fromRoute: string = 'list-workspace'; // Por defecto list-workspace
+  fromRoute: string = 'list-workspace';
   workspaceId?: number;
 
   constructor(
@@ -63,11 +63,10 @@ export class TableroTareasComponent implements OnInit {
   ngOnInit(): void {
     this.isLoading$ = this.tareaService.isLoading$;
 
-    // ✅ NUEVO: Capturar queryParams para detectar origen
     this.route.queryParams.subscribe(queryParams => {
       this.fromRoute = queryParams['from'] || 'list-workspace';
       this.workspaceId = queryParams['workspaceId'] ? +queryParams['workspaceId'] : undefined;
-      
+
       console.log('🔍 Tablero: Origen detectado:', this.fromRoute);
       if (this.workspaceId) {
         console.log('📌 Tablero: Workspace ID:', this.workspaceId);
@@ -76,7 +75,7 @@ export class TableroTareasComponent implements OnInit {
 
     this.route.params.subscribe(params => {
       this.grupo_id = +params['grupo_id'];
-      
+
       if (this.grupo_id) {
         this.checkWritePermissions(() => {
           this.loadGrupoData();
@@ -90,7 +89,6 @@ export class TableroTareasComponent implements OnInit {
     });
   }
 
-  // ✅ MEJORADO: Verificar permisos con callback para ejecutar después
   checkWritePermissions(callback?: () => void) {
     if (this.grupo_id) {
       this.grupoService.checkWriteAccess(this.grupo_id).subscribe({
@@ -99,19 +97,16 @@ export class TableroTareasComponent implements OnInit {
             this.hasWriteAccess = resp.has_write_access;
             this.isOwner = resp.is_owner;
             this.permissionsLoaded = true;
-            
-            // ✅ NUEVO: Mostrar mensaje si es solo lectura
+
             if (!this.hasWriteAccess && !this.isOwner) {
               console.log('👁️ Usuario tiene solo permisos de lectura');
               this.toastr.info('Tienes permisos de solo lectura en este grupo', 'Información', {
                 timeOut: 4000
               });
             }
-            
-            // ✅ Forzar detección de cambios para actualizar la vista
+
             this.cdr.detectChanges();
-            
-            // Ejecutar callback si existe
+
             if (callback) {
               callback();
             }
@@ -122,7 +117,6 @@ export class TableroTareasComponent implements OnInit {
           this.hasWriteAccess = false;
           this.permissionsLoaded = true;
           this.toastr.error('Error al verificar permisos de acceso', 'Error');
-          // Aún así ejecutar el callback para cargar los datos en modo lectura
           if (callback) {
             callback();
           }
@@ -133,17 +127,14 @@ export class TableroTareasComponent implements OnInit {
 
   loadGrupoData() {
     console.log('📋 Cargando información del grupo:', this.grupo_id);
-    
-    // ✅ Usar el método getGrupo específico en lugar de listGrupos
+
     this.grupoService.getGrupo(this.grupo_id).subscribe({
       next: (resp: any) => {
         console.log('✅ Respuesta del grupo:', resp);
-        
+
         if (resp.message === 200 && resp.grupo) {
           this.GRUPO_SELECTED = resp.grupo;
           console.log('🎯 Grupo cargado:', this.GRUPO_SELECTED);
-          
-          // ✅ Forzar detección de cambios para quitar el mensaje "Cargando grupo..."
           this.cdr.detectChanges();
         } else {
           console.error('❌ Respuesta no exitosa:', resp);
@@ -159,16 +150,14 @@ export class TableroTareasComponent implements OnInit {
     });
   }
 
-  // 🆕 Toggle del menú de configuración del grupo
   toggleGrupoMenu(event: MouseEvent) {
     event.stopPropagation();
     this.grupoMenuOpen = !this.grupoMenuOpen;
   }
 
-  // 🆕 Cerrar menú de grupo y ejecutar acción
   closeGrupoMenuAnd(action: string) {
     this.grupoMenuOpen = false;
-    
+
     switch (action) {
       case 'verMiembros':
         this.verMiembros();
@@ -182,7 +171,6 @@ export class TableroTareasComponent implements OnInit {
     }
   }
 
-  // 🆕 Ver miembros del grupo
   verMiembros() {
     if (!this.GRUPO_SELECTED) {
       this.toastr.warning('No se ha cargado el grupo', 'Advertencia');
@@ -190,34 +178,26 @@ export class TableroTareasComponent implements OnInit {
     }
 
     console.log('🔍 Ver miembros del grupo:', this.GRUPO_SELECTED.id);
-    
-    // Establecer el grupo seleccionado
+
     this.selectedGrupo = { ...this.GRUPO_SELECTED };
-    
-    // Limpiar miembros anteriores
     this.miembrosGrupo = [];
-    
-    // Mostrar loading
     this.loadingMiembros = true;
-    
-    // Abrir el modal ANTES de cargar los datos
+
     this.openMiembrosModal();
-    
-    // Cargar los miembros del grupo desde el backend
+
     this.grupoService.getSharedUsers(this.GRUPO_SELECTED.id).subscribe({
       next: (resp: any) => {
         console.log('✅ Respuesta de miembros:', resp);
-        
+
         if (resp.message === 200) {
           this.miembrosGrupo = resp.shared_users || [];
           this.selectedGrupo.shared_with = resp.shared_users || [];
-          
           console.log('👥 Miembros cargados:', this.miembrosGrupo);
         } else {
           console.warn('⚠️ Respuesta inesperada del servidor:', resp);
           this.toastr.warning('No se pudieron cargar los miembros', 'Advertencia');
         }
-        
+
         this.loadingMiembros = false;
         this.cdr.detectChanges();
       },
@@ -231,15 +211,14 @@ export class TableroTareasComponent implements OnInit {
     });
   }
 
-  // 🆕 Abrir modal de miembros
   openMiembrosModal() {
     const modalElement = document.getElementById('miembrosModal');
-    
+
     if (!modalElement) {
       console.error('❌ Modal element not found');
       return;
     }
-    
+
     if (typeof (window as any).bootstrap !== 'undefined') {
       const modal = new (window as any).bootstrap.Modal(modalElement);
       modal.show();
@@ -248,21 +227,20 @@ export class TableroTareasComponent implements OnInit {
       modalElement.classList.add('show');
       modalElement.style.display = 'block';
       document.body.classList.add('modal-open');
-      
+
       const backdrop = document.createElement('div');
       backdrop.className = 'modal-backdrop fade show';
       backdrop.id = 'miembros-backdrop';
       document.body.appendChild(backdrop);
-      
+
       console.log('✅ Modal abierto manualmente');
     }
   }
 
-  // 🆕 Cerrar modal de miembros
   closeMiembrosModal() {
     const modalElement = document.getElementById('miembrosModal');
     const backdrop = document.getElementById('miembros-backdrop');
-    
+
     if (modalElement) {
       if (typeof (window as any).bootstrap !== 'undefined') {
         const modalInstance = (window as any).bootstrap.Modal.getInstance(modalElement);
@@ -275,55 +253,50 @@ export class TableroTareasComponent implements OnInit {
         document.body.classList.remove('modal-open');
       }
     }
-    
+
     if (backdrop) {
       backdrop.remove();
     }
-    
+
     setTimeout(() => {
       this.selectedGrupo = null;
       this.miembrosGrupo = [];
       this.loadingMiembros = false;
     }, 300);
-    
+
     console.log('✅ Modal cerrado');
   }
 
-  // 🆕 Abrir modal de compartir desde el tablero
   shareGrupo() {
     if (!this.GRUPO_SELECTED) {
       this.toastr.warning('No se ha cargado el grupo', 'Advertencia');
       return;
     }
 
-    // Verificar que es el propietario
     if (!this.isOwner) {
       this.toastr.warning('Solo el propietario puede compartir el grupo', 'Permiso denegado');
       return;
     }
 
-    const modalRef = this.modalService.open(ShareGrupoComponent, { 
-      centered: true, 
-      size: 'md' 
+    const modalRef = this.modalService.open(ShareGrupoComponent, {
+      centered: true,
+      size: 'md'
     });
-    
+
     modalRef.componentInstance.GRUPO_SELECTED = this.GRUPO_SELECTED;
-    
+
     modalRef.componentInstance.GrupoShared.subscribe(() => {
-      // Recargar los datos del grupo para actualizar la información de compartidos
       this.loadGrupoData();
       this.toastr.success('Grupo compartido correctamente', 'Éxito');
     });
   }
 
-  // 🆕 Abrir modal de permisos desde el tablero
   openPermissionsModal() {
     if (!this.GRUPO_SELECTED) {
       this.toastr.warning('No se ha cargado el grupo', 'Advertencia');
       return;
     }
 
-    // Verificar que es el propietario
     if (!this.isOwner) {
       this.toastr.warning('Solo el propietario puede gestionar permisos', 'Permiso denegado');
       return;
@@ -333,11 +306,10 @@ export class TableroTareasComponent implements OnInit {
       centered: true,
       size: 'md'
     });
-    
+
     modalRef.componentInstance.GRUPO_SELECTED = this.GRUPO_SELECTED;
-    
+
     modalRef.componentInstance.PermisosChanged.subscribe((grupoActualizado: any) => {
-      // Actualizar el grupo con la nueva información de permisos
       this.GRUPO_SELECTED = { ...this.GRUPO_SELECTED, ...grupoActualizado };
       this.toastr.success('Permisos actualizados correctamente', 'Éxito');
       this.cdr.detectChanges();
@@ -352,13 +324,11 @@ export class TableroTareasComponent implements OnInit {
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    
-    // Cerrar menú de lista
+
     if (!target.closest('.menu-dropdown') && !target.closest('.btn-icon')) {
       this.openMenuId = null;
     }
-    
-    // 🆕 Cerrar menú de grupo
+
     if (!target.closest('.menu-dropdown') && !target.closest('.btn-light-primary')) {
       this.grupoMenuOpen = false;
     }
@@ -369,22 +339,17 @@ export class TableroTareasComponent implements OnInit {
     tarea.expanded = !tarea.expanded;
   }
 
-  // ✅ MEJORADO: Verificar permisos antes de permitir reordenar
+  // ============================================================
+  // onListDrop — actualización optimista sin flash
+  // ============================================================
   onListDrop(event: CdkDragDrop<any[]>) {
-    // ✅ NUEVO: Verificación adicional de permisos
     if (!this.hasWriteAccess) {
       this.toastr.warning('No tienes permisos para reordenar listas', 'Permiso denegado');
       return;
     }
+    if (event.previousIndex === event.currentIndex) { return; }
 
-    if (event.previousIndex === event.currentIndex) {
-      return;
-    }
-
-    console.log('📋 Moviendo lista:', {
-      from: event.previousIndex,
-      to: event.currentIndex
-    });
+    const previousOrder = [...this.LISTAS];
 
     moveItemInArray(this.LISTAS, event.previousIndex, event.currentIndex);
 
@@ -393,61 +358,29 @@ export class TableroTareasComponent implements OnInit {
       orden: index
     }));
 
-    this.saveListOrder(updatedListas);
-  }
-
-  saveListOrder(listas: { id: number, orden: number }[]) {
-    this.tareaService.reorderListas(listas).subscribe({
-      next: (resp: any) => {
-        console.log('✅ Orden guardado correctamente');
-
-        Swal.fire({
-          icon: 'success',
-          title: 'Orden actualizado',
-          text: 'Las listas fueron reordenadas correctamente',
-          timer: 2000,
-          toast: true,
-          position: 'top-end',
-          showConfirmButton: false
-        });
-
-        this.cdr.detectChanges();
+    this.tareaService.reorderListas(updatedListas).subscribe({
+      next: () => {
+        console.log('✅ Orden de listas guardado');
       },
       error: (error) => {
-        console.error('❌ Error al guardar orden:', error);
-
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudo guardar el nuevo orden',
-          toast: true,
-          position: 'top-end',
-          timer: 2500,
-          showConfirmButton: false
-        });
-
-        this.listListas();
+        console.error('❌ Error al guardar orden de listas:', error);
+        this.LISTAS = previousOrder;
+        this.cdr.detectChanges();
+        this.toastr.error('No se pudo guardar el nuevo orden', 'Error');
       }
     });
   }
-
 
   getConnectedLists(): string[] {
     return this.LISTAS.map(lista => 'lista-' + lista.id);
   }
 
-  // ✅ MEJORADO: Verificar permisos antes de permitir mover tareas
+  // ============================================================
+  // onTaskDrop — actualización optimista sin flash
+  // ============================================================
   onTaskDrop(event: CdkDragDrop<any[]>, targetList: any) {
     if (!this.hasWriteAccess) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Permiso denegado',
-        text: 'No tienes permisos para mover tareas',
-        toast: true,
-        position: 'top-end',
-        timer: 2500,
-        showConfirmButton: false
-      });
+      this.toastr.warning('No tienes permisos para mover tareas', 'Permiso denegado');
       return;
     }
 
@@ -457,6 +390,9 @@ export class TableroTareasComponent implements OnInit {
       const prevList = this.LISTAS.find(l => l.tareas === event.previousContainer.data);
       if (!prevList) return;
 
+      const prevListSnapshot = [...prevList.tareas];
+      const targetListSnapshot = [...targetList.tareas];
+
       transferArrayItem(
         event.previousContainer.data,
         event.container.data,
@@ -465,7 +401,6 @@ export class TableroTareasComponent implements OnInit {
       );
 
       const movedTask = targetList.tareas[event.currentIndex];
-      const oldListId = movedTask.lista_id;
       const newListId = targetList.id;
 
       movedTask.lista_id = newListId;
@@ -473,27 +408,16 @@ export class TableroTareasComponent implements OnInit {
 
       this.tareaService.moveTarea(movedTask.id, newListId).subscribe({
         next: () => {
-          Swal.fire({
-            icon: 'success',
-            title: 'Tarea movida',
-            text: `Ahora está en "${targetList.name}"`,
-            toast: true,
-            position: 'top-end',
-            timer: 2000,
-            showConfirmButton: false
-          });
+          console.log('✅ Tarea movida correctamente');
         },
         error: (err) => {
-          console.error('Error al mover tarea:', err);
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudo mover la tarea',
-            toast: true,
-            position: 'top-end',
-            timer: 2500
-          });
-          this.listListas();
+          console.error('❌ Error al mover tarea:', err);
+          prevList.tareas = prevListSnapshot;
+          targetList.tareas = targetListSnapshot;
+          movedTask.lista_id = prevList.id;
+          movedTask.lista = { id: prevList.id, name: prevList.name };
+          this.cdr.detectChanges();
+          this.toastr.error('No se pudo mover la tarea', 'Error');
         }
       });
     }
@@ -505,16 +429,16 @@ export class TableroTareasComponent implements OnInit {
       return;
     }
 
-    const modalRef = this.modalService.open(CreateListaComponent, { 
-      centered: true, 
-      size: 'md' 
+    const modalRef = this.modalService.open(CreateListaComponent, {
+      centered: true,
+      size: 'md'
     });
-    
+
     modalRef.componentInstance.grupo_id = this.grupo_id;
-    
+
     modalRef.componentInstance.ListaC.subscribe((lista: any) => {
       this.LISTAS.push(lista);
-      this.toastr.success('Lista creada correctamente', 'Éxito');
+      // ✅ Sin toastr: create-lista ya muestra su propio Swal de éxito
     });
   }
 
@@ -524,19 +448,24 @@ export class TableroTareasComponent implements OnInit {
       return;
     }
 
-    const modalRef = this.modalService.open(EditListaComponent, { 
-      centered: true, 
-      size: 'md' 
+    const modalRef = this.modalService.open(EditListaComponent, {
+      centered: true,
+      size: 'md'
     });
-    
+
     modalRef.componentInstance.LISTA_SELECTED = lista;
-    
+
     modalRef.componentInstance.ListaE.subscribe((listaEditada: any) => {
       const index = this.LISTAS.findIndex((l: any) => l.id === lista.id);
       if (index !== -1) {
-        this.LISTAS[index] = listaEditada;
+        // ✅ Fusionar: conservar .tareas y todo lo existente en memoria
+        this.LISTAS[index] = {
+          ...this.LISTAS[index],
+          ...listaEditada
+        };
+        this.cdr.detectChanges();
       }
-      this.toastr.success('Lista actualizada correctamente', 'Éxito');
+      // ✅ Sin toastr: edit-lista ya muestra su propio Swal de éxito
     });
   }
 
@@ -546,16 +475,16 @@ export class TableroTareasComponent implements OnInit {
       return;
     }
 
-    const modalRef = this.modalService.open(DelteListaComponent, { 
-      centered: true, 
-      size: 'md' 
+    const modalRef = this.modalService.open(DelteListaComponent, {
+      centered: true,
+      size: 'md'
     });
-    
+
     modalRef.componentInstance.LISTA_SELECTED = lista;
-    
+
     modalRef.componentInstance.ListaD.subscribe(() => {
       this.LISTAS = this.LISTAS.filter((l: any) => l.id !== lista.id);
-      this.toastr.success('Lista eliminada correctamente', 'Éxito');
+      // ✅ Sin toastr: delte-lista ya muestra su propio Swal de éxito
     });
   }
 
@@ -565,16 +494,16 @@ export class TableroTareasComponent implements OnInit {
       return;
     }
 
-    const modalRef = this.modalService.open(CreateTareaComponent, { 
-      centered: true, 
-      size: 'xl' 
+    const modalRef = this.modalService.open(CreateTareaComponent, {
+      centered: true,
+      size: 'xl'
     });
-    
+
     modalRef.componentInstance.lista_id = lista_id;
     modalRef.componentInstance.grupo_id = this.grupo_id;
     modalRef.componentInstance.users = this.users;
     modalRef.componentInstance.sucursales = this.sucursales;
-    
+
     modalRef.componentInstance.TareaC.subscribe((tarea: any) => {
       const lista = this.LISTAS.find((l: any) => l.id === lista_id);
       if (lista) {
@@ -583,22 +512,22 @@ export class TableroTareasComponent implements OnInit {
         }
         lista.tareas.push(tarea);
       }
-      this.toastr.success('Tarea creada correctamente', 'Éxito');
+      // ✅ Sin toastr: create-tarea ya muestra su propio Swal de éxito
     });
   }
 
   editTarea(tarea: any) {
-    const modalRef = this.modalService.open(EditTareaComponent, { 
-      centered: true, 
-      size: 'xl' 
+    const modalRef = this.modalService.open(EditTareaComponent, {
+      centered: true,
+      size: 'xl'
     });
-    
+
     modalRef.componentInstance.TAREA_SELECTED = tarea;
     modalRef.componentInstance.users = this.users;
     modalRef.componentInstance.sucursales = this.sucursales;
     modalRef.componentInstance.grupo_id = this.grupo_id;
     modalRef.componentInstance.hasWriteAccess = this.hasWriteAccess;
-    
+
     modalRef.componentInstance.TareaE.subscribe((tareaEditada: any) => {
       for (const lista of this.LISTAS) {
         const index = lista.tareas.findIndex((t: any) => t.id === tarea.id);
@@ -607,25 +536,25 @@ export class TableroTareasComponent implements OnInit {
           break;
         }
       }
-      this.toastr.success('Tarea actualizada correctamente', 'Éxito');
+      // ✅ Sin toastr: edit-tarea ya muestra sus propios Swal de éxito por cada acción
     });
   }
 
   deleteTarea(tarea: any, event: MouseEvent) {
     event.stopPropagation();
-    
+
     if (!this.hasWriteAccess) {
       this.toastr.warning('No tienes permisos para eliminar tareas', 'Permiso denegado');
       return;
     }
 
-    const modalRef = this.modalService.open(DeleteTareaComponent, { 
-      centered: true, 
-      size: 'md' 
+    const modalRef = this.modalService.open(DeleteTareaComponent, {
+      centered: true,
+      size: 'md'
     });
-    
+
     modalRef.componentInstance.TAREA_SELECTED = tarea;
-    
+
     modalRef.componentInstance.TareaD.subscribe(() => {
       for (const lista of this.LISTAS) {
         const index = lista.tareas.findIndex((t: any) => t.id === tarea.id);
@@ -634,7 +563,7 @@ export class TableroTareasComponent implements OnInit {
           break;
         }
       }
-      this.toastr.success('Tarea eliminada correctamente', 'Éxito');
+      // ✅ Sin toastr: delete-tarea ya muestra su propio Swal de éxito
     });
   }
 
@@ -642,11 +571,11 @@ export class TableroTareasComponent implements OnInit {
     this.tareaService.listListas(this.grupo_id).subscribe({
       next: (resp: any) => {
         console.log('📋 Listas cargadas del servidor:', resp);
-        
+
         if (resp.listas && resp.listas.length > 0) {
           const primeraTarea = resp.listas[0]?.tareas?.[0];
           console.log('🔍 DEBUG - Primera tarea para analizar estructura:', primeraTarea);
-          
+
           console.log('📊 Estructura de la primera tarea:', {
             id: primeraTarea?.id,
             name: primeraTarea?.name,
@@ -670,12 +599,12 @@ export class TableroTareasComponent implements OnInit {
             user_data: primeraTarea?.user
           });
         }
-        
+
         this.LISTAS = resp.listas.map((lista: any) => ({
           ...lista,
           tareas: (lista.tareas || []).map((tarea: any) => {
             const adjuntos = tarea.adjuntos || { archivos: [], enlaces: [] };
-            
+
             if (Array.isArray(adjuntos)) {
               tarea.adjuntos = { archivos: [], enlaces: [] };
             } else {
@@ -684,25 +613,23 @@ export class TableroTareasComponent implements OnInit {
                 enlaces: adjuntos.enlaces || []
               };
             }
-            
+
             if (!Array.isArray(tarea.etiquetas)) {
               tarea.etiquetas = [];
             }
-            
+
             if (!Array.isArray(tarea.checklists)) {
               tarea.checklists = [];
             }
-            
+
             if (tarea.comentarios_count === undefined) {
               tarea.comentarios_count = tarea.comentarios?.length || 0;
             }
-            
-            // 🆕 SOLUCIÓN: Procesar miembros asignados
+
             if (!Array.isArray(tarea.assigned_members)) {
               tarea.assigned_members = [];
             }
-            
-            // 🔍 DEBUG: Logs detallados de assigned_members
+
             if (tarea.assigned_members.length > 0) {
               console.log(`🔍 DEBUG - Tarea: "${tarea.name}" tiene ${tarea.assigned_members.length} miembro(s)`);
               tarea.assigned_members.forEach((member: any, index: number) => {
@@ -717,7 +644,7 @@ export class TableroTareasComponent implements OnInit {
                 });
               });
             }
-            
+
             console.log(`✅ Tarea procesada: ${tarea.name}`, {
               etiquetas: tarea.etiquetas.length,
               adjuntos: tarea.adjuntos.archivos.length + tarea.adjuntos.enlaces.length,
@@ -725,14 +652,14 @@ export class TableroTareasComponent implements OnInit {
               comentarios: tarea.comentarios_count,
               miembros: tarea.assigned_members.length
             });
-            
+
             return {
               ...tarea,
               expanded: false
             };
           })
         }));
-        
+
         console.log('✅ Listas procesadas correctamente');
         this.cdr.detectChanges();
       },
@@ -765,13 +692,11 @@ export class TableroTareasComponent implements OnInit {
 
   volverAGrupos() {
     console.log('🔙 Volviendo desde:', this.fromRoute);
-    
+
     if (this.fromRoute === 'list-grupo' && this.workspaceId) {
-      // Volver a la vista de grupos del workspace específico
       console.log('➡️ Navegando a /tasks/grupos/' + this.workspaceId);
       this.router.navigate(['/tasks/grupos', this.workspaceId]);
     } else {
-      // Volver a la vista general (list-workspace)
       console.log('➡️ Navegando a /tasks/workspaces/list');
       this.router.navigate(['/tasks/workspaces/list']);
     }
@@ -788,16 +713,16 @@ export class TableroTareasComponent implements OnInit {
 
   getTotalAdjuntos(tarea: any): number {
     if (!tarea.adjuntos) return 0;
-    
+
     const archivos = tarea.adjuntos.archivos?.length || 0;
     const enlaces = tarea.adjuntos.enlaces?.length || 0;
-    
+
     return archivos + enlaces;
   }
 
   getTotalChecklistItems(tarea: any): number {
     if (!tarea.checklists || !Array.isArray(tarea.checklists)) return 0;
-    
+
     return tarea.checklists.reduce((total: number, checklist: any) => {
       return total + (checklist.items?.length || 0);
     }, 0);
@@ -805,10 +730,10 @@ export class TableroTareasComponent implements OnInit {
 
   getCompletedChecklistItems(tarea: any): number {
     if (!tarea.checklists || !Array.isArray(tarea.checklists)) return 0;
-    
+
     return tarea.checklists.reduce((total: number, checklist: any) => {
       if (!checklist.items) return total;
-      
+
       const completados = checklist.items.filter((item: any) => item.completed).length;
       return total + completados;
     }, 0);
@@ -817,7 +742,7 @@ export class TableroTareasComponent implements OnInit {
   getChecklistProgress(tarea: any): number {
     const total = this.getTotalChecklistItems(tarea);
     if (total === 0) return 0;
-    
+
     const completados = this.getCompletedChecklistItems(tarea);
     return Math.round((completados / total) * 100);
   }
@@ -825,7 +750,7 @@ export class TableroTareasComponent implements OnInit {
   isChecklistCompleted(tarea: any): boolean {
     const total = this.getTotalChecklistItems(tarea);
     if (total === 0) return false;
-    
+
     return this.getCompletedChecklistItems(tarea) === total;
   }
 
@@ -833,11 +758,11 @@ export class TableroTareasComponent implements OnInit {
     if (tarea.comentarios && Array.isArray(tarea.comentarios)) {
       return tarea.comentarios.length;
     }
-    
+
     if (tarea.comentarios_count !== undefined) {
       return tarea.comentarios_count;
     }
-    
+
     return 0;
   }
 
@@ -851,10 +776,6 @@ export class TableroTareasComponent implements OnInit {
     event.target.src = 'assets/media/avatars/1.png';
   }
 
-  /**
-   * 🎨 Obtener la ruta correcta del avatar de un miembro
-   * Funciona tanto para miembros de tareas como para el modal de miembros
-   */
   public getMemberAvatar(member: any): string {
     console.log('🎨 getMemberAvatar llamado con:', {
       member_completo: member,
@@ -862,7 +783,7 @@ export class TableroTareasComponent implements OnInit {
       valor_avatar: member?.avatar,
       tipo_avatar: typeof member?.avatar
     });
-    
+
     if (member?.avatar) {
       const url = this.getAvatarUrl(member.avatar);
       console.log('   ✅ Avatar URL generada:', url);
@@ -873,59 +794,47 @@ export class TableroTareasComponent implements OnInit {
     return 'assets/media/avatars/1.png';
   }
 
-
-  /**
-   * 🔧 Helper genérico para construir la URL del avatar
-   * Maneja los formatos: "1.png", "2.png", URLs completas, y rutas storage
-   */
   public getAvatarUrl(avatarValue: string): string {
     console.log('🔧 getAvatarUrl recibió:', {
       valor: avatarValue,
       tipo: typeof avatarValue,
       es_vacio: !avatarValue
     });
-    
+
     if (!avatarValue) {
       console.log('   → Retornando 1.png (valor vacío)');
       return 'assets/media/avatars/1.png';
     }
 
-    // 🆕 Caso: solo el número sin extensión (ej. "3")
     if (/^\d+$/.test(avatarValue)) {
       const url = `assets/media/avatars/${avatarValue}.png`;
       console.log('   → Caso: solo número. URL:', url);
       return url;
     }
 
-    // Caso: formato nuevo "3.png"
     if (/^\d+\.png$/.test(avatarValue)) {
       const url = `assets/media/avatars/${avatarValue}`;
       console.log('   → Caso: número.png. URL:', url);
       return url;
     }
 
-    // Caso: URL completa
     if (avatarValue.includes('http') || avatarValue.includes('storage')) {
       console.log('   → Caso: URL completa. URL:', avatarValue);
       return avatarValue;
     }
 
-    // Caso general: intentar construir ruta
     const url = `assets/media/avatars/${avatarValue}`;
     console.log('   → Caso: general. URL:', url);
     return url;
   }
 
-  /**
-   * 🎨 Obtener la ruta correcta del avatar del propietario del grupo
-   */
   getUserAvatar(): string {
     const userToCheck = this.selectedGrupo?.user;
-    
+
     if (userToCheck?.avatar) {
       return this.getAvatarUrl(userToCheck.avatar);
     }
-    
+
     return 'assets/media/avatars/1.png';
   }
 

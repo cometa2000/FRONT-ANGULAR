@@ -1,0 +1,192 @@
+<!-- ========================================================
+     MODAL: Seleccionar Tarea para adjuntar al Ticket
+     ======================================================== -->
+<div class="modal-header py-4">
+  <div class="d-flex align-items-center gap-3">
+    <div class="symbol symbol-40px symbol-circle bg-light-primary">
+      <span class="symbol-label">
+        <i class="ki-duotone ki-abstract-26 fs-2 text-primary">
+          <span class="path1"></span><span class="path2"></span>
+        </i>
+      </span>
+    </div>
+    <div>
+      <h4 class="modal-title fw-bold mb-0">Adjuntar Tarea</h4>
+      <span class="text-muted fs-7">Selecciona una o varias tareas como evidencia</span>
+    </div>
+  </div>
+  <button type="button" class="btn btn-sm btn-icon btn-light" (click)="modal.dismiss()">
+    <i class="ki-duotone ki-cross fs-3"><span class="path1"></span><span class="path2"></span></i>
+  </button>
+</div>
+
+<div class="modal-body py-4">
+
+  <!-- Barra de búsqueda + filtro estado -->
+  <div class="d-flex gap-3 mb-5">
+    <div class="flex-grow-1 position-relative">
+      <i class="ki-duotone ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-3">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+      <input
+        type="text"
+        class="form-control form-control-solid ps-10"
+        placeholder="Buscar tarea, grupo o lista..."
+        [(ngModel)]="searchText"
+        (ngModelChange)="aplicarFiltros()"
+      />
+    </div>
+    <select
+      class="form-select form-select-solid w-180px"
+      [(ngModel)]="filtroStatus"
+      (ngModelChange)="aplicarFiltros()"
+    >
+      <option *ngFor="let opt of statusOptions" [value]="opt.value">{{ opt.label }}</option>
+    </select>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="text-center py-10">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="text-muted mt-3">Cargando tareas...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="!isLoading && errorMsg" class="alert alert-danger d-flex gap-3 align-items-center">
+    <i class="ki-duotone ki-information-5 fs-2x text-danger">
+      <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+    </i>
+    <div>
+      <p class="mb-1 fw-bold">Error al cargar</p>
+      <p class="mb-2 fs-7">{{ errorMsg }}</p>
+      <button class="btn btn-sm btn-danger" (click)="cargarTareas()">Reintentar</button>
+    </div>
+  </div>
+
+  <!-- Lista de tareas -->
+  <div *ngIf="!isLoading && !errorMsg">
+
+    <!-- Sin resultados -->
+    <div *ngIf="tareasFiltradas.length === 0" class="text-center py-12">
+      <i class="ki-duotone ki-abstract-26 fs-5x text-gray-300 mb-3">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+      <p class="text-muted fs-6 mb-0">No se encontraron tareas</p>
+      <p class="text-muted fs-7">Intenta con otro término de búsqueda</p>
+    </div>
+
+    <!-- Tarjetas de tarea -->
+    <div class="tareas-list" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
+      <div
+        *ngFor="let tarea of tareasFiltradas"
+        class="tarea-card border rounded p-4 mb-3 cursor-pointer transition-all"
+        [class.selected]="isSeleccionada(tarea)"
+        (click)="toggleSeleccion(tarea)"
+        style="cursor: pointer; transition: all 0.15s ease;"
+        [style.border-color]="isSeleccionada(tarea) ? '#009ef7' : '#e4e6ef'"
+        [style.background-color]="isSeleccionada(tarea) ? '#f1faff' : '#ffffff'"
+      >
+        <div class="d-flex align-items-start gap-3">
+
+          <!-- Checkbox visual -->
+          <div class="d-flex align-items-center pt-1">
+            <div
+              class="w-20px h-20px rounded-circle border-2 d-flex align-items-center justify-content-center flex-shrink-0"
+              [style.border-color]="isSeleccionada(tarea) ? '#009ef7' : '#b5b5c3'"
+              [style.background-color]="isSeleccionada(tarea) ? '#009ef7' : 'transparent'"
+            >
+              <i *ngIf="isSeleccionada(tarea)" class="ki-duotone ki-check fs-8 text-white">
+                <span class="path1"></span><span class="path2"></span>
+              </i>
+            </div>
+          </div>
+
+          <!-- Info de la tarea -->
+          <div class="flex-grow-1 min-w-0">
+            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+              <span class="fw-semibold fs-6 text-gray-800 text-truncate">{{ tarea.name }}</span>
+              <span
+                class="badge badge-sm"
+                [class]="'badge-light-' + getStatusClass(tarea.status)"
+              >{{ getStatusLabel(tarea.status) }}</span>
+              <span
+                *ngIf="tarea.priority"
+                class="badge badge-sm"
+                [class]="'badge-light-' + getPriorityClass(tarea.priority)"
+              >
+                <ng-container [ngSwitch]="tarea.priority">
+                  <span *ngSwitchCase="'high'">Alta</span>
+                  <span *ngSwitchCase="'medium'">Media</span>
+                  <span *ngSwitchDefault>Baja</span>
+                </ng-container>
+              </span>
+            </div>
+
+            <!-- Jerarquía: grupo › lista -->
+            <div class="d-flex align-items-center gap-2 text-muted fs-7 mb-2 flex-wrap">
+              <span *ngIf="tarea.grupo_name">
+                <i class="ki-duotone ki-folder fs-7 me-1">
+                  <span class="path1"></span><span class="path2"></span>
+                </i>
+                {{ tarea.grupo_name }}
+              </span>
+              <span *ngIf="tarea.lista_name" class="d-flex align-items-center gap-1">
+                <i class="ki-duotone ki-right fs-8"><span class="path1"></span><span class="path2"></span></i>
+                {{ tarea.lista_name }}
+              </span>
+              <span *ngIf="tarea.due_date" class="ms-auto d-flex align-items-center gap-1">
+                <i class="ki-duotone ki-calendar fs-7">
+                  <span class="path1"></span><span class="path2"></span>
+                </i>
+                {{ tarea.due_date | date:'dd/MM/yyyy' }}
+              </span>
+            </div>
+
+            <!-- Barra de progreso checklist -->
+            <div *ngIf="tarea.total_checklist_progress > 0 || tarea.status !== 'completada'" class="d-flex align-items-center gap-2">
+              <div class="flex-grow-1 bg-light rounded" style="height: 6px;">
+                <div
+                  class="rounded"
+                  [class]="getProgressColor(tarea.total_checklist_progress)"
+                  [style.width.%]="tarea.total_checklist_progress"
+                  style="height: 6px; transition: width 0.3s;"
+                ></div>
+              </div>
+              <span class="text-muted fs-8 fw-semibold" style="min-width: 34px; text-align: right;">
+                {{ tarea.total_checklist_progress }}%
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen selección -->
+    <div *ngIf="selectedIds.size > 0" class="mt-4 p-3 bg-light-primary rounded d-flex align-items-center gap-2">
+      <i class="ki-duotone ki-check-circle fs-4 text-primary">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+      <span class="text-primary fw-semibold fs-7">
+        {{ selectedIds.size }} tarea{{ selectedIds.size > 1 ? 's' : '' }} seleccionada{{ selectedIds.size > 1 ? 's' : '' }}
+      </span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="modal-footer py-3">
+  <button type="button" class="btn btn-light" (click)="modal.dismiss()">Cancelar</button>
+  <button
+    type="button"
+    class="btn btn-primary"
+    [disabled]="selectedIds.size === 0"
+    (click)="confirmar()"
+  >
+    <i class="ki-duotone ki-abstract-26 fs-5 me-2">
+      <span class="path1"></span><span class="path2"></span>
+    </i>
+    Adjuntar {{ selectedIds.size > 0 ? '(' + selectedIds.size + ')' : '' }}
+  </button>
+</div>

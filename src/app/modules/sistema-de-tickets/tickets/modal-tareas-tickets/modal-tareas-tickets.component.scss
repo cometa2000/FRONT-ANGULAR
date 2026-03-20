@@ -1,0 +1,27 @@
+.tarea-card {
+  &:hover {
+    border-color: #009ef7 !important;
+    box-shadow: 0 0 0 3px rgba(0, 158, 247, 0.1);
+  }
+
+  &.selected {
+    border-color: #009ef7 !important;
+    background-color: #f1faff !important;
+  }
+}
+
+.tareas-list {
+  scrollbar-width: thin;
+  scrollbar-color: #e4e6ef transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #e4e6ef;
+    border-radius: 4px;
+  }
+}

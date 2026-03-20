@@ -116,28 +116,78 @@
       </div>
     </div>
 
-    <!-- Adjuntos -->
+    <!-- Adjuntos — abre modal con 3 opciones -->
     <div class="mb-2">
       <label class="form-label fw-semibold fs-6">Archivos Adjuntos</label>
-      <label class="d-flex flex-column align-items-center justify-content-center p-4 border border-dashed rounded cursor-pointer bg-light-primary border-primary">
-        <i class="ki-duotone ki-file-up fs-2x text-primary mb-2">
+
+      <!-- Botón que abre el modal -->
+      <button type="button"
+              class="btn btn-light-primary w-100 d-flex flex-column align-items-center
+                     justify-content-center gap-2 p-5 border border-dashed border-primary rounded"
+              (click)="abrirModalAdjuntos()">
+        <i class="ki-duotone ki-paper-clip fs-2x text-primary">
           <span class="path1"></span><span class="path2"></span>
         </i>
-        <span class="text-muted fs-7">Haz clic para seleccionar archivos o arrástralos aquí</span>
-        <input type="file" class="d-none" multiple (change)="onFileChange($event)" />
-      </label>
-      <div *ngIf="adjuntos.length > 0" class="mt-3 d-flex flex-column gap-2">
-        <div *ngFor="let f of adjuntos; let i = index"
-             class="d-flex align-items-center justify-content-between p-2 bg-light rounded">
-          <div class="d-flex align-items-center gap-2">
-            <i class="ki-duotone ki-file fs-4 text-primary"><span class="path1"></span><span class="path2"></span></i>
-            <span class="fs-7 text-truncate" style="max-width:300px;">{{ f.name }}</span>
-            <span class="text-muted fs-9">{{ formatFileSize(f.size) }}</span>
-          </div>
-          <button type="button" class="btn btn-xs btn-icon btn-light-danger" (click)="removeAdjunto(i)">
-            <i class="ki-duotone ki-cross fs-5"><span class="path1"></span><span class="path2"></span></i>
+        <span class="fw-semibold fs-7">Adjuntar archivo(s)</span>
+        <span class="text-muted fs-9">Nuevo archivo · Desde el sistema de archivos · URL externa</span>
+      </button>
+
+      <!-- Badges de adjuntos seleccionados -->
+      <div *ngIf="adjuntos.length > 0" class="mt-3 d-flex flex-wrap gap-2">
+        <span *ngFor="let adj of adjuntos; let i = index"
+              class="badge d-inline-flex align-items-center gap-1 py-2 px-3"
+              [ngClass]="getColorAdjunto(adj)">
+          <i [class]="getIconoAdjunto(adj) + ' fs-6'">
+            <span class="path1"></span><span class="path2"></span>
+          </i>
+          <span class="text-truncate" style="max-width:140px;">{{ getNombreAdjunto(adj) }}</span>
+          <span *ngIf="adj.tipo === 'nuevo'" class="text-muted fs-9 ms-1">
+            ({{ formatFileSize(adj.file.size) }})
+          </span>
+          <button type="button" class="btn p-0 ms-1" style="line-height:1; font-size:10px;"
+                  (click)="removeAdjunto(i)">
+            <i class="ki-duotone ki-cross fs-8 text-danger">
+              <span class="path1"></span><span class="path2"></span>
+            </i>
           </button>
-        </div>
+        </span>
+      </div>
+    </div>
+
+    <div class="mb-2 mt-3">
+      <label class="form-label fw-semibold fs-6">Tareas como Evidencia <span class="text-muted fs-8">(opcional)</span></label>
+
+      <!-- Botón que abre el modal -->
+      <button type="button"
+              class="btn btn-light-success w-100 d-flex flex-column align-items-center
+                     justify-content-center gap-2 p-4 border border-dashed border-success rounded"
+              (click)="abrirModalTareas()">
+        <i class="ki-duotone ki-abstract-26 fs-2x text-success">
+          <span class="path1"></span><span class="path2"></span>
+        </i>
+        <span class="fw-semibold fs-7">Adjuntar tarea existente</span>
+        <span class="text-muted fs-9">Vincula una tarea como evidencia del ticket</span>
+      </button>
+
+      <!-- Badges de tareas seleccionadas -->
+      <div *ngIf="tareasAdjuntas.length > 0" class="mt-3 d-flex flex-wrap gap-2">
+        <span *ngFor="let t of tareasAdjuntas; let i = index"
+              class="badge badge-light-success d-inline-flex align-items-center gap-1 py-2 px-3">
+          <i class="ki-duotone ki-abstract-26 fs-7">
+            <span class="path1"></span><span class="path2"></span>
+          </i>
+          <span class="text-truncate" style="max-width: 160px;">{{ t.name }}</span>
+          <span class="badge badge-sm ms-1"
+                [class]="'badge-light-' + ticketsService.getTareaStatusClass(t.status)">
+            {{ ticketsService.getTareaStatusLabel(t.status) }}
+          </span>
+          <button type="button" class="btn p-0 ms-1" style="line-height:1; font-size:10px;"
+                  (click)="removeTareaAdjunta(i)">
+            <i class="ki-duotone ki-cross fs-8 text-danger">
+              <span class="path1"></span><span class="path2"></span>
+            </i>
+          </button>
+        </span>
       </div>
     </div>
 

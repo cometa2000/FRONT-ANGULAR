@@ -91,6 +91,24 @@ export const SIDEBAR:any = [
         }
       ]
     },
+    {
+      'name': 'Centro de Solicitudes',
+      'permisos': [
+        {
+          name:'Registrar',
+          permiso: 'register_ticket',
+        },
+        {
+          name:'Editar',
+          permiso: 'edit_ticket',
+        },
+        {
+          name:'Eliminar',
+          permiso: 'delete_ticket',
+        }
+      ]
+    },
+  
     
 ];
 

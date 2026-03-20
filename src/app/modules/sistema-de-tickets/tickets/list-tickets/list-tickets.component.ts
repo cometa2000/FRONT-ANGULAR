@@ -1,30 +1,43 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
+import {
+  Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone,
+  ViewChild, ElementRef, AfterViewChecked
+} from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { Subject, takeUntil } from 'rxjs';
-import { TicketsService, Ticket, TicketMetricas, TicketConfig } from '../service/tickets.service';
+import { Subject, takeUntil, interval, Subscription } from 'rxjs';
+import { TicketsService, Ticket, TicketMessage, TicketMetricas, TicketConfig } from '../service/tickets.service';
 import { CreateTicketsComponent } from '../create-tickets/create-tickets.component';
 import { EditTicketsComponent } from '../edit-tickets/edit-tickets.component';
 import { DeleteTicketsComponent } from '../delete-tickets/delete-tickets.component';
+import { ModalAdjuntosTicketsComponent, AdjuntoTicket } from '../modal-adjuntos-tickets/modal-adjuntos-tickets.component';
+import { VistaDocumentoService } from 'src/app/modules/documents/vista-documentos/service/vista-documento.service';
+import { ModalTareasTicketsComponent } from '../modal-tareas-tickets/modal-tareas-tickets.component';
+import { TareaDisponible, TicketTareaAdjunta } from '../service/tickets.service';
+import { EditTareaComponent } from 'src/app/modules/tasks/tareas/edit-tarea/edit-tarea.component';
+
 
 @Component({
   selector: 'app-list-tickets',
   templateUrl: './list-tickets.component.html',
   styleUrls: ['./list-tickets.component.scss'],
 })
-export class ListTicketsComponent implements OnInit, OnDestroy {
+export class ListTicketsComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   private destroy$ = new Subject<void>();
+
+  // ── Referencia al contenedor de mensajes para auto-scroll ──
+  @ViewChild('chatContainer') chatContainer!: ElementRef;
+  private shouldScrollToBottom = false;
+  private lastMessageCount = 0;
 
   // ── Estado principal ──
   tickets: Ticket[] = [];
   ticketSeleccionado: Ticket | null = null;
   metricas: TicketMetricas | null = null;
-  /** config devuelve es_sede para controlar visibilidad del botón de estado */
   config: TicketConfig | null = null;
   isLoading$: any;
 
-  // ── Vista activa — controlada por queryParam del sidebar ──
+  // ── Vista activa ──
   vistaActiva: string = 'bandeja';
   vistaLabels: Record<string, string> = {
     bandeja:     'Bandeja de Entrada',
@@ -48,8 +61,7 @@ export class ListTicketsComponent implements OnInit, OnDestroy {
   nuevoEstado: string = '';
   comentarioEstado: string = '';
 
-  /** Lista completa — solo se muestra la que el usuario puede usar */
-  private todosLosEstados = [
+  readonly todosLosEstados = [
     { value: 'pendiente',  label: 'Pendiente',  class: 'warning' },
     { value: 'en_proceso', label: 'En Proceso', class: 'primary' },
     { value: 'en_espera',  label: 'En Espera',  class: 'info'    },
@@ -60,21 +72,41 @@ export class ListTicketsComponent implements OnInit, OnDestroy {
 
   // ── Mensaje nuevo ──
   nuevoMensaje: string = '';
-  adjuntosNuevoMensaje: File[] = [];
+  /** Adjuntos pendientes: nuevos, existentes del sistema o URLs */
+  adjuntosPendientes: AdjuntoTicket[] = [];
   isSendingMessage: boolean = false;
+
+  // ================================================================
+  // POLLING — TIEMPO REAL
+  // ================================================================
+
+  /** Intervalo en ms para refrescar mensajes del ticket activo */
+  private readonly POLL_MESSAGES_MS = 5000;
+  /** Intervalo en ms para refrescar métricas del sidebar */
+  private readonly POLL_METRICAS_MS = 15000;
+
+  private pollingMessages$: Subscription | null = null;
+  private pollingMetricas$: Subscription | null = null;
+
+  /** Bandera para evitar peticiones solapadas */
+  private isPollingMessages = false;
 
   constructor(
     public modalService: NgbModal,
     public ticketsService: TicketsService,
+    private vistaDocService: VistaDocumentoService,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone,
   ) {}
 
+  // ================================================================
+  // LIFECYCLE
+  // ================================================================
+
   ngOnInit(): void {
     this.isLoading$ = this.ticketsService.isLoading$;
 
-    // Cargar config para determinar si el usuario es de la sede
     this.ticketsService.getConfig().subscribe({
       next: (cfg: any) => {
         this.ngZone.run(() => {
@@ -84,7 +116,6 @@ export class ListTicketsComponent implements OnInit, OnDestroy {
       },
     });
 
-    // Escuchar cambios del queryParam ?vista=xxx desde el sidebar
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
       const vista = params['vista'] || 'bandeja';
       if (vista !== this.vistaActiva) {
@@ -92,65 +123,184 @@ export class ListTicketsComponent implements OnInit, OnDestroy {
         this.filtroSearch = '';
         this.filtroPrioridad = '';
         this.ticketSeleccionado = null;
+        // Cambió la vista → detener polling de mensajes
+        this.detenerPollingMensajes();
       }
       this.cargarTickets();
       this.cargarMetricas();
     });
+
+    // Iniciar polling de métricas globales
+    this.iniciarPollingMetricas();
+  }
+
+  ngAfterViewChecked(): void {
+    // Auto-scroll al fondo cuando llegan mensajes nuevos
+    if (this.shouldScrollToBottom) {
+      this.scrollToBottom();
+      this.shouldScrollToBottom = false;
+    }
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    this.detenerPollingMensajes();
+    this.detenerPollingMetricas();
   }
 
-  // ── Label de la vista actual ──
+  // ================================================================
+  // POLLING — MENSAJES EN TIEMPO REAL
+  // ================================================================
+
+  /**
+   * Inicia el polling de mensajes para el ticket actualmente seleccionado.
+   * Llama al endpoint getTicket cada POLL_MESSAGES_MS ms y compara
+   * el conteo de mensajes para detectar mensajes nuevos de otros usuarios.
+   */
+  private iniciarPollingMensajes(ticketId: number): void {
+    this.detenerPollingMensajes();
+
+    this.pollingMessages$ = interval(this.POLL_MESSAGES_MS)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        // No hacer polling si ya hay una petición en vuelo o
+        // el usuario está escribiendo (para no interrumpir la UX)
+        if (this.isPollingMessages || !this.ticketSeleccionado) return;
+        if (this.ticketSeleccionado.id !== ticketId) {
+          this.detenerPollingMensajes();
+          return;
+        }
+        this.isPollingMessages = true;
+
+        this.ticketsService.getTicket(ticketId).subscribe({
+          next: (resp: any) => {
+            this.ngZone.run(() => {
+              const ticketActualizado: Ticket = resp.ticket;
+              const mensajesNuevos = ticketActualizado.messages ?? [];
+              const cantidadActual = this.ticketSeleccionado?.messages?.length ?? 0;
+
+              if (mensajesNuevos.length > cantidadActual) {
+                // Hay mensajes nuevos → actualizar la conversación
+                this.ticketSeleccionado!.messages = mensajesNuevos;
+                // También actualizar estado y otros campos por si cambiaron
+                this.ticketSeleccionado!.estado  = ticketActualizado.estado;
+                this.ticketSeleccionado!.is_vencido = ticketActualizado.is_vencido;
+                this.shouldScrollToBottom = true;
+                // Actualizar el ticket en la lista también
+                const idx = this.tickets.findIndex(t => t.id === ticketId);
+                if (idx !== -1) {
+                  this.tickets[idx].messages_count = mensajesNuevos.length;
+                  this.tickets[idx].estado = ticketActualizado.estado;
+                }
+                this.cdr.detectChanges();
+              }
+
+              this.isPollingMessages = false;
+            });
+          },
+          error: () => {
+            this.isPollingMessages = false;
+          },
+        });
+      });
+  }
+
+  private detenerPollingMensajes(): void {
+    if (this.pollingMessages$) {
+      this.pollingMessages$.unsubscribe();
+      this.pollingMessages$ = null;
+    }
+    this.isPollingMessages = false;
+  }
+
+  // ================================================================
+  // POLLING — MÉTRICAS EN TIEMPO REAL (badges sidebar)
+  // ================================================================
+
+  /**
+   * Polling de métricas cada POLL_METRICAS_MS ms.
+   * Emite el resultado a través de TicketsService para que
+   * el SidebarMenuComponent también se actualice automáticamente.
+   */
+  private iniciarPollingMetricas(): void {
+    this.pollingMetricas$ = interval(this.POLL_METRICAS_MS)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.cargarMetricas();
+      });
+  }
+
+  private detenerPollingMetricas(): void {
+    if (this.pollingMetricas$) {
+      this.pollingMetricas$.unsubscribe();
+      this.pollingMetricas$ = null;
+    }
+  }
+
+  // ================================================================
+  // AUTO SCROLL
+  // ================================================================
+
+  private scrollToBottom(): void {
+    try {
+      if (this.chatContainer?.nativeElement) {
+        const el = this.chatContainer.nativeElement;
+        el.scrollTop = el.scrollHeight;
+      }
+    } catch {}
+  }
+
+  // ================================================================
+  // HELPERS DE VISTA
+  // ================================================================
+
   getVistaLabel(): string {
     return this.vistaLabels[this.vistaActiva] ?? this.vistaActiva;
   }
 
   // ================================================================
-  // PERMISOS DE ESTADO
+  // GETTERS DE IDENTIDAD
   // ================================================================
 
-  /**
-   * El botón de cambiar estado SOLO aparece si:
-   * 1. El usuario es de la sede principal (huezo) → puede usar todos los estados
-   * 2. El usuario es el franquiciatario asignado al ticket → puede usar todos
-   * (Los demás usuarios solo pueden usar en_proceso y en_espera, pero ese control
-   *  está en el backend; aquí simplemente mostramos el botón a quien le corresponde)
-   */
-  get puedeVerBotonEstado(): boolean {
-    if (!this.ticketSeleccionado) return false;
-    // Ticket cerrado o rechazado: nadie puede cambiar estado
-    if (['cerrado', 'rechazado'].includes(this.ticketSeleccionado.estado)) return false;
-    // Usuario de la sede: siempre puede
-    if (this.config?.es_sede) return true;
-    // Franquiciatario asignado: puede
-    const userId = this.ticketsService.authservice.user?.id;
-    return this.ticketSeleccionado.asignado?.id === userId;
+  private get miUserId(): number | undefined {
+    return this.ticketsService.authservice.user?.id;
   }
 
-  /**
-   * Los estados disponibles en el panel dependen del tipo de usuario:
-   * - Sede o franquiciatario asignado → todos los estados
-   * - Otros → solo en_proceso y en_espera (aunque el backend también lo valida)
-   */
+  get esElAsignado(): boolean {
+    if (!this.ticketSeleccionado || !this.miUserId) return false;
+    return this.ticketSeleccionado.asignado?.id === this.miUserId;
+  }
+
+  get estaFinalizado(): boolean {
+    return ['cerrado', 'rechazado'].includes(this.ticketSeleccionado?.estado ?? '');
+  }
+
+  get esElCreador(): boolean {
+    if (!this.ticketSeleccionado || !this.miUserId) return false;
+    return this.ticketSeleccionado.creador?.id === this.miUserId;
+  }
+
+  esMiMensaje(msg: TicketMessage): boolean {
+    if (!this.miUserId || !msg.user) return false;
+    return msg.user.id === this.miUserId;
+  }
+
   get estadosDisponiblesParaUsuario() {
-    const esSede = this.config?.es_sede;
-    const userId = this.ticketsService.authservice.user?.id;
-    const esFranqAsignado = this.ticketSeleccionado?.asignado?.id === userId;
-    if (esSede || esFranqAsignado) return this.todosLosEstados;
-    return this.todosLosEstados.filter(e => ['en_proceso', 'en_espera'].includes(e.value));
+    return this.todosLosEstados;
   }
 
   // ================================================================
   // CARGA DE DATOS
   // ================================================================
+
   cargarMetricas(): void {
     this.ticketsService.getMetricas().subscribe({
       next: (resp: any) => {
         this.ngZone.run(() => {
           this.metricas = resp.metricas;
+          // Emitir al servicio compartido para que el sidebar lo recoja
+          this.ticketsService.metricasSubject.next(resp.metricas);
           this.cdr.detectChanges();
         });
       },
@@ -162,6 +312,7 @@ export class ListTicketsComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.tickets = [];
     this.ticketSeleccionado = null;
+    this.detenerPollingMensajes();
     this.cdr.detectChanges();
 
     this.ticketsService.getTickets({
@@ -190,18 +341,26 @@ export class ListTicketsComponent implements OnInit, OnDestroy {
   // ================================================================
   // SELECCIONAR TICKET
   // ================================================================
+
   seleccionarTicket(ticket: Ticket): void {
     this.isLoadingDetalle = true;
     this.showEstadoPanel = false;
+    // Detener polling anterior antes de cargar el nuevo ticket
+    this.detenerPollingMensajes();
     this.cdr.detectChanges();
 
     this.ticketsService.getTicket(ticket.id).subscribe({
       next: (resp: any) => {
         this.ngZone.run(() => {
           this.ticketSeleccionado = resp.ticket;
+          this.lastMessageCount = resp.ticket.messages?.length ?? 0;
           this.isLoadingDetalle = false;
           this.nuevoMensaje = '';
+          this.adjuntosPendientes = [];
+          this.shouldScrollToBottom = true;
           this.cdr.detectChanges();
+          // Iniciar polling de mensajes para este ticket
+          this.iniciarPollingMensajes(ticket.id);
         });
       },
       error: () => {
@@ -215,12 +374,14 @@ export class ListTicketsComponent implements OnInit, OnDestroy {
 
   cerrarDetalle(): void {
     this.ticketSeleccionado = null;
+    this.detenerPollingMensajes();
     this.cdr.detectChanges();
   }
 
   // ================================================================
   // CAMBIAR ESTADO
   // ================================================================
+
   abrirPanelEstado(): void {
     this.showEstadoPanel = true;
     this.nuevoEstado = this.ticketSeleccionado?.estado ?? '';
@@ -255,19 +416,87 @@ export class ListTicketsComponent implements OnInit, OnDestroy {
   // ================================================================
   // ENVIAR MENSAJE
   // ================================================================
-  onAdjuntoMensaje(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files) this.adjuntosNuevoMensaje = Array.from(input.files);
+
+  // ================================================================
+  // MODAL DE ADJUNTOS
+  // ================================================================
+
+  abrirModalAdjuntos(): void {
+    const ref = this.modalService.open(ModalAdjuntosTicketsComponent, {
+      centered: true,
+      size: 'lg',
+      backdrop: 'static',
+    });
+    // Pasar la sucursal del ticket para filtrar el explorador de archivos
+    ref.componentInstance.sucursaleId =
+      (this.ticketSeleccionado as any)?.sucursal_origen?.id ?? null;
+
+    ref.componentInstance.AdjuntosSeleccionados.subscribe((adjuntos: AdjuntoTicket[]) => {
+      this.ngZone.run(() => {
+        this.adjuntosPendientes = [...this.adjuntosPendientes, ...adjuntos];
+        this.cdr.detectChanges();
+      });
+    });
   }
 
+  quitarAdjuntoPendiente(i: number): void {
+    this.adjuntosPendientes.splice(i, 1);
+    this.cdr.detectChanges();
+  }
+
+  getNombreAdjunto(adj: AdjuntoTicket): string {
+    if (adj.tipo === 'nuevo')     return adj.file.name;
+    if (adj.tipo === 'existente') return adj.nombre;
+    return adj.titulo;
+  }
+
+  getIconoAdjunto(adj: AdjuntoTicket): string {
+    if (adj.tipo === 'url')       return 'ki-duotone ki-link';
+    if (adj.tipo === 'existente') return 'ki-duotone ki-folder-open';
+    return 'ki-duotone ki-file';
+  }
+
+  getColorAdjunto(adj: AdjuntoTicket): string {
+    if (adj.tipo === 'url')       return 'badge-light-warning';
+    if (adj.tipo === 'existente') return 'badge-light-info';
+    return 'badge-light-primary';
+  }
+
+  // ================================================================
+  // ENVIAR MENSAJE
+  // ================================================================
+
   enviarMensaje(): void {
-    if (!this.ticketSeleccionado || !this.nuevoMensaje.trim()) return;
+    if (!this.ticketSeleccionado) return;
+    const hayTexto    = this.nuevoMensaje.trim().length > 0;
+    const hayAdjuntos = this.adjuntosPendientes.length > 0;
+    if (!hayTexto && !hayAdjuntos) return;
+
     this.isSendingMessage = true;
     this.cdr.detectChanges();
 
+    // Capturar antes de limpiar (fire & forget los que van al sistema de archivos)
+    const paraSistema = this.adjuntosPendientes
+      .filter(a => a.tipo === 'nuevo' && (a as any).guardarEnSistema) as any[];
+
     const fd = new FormData();
-    fd.append('contenido', this.nuevoMensaje);
-    this.adjuntosNuevoMensaje.forEach(f => fd.append('adjuntos[]', f));
+    fd.append('contenido', this.nuevoMensaje.trim() || '📎 Adjunto(s)');
+
+    // TIPO 1: archivos nuevos
+    (this.adjuntosPendientes.filter(a => a.tipo === 'nuevo') as any[])
+      .forEach((a: any) => fd.append('adjuntos[]', a.file));
+
+    // TIPO 2: documentos existentes (referencia, sin clonar)
+    (this.adjuntosPendientes.filter(a => a.tipo === 'existente') as any[])
+      .forEach((a: any) => fd.append('documento_ids[]', String(a.documento_id)));
+
+    // TIPO 3: URLs externas
+    const urls = this.adjuntosPendientes.filter(a => a.tipo === 'url') as any[];
+    if (urls.length > 0) {
+      fd.append('adjuntos_url', JSON.stringify(
+        urls.map((u: any) => ({ titulo: u.titulo, url: u.url }))
+      ));
+    }
 
     this.ticketsService.sendMessage(this.ticketSeleccionado.id, fd).subscribe({
       next: (resp: any) => {
@@ -275,8 +504,11 @@ export class ListTicketsComponent implements OnInit, OnDestroy {
           if (!this.ticketSeleccionado!.messages) this.ticketSeleccionado!.messages = [];
           this.ticketSeleccionado!.messages.push(resp.mensaje);
           this.nuevoMensaje = '';
-          this.adjuntosNuevoMensaje = [];
+          this.adjuntosPendientes = [];
           this.isSendingMessage = false;
+          this.shouldScrollToBottom = true;
+          const idx = this.tickets.findIndex(t => t.id === this.ticketSeleccionado!.id);
+          if (idx !== -1) this.tickets[idx].messages_count++;
           this.cdr.detectChanges();
         });
       },
@@ -284,11 +516,23 @@ export class ListTicketsComponent implements OnInit, OnDestroy {
         this.ngZone.run(() => { this.isSendingMessage = false; this.cdr.detectChanges(); });
       },
     });
+
+    // Fire & forget: subir al sistema de archivos los que el usuario marcó
+    const sucId = (this.ticketSeleccionado as any)?.sucursal_origen?.id ?? null;
+    paraSistema.forEach((a: any) => {
+      const docFd = new FormData();
+      docFd.append('file', a.file);
+      docFd.append('name', a.file.name);
+      if (sucId) docFd.append('sucursale_id', String(sucId));
+      if (a.carpetaDestino) docFd.append('parent_id', String(a.carpetaDestino));
+      this.vistaDocService.uploadFile(docFd).subscribe({ error: () => {} });
+    });
   }
 
   // ================================================================
   // FAVORITO / ARCHIVAR
   // ================================================================
+
   toggleFavorito(ticket: Ticket, event: Event): void {
     event.stopPropagation();
     this.ticketsService.toggleFavorito(ticket.id).subscribe({
@@ -298,6 +542,14 @@ export class ListTicketsComponent implements OnInit, OnDestroy {
           if (this.ticketSeleccionado?.id === ticket.id) {
             this.ticketSeleccionado.es_favorito = resp.es_favorito;
           }
+          if (this.vistaActiva === 'favoritos' && !resp.es_favorito) {
+            this.tickets = this.tickets.filter(t => t.id !== ticket.id);
+            if (this.ticketSeleccionado?.id === ticket.id) {
+              this.ticketSeleccionado = null;
+              this.detenerPollingMensajes();
+            }
+          }
+          this.cargarMetricas();
           this.cdr.detectChanges();
         });
       },
@@ -307,10 +559,28 @@ export class ListTicketsComponent implements OnInit, OnDestroy {
   archivar(ticket: Ticket, event: Event): void {
     event.stopPropagation();
     this.ticketsService.toggleArchivar(ticket.id).subscribe({
-      next: () => {
+      next: (resp: any) => {
         this.ngZone.run(() => {
-          if (this.ticketSeleccionado?.id === ticket.id) this.ticketSeleccionado = null;
-          this.cargarTickets();
+          ticket.archivado = resp.archivado;
+          if (this.ticketSeleccionado?.id === ticket.id) {
+            this.ticketSeleccionado.archivado = resp.archivado;
+          }
+          if (resp.archivado && this.vistaActiva !== 'archivados') {
+            this.tickets = this.tickets.filter(t => t.id !== ticket.id);
+            if (this.ticketSeleccionado?.id === ticket.id) {
+              this.ticketSeleccionado = null;
+              this.detenerPollingMensajes();
+            }
+          }
+          if (!resp.archivado && this.vistaActiva === 'archivados') {
+            this.tickets = this.tickets.filter(t => t.id !== ticket.id);
+            if (this.ticketSeleccionado?.id === ticket.id) {
+              this.ticketSeleccionado = null;
+              this.detenerPollingMensajes();
+            }
+          }
+          this.cargarMetricas();
+          this.cdr.detectChanges();
         });
       },
     });
@@ -319,6 +589,7 @@ export class ListTicketsComponent implements OnInit, OnDestroy {
   // ================================================================
   // CRUD MODALES
   // ================================================================
+
   createTicket(): void {
     const modalRef = this.modalService.open(CreateTicketsComponent, { centered: true, size: 'lg' });
     modalRef.componentInstance.TicketCreado.subscribe((ticket: Ticket) => {
@@ -352,26 +623,113 @@ export class ListTicketsComponent implements OnInit, OnDestroy {
       this.ngZone.run(() => {
         const idx = this.tickets.findIndex(t => t.id === ticket.id);
         if (idx !== -1) this.tickets.splice(idx, 1);
-        if (this.ticketSeleccionado?.id === ticket.id) this.ticketSeleccionado = null;
+        if (this.ticketSeleccionado?.id === ticket.id) {
+          this.ticketSeleccionado = null;
+          this.detenerPollingMensajes();
+        }
         this.cargarMetricas();
         this.cdr.detectChanges();
       });
     });
   }
+  
+
+  abrirModalTareas(): void {
+    if (!this.ticketSeleccionado) return;
+
+    const ref = this.modalService.open(ModalTareasTicketsComponent, {
+      centered: true,
+      size: 'lg',
+      backdrop: 'static',
+    });
+
+    ref.componentInstance.TareasSeleccionadas.subscribe((tareas: TareaDisponible[]) => {
+      this.ngZone.run(() => {
+        tareas.forEach((t) => {
+          // Adjuntar directamente (sin mensaje de texto obligatorio)
+          // Se adjunta a través del endpoint dedicado para no mezclar con el flujo de mensajes
+          this.ticketsService
+            .adjuntarTarea(this.ticketSeleccionado!.id, t.id, null)
+            .subscribe({
+              next: (resp) => {
+                // Agregar la tarea a la lista local del ticket (tareas_adjuntas)
+                if (!this.ticketSeleccionado!.tareas_adjuntas) {
+                  this.ticketSeleccionado!.tareas_adjuntas = [];
+                }
+                this.ticketSeleccionado!.tareas_adjuntas!.push(resp.ticket_tarea);
+                this.cdr.detectChanges();
+              },
+            });
+        });
+      });
+    });
+  }
+
+  // ── 3) MÉTODO — quitar tarea adjunta ─────────────────────────────────
+  quitarTareaAdjunta(tareaAdj: TicketTareaAdjunta): void {
+    if (!this.ticketSeleccionado) return;
+    this.ticketsService
+      .quitarTarea(this.ticketSeleccionado.id, tareaAdj.id)
+      .subscribe({
+        next: () => {
+          this.ngZone.run(() => {
+            if (this.ticketSeleccionado?.tareas_adjuntas) {
+              this.ticketSeleccionado.tareas_adjuntas =
+                this.ticketSeleccionado.tareas_adjuntas.filter((t) => t.id !== tareaAdj.id);
+            }
+            this.cdr.detectChanges();
+          });
+        },
+      });
+  }
+
+  abrirTarea(tareaAdj: TicketTareaAdjunta): void {
+    const ref = this.modalService.open(EditTareaComponent, {
+      centered: true,
+      size: 'xl',
+      windowClass: 'modal-fullscreen-xl',
+      backdrop: 'static',
+    });
+
+    // Pasar el ID de la tarea
+    ref.componentInstance.TAREA_SELECTED = { id: tareaAdj.tarea_id };
+
+    // ⚡ CLAVE: forzar solo lectura — NO pasar grupo_id
+    // checkWritePermissions() en edit-tarea hace un early return con
+    // hasWriteAccess = false cuando grupo_id está undefined/null.
+    // Por lo tanto no pasamos grupo_id y el componente queda en read-only.
+    // (ver edit-tarea.component.ts líneas 305-310)
+    ref.componentInstance.grupo_id   = undefined;
+    ref.componentInstance.isReadOnly = true;   // flag directo
+    ref.componentInstance.hasWriteAccess = false; // refuerzo
+  }
 
   // ================================================================
   // HELPERS
   // ================================================================
+
+  getTareaStatusClass(s: string)  { return this.ticketsService.getTareaStatusClass(s);  }
+  getTareaStatusLabel(s: string)  { return this.ticketsService.getTareaStatusLabel(s);  }
+  getTareaPriorityClass(p: string){ return this.ticketsService.getTareaPriorityClass(p); }
+
+  getTareaProgressColor(progress: number): string {
+    if (progress >= 80) return 'bg-success';
+    if (progress >= 40) return 'bg-warning';
+    return 'bg-danger';
+  }
+
   getPrioridadClass(p: string): string  { return this.ticketsService.getPrioridadClass(p); }
   getEstadoClass(e: string): string     { return this.ticketsService.getEstadoClass(e); }
   getEstadoLabel(e: string): string     { return this.ticketsService.getEstadoLabel(e); }
   formatFileSize(b: number): string     { return this.ticketsService.formatFileSize(b); }
 
-  getAvatarUrl(avatar: string | null): string {
+  getAvatarUrl(avatar: string | null | undefined): string {
     if (!avatar) return 'assets/media/avatars/blank.png';
     if (avatar.startsWith('http')) return avatar;
     return `assets/media/avatars/${avatar}`;
   }
 
   trackById(_: number, item: Ticket): number { return item.id; }
+
+  
 }

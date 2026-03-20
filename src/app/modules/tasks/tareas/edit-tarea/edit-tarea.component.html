@@ -83,17 +83,11 @@
           <div class="mb-3">
               <button class="btn-light" (click)="abrirModalAdjuntar()">
                 <i class="fa-solid fa-paperclip"></i> Adjuntar
-                <span *ngIf="adjuntos.archivos.length > 0 || adjuntos.enlaces.length > 0" class="badge badge-primary ms-2">
-                  {{ adjuntos.archivos.length + adjuntos.enlaces.length }}
-                </span>
               </button>
           </div>
           <div class="mb-3">
               <button class="btn-light" (click)="abrirModalMiembros()">
                 <i class="fa-solid fa-user-plus"></i> Miembros
-                <span *ngIf="miembrosAsignados.length > 0" class="badge badge-primary ms-2">
-                  {{ miembrosAsignados.length }}
-                </span>
               </button>
           </div>
         </div>

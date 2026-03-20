@@ -1,0 +1,413 @@
+<!-- ============================================================
+     modal-adjuntos-tickets.component.html
+     3 pestañas: Nuevo archivo | Archivo existente | URL
+     ============================================================ -->
+
+<!-- HEADER -->
+<div class="modal-header py-4 border-bottom">
+  <div class="d-flex align-items-center gap-3">
+    <span class="bg-primary bg-opacity-10 rounded p-2 d-flex">
+      <i class="ki-duotone ki-paper-clip fs-2 text-primary">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+    </span>
+    <div>
+      <h4 class="modal-title fw-bold mb-0">Adjuntar archivo</h4>
+      <span class="text-muted fs-8">Elige cómo quieres adjuntar el archivo al ticket</span>
+    </div>
+  </div>
+  <button type="button" class="btn btn-sm btn-icon btn-light" (click)="modal.dismiss()">
+    <i class="ki-duotone ki-cross fs-3"><span class="path1"></span><span class="path2"></span></i>
+  </button>
+</div>
+
+<!-- PESTAÑAS -->
+<div class="px-6 pt-5 pb-0 border-bottom">
+  <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x fs-6">
+
+    <li class="nav-item">
+      <a class="nav-link d-flex align-items-center gap-2 pb-3 cursor-pointer"
+         [class.active]="tabActiva === 'nuevo'"
+         (click)="cambiarTab('nuevo')">
+        <i class="ki-duotone ki-file-up fs-4"><span class="path1"></span><span class="path2"></span></i>
+        Nuevo archivo
+        <span *ngIf="archivosNuevos.length"
+              class="badge badge-circle badge-primary fs-9 ms-1">{{ archivosNuevos.length }}</span>
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-link d-flex align-items-center gap-2 pb-3 cursor-pointer"
+         [class.active]="tabActiva === 'existente'"
+         (click)="cambiarTab('existente')">
+        <i class="ki-duotone ki-folder-open fs-4"><span class="path1"></span><span class="path2"></span></i>
+        Archivo existente
+        <span *ngIf="seleccionados.length"
+              class="badge badge-circle badge-info fs-9 ms-1">{{ seleccionados.length }}</span>
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-link d-flex align-items-center gap-2 pb-3 cursor-pointer"
+         [class.active]="tabActiva === 'url'"
+         (click)="cambiarTab('url')">
+        <i class="ki-duotone ki-link fs-4"><span class="path1"></span><span class="path2"></span></i>
+        Pegar URL
+        <span *ngIf="urlsAgregadas.length"
+              class="badge badge-circle badge-warning fs-9 ms-1">{{ urlsAgregadas.length }}</span>
+      </a>
+    </li>
+
+  </ul>
+</div>
+
+<!-- CUERPO -->
+<div class="modal-body p-0" style="min-height:370px; max-height:490px; overflow-y:auto;">
+
+
+  <!-- ══════════════════════════════
+       TAB 1 — NUEVO ARCHIVO
+  ══════════════════════════════ -->
+  <ng-container *ngIf="tabActiva === 'nuevo'">
+    <div class="p-6">
+
+      <!-- Zona drag & drop -->
+      <div class="drop-zone d-flex flex-column align-items-center justify-content-center gap-3
+                  p-8 mb-5 rounded border border-dashed cursor-pointer"
+           [class.drop-zone--active]="isDragging"
+           (dragover)="onDragOver($event)"
+           (dragleave)="onDragLeave()"
+           (drop)="onDrop($event)"
+           (click)="fileInput.click()">
+        <i class="ki-duotone ki-cloud-download fs-4x text-primary">
+          <span class="path1"></span><span class="path2"></span>
+        </i>
+        <div class="text-center">
+          <p class="fw-bold text-dark mb-1 fs-6">Arrastra archivos aquí o haz clic para seleccionar</p>
+          <span class="text-muted fs-8">Puedes seleccionar múltiples archivos a la vez</span>
+        </div>
+        <input #fileInput type="file" class="d-none" multiple (change)="onFileInput($event)" />
+      </div>
+
+      <!-- Sin archivos aún -->
+      <div *ngIf="archivosNuevos.length === 0" class="text-center text-muted py-2">
+        <span class="fs-8">Aún no has seleccionado ningún archivo</span>
+      </div>
+
+      <!-- Lista de archivos seleccionados -->
+      <div *ngFor="let item of archivosNuevos; let i = index"
+           class="archivo-item border rounded p-4 mb-3 bg-white">
+
+        <!-- Fila: ícono + nombre + tamaño + quitar -->
+        <div class="d-flex align-items-center gap-3">
+          <i class="ki-duotone ki-file fs-2x text-primary flex-shrink-0">
+            <span class="path1"></span><span class="path2"></span>
+          </i>
+          <div class="flex-grow-1 min-w-0">
+            <p class="fw-semibold text-dark mb-0 text-truncate">{{ item.file.name }}</p>
+            <span class="text-muted fs-8">{{ formatSize(item.file.size) }}</span>
+          </div>
+          <button type="button" class="btn btn-sm btn-icon btn-light-danger flex-shrink-0"
+                  (click)="eliminarArchivoNuevo(i)">
+            <i class="ki-duotone ki-cross fs-4"><span class="path1"></span><span class="path2"></span></i>
+          </button>
+        </div>
+
+        <!-- Toggle: guardar en sistema de archivos -->
+        <div class="mt-3 pt-3 border-top">
+          <div class="form-check form-switch d-flex align-items-center gap-2">
+            <input class="form-check-input" type="checkbox"
+                   [id]="'guardar-' + i"
+                   [(ngModel)]="item.guardarEnSistema"
+                   (change)="onToggleGuardarEnSistema(item)" />
+            <label class="form-check-label fs-7 text-muted cursor-pointer" [for]="'guardar-' + i">
+              Guardar también en el <strong>Sistema de Archivos</strong>
+            </label>
+          </div>
+
+          <!-- Selector de carpeta destino -->
+          <div *ngIf="item.guardarEnSistema" class="mt-3 ps-2">
+            <p class="fs-8 fw-semibold text-muted mb-2">Guardar en:</p>
+
+            <!-- Carpeta actualmente elegida -->
+            <div class="d-flex align-items-center gap-2 p-2 rounded bg-light-primary mb-2">
+              <i class="ki-duotone ki-folder fs-5 text-warning">
+                <span class="path1"></span><span class="path2"></span>
+              </i>
+              <span class="fs-7 fw-semibold flex-grow-1">{{ getNombreCarpeta(item.carpetaDestino) }}</span>
+              <button type="button" class="btn btn-xs btn-light"
+                      (click)="item.mostrandoSelectorCarpeta = !item.mostrandoSelectorCarpeta">
+                <i class="ki-duotone ki-pencil fs-7"><span class="path1"></span><span class="path2"></span></i>
+                Cambiar
+              </button>
+            </div>
+
+            <!-- Árbol de carpetas -->
+            <div *ngIf="item.mostrandoSelectorCarpeta"
+                 class="carpeta-selector border rounded p-3"
+                 style="max-height:180px; overflow-y:auto;">
+              <div *ngIf="loadingCarpetas" class="text-center py-3">
+                <div class="spinner-border spinner-border-sm text-primary"></div>
+              </div>
+              <ng-container *ngIf="!loadingCarpetas">
+                <!-- Raíz -->
+                <div class="carpeta-nodo d-flex align-items-center gap-2 p-2 rounded cursor-pointer mb-1"
+                     [class.carpeta-nodo--activa]="item.carpetaDestino === null"
+                     (click)="seleccionarCarpeta(item, null)">
+                  <i class="ki-duotone ki-home fs-5"><span class="path1"></span><span class="path2"></span></i>
+                  <span class="fs-7">Raíz</span>
+                </div>
+                <!-- Subárbol recursivo -->
+                <ng-container *ngTemplateOutlet="arbolTpl; context: { $implicit: carpetasArbol, nivel: 1, item: item }">
+                </ng-container>
+              </ng-container>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+      <!-- fin lista archivos -->
+
+    </div>
+  </ng-container>
+  <!-- FIN TAB 1 -->
+
+
+  <!-- ══════════════════════════════
+       TAB 2 — ARCHIVO EXISTENTE
+  ══════════════════════════════ -->
+  <ng-container *ngIf="tabActiva === 'existente'">
+    <div class="d-flex flex-column" style="height:100%;">
+
+      <!-- Breadcrumb -->
+      <div class="px-4 py-3 bg-light border-bottom flex-shrink-0">
+        <div class="d-flex align-items-center gap-2">
+          <button *ngIf="breadcrumb.length > 1"
+                  type="button" class="btn btn-sm btn-icon btn-light flex-shrink-0"
+                  (click)="volverAtras()">
+            <i class="ki-duotone ki-arrow-left fs-5"><span class="path1"></span><span class="path2"></span></i>
+          </button>
+          <ol class="breadcrumb mb-0 fs-8 flex-wrap">
+            <li *ngFor="let b of breadcrumb; let i = index; let last = last"
+                class="breadcrumb-item">
+              <span *ngIf="!last"
+                    class="text-primary fw-semibold cursor-pointer"
+                    (click)="navegarBreadcrumb(i)">
+                <i *ngIf="i === 0" class="ki-duotone ki-home fs-7 me-1">
+                  <span class="path1"></span><span class="path2"></span>
+                </i>
+                {{ b.name }}
+              </span>
+              <span *ngIf="last" class="fw-bold text-dark">{{ b.name }}</span>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Contenido del explorador -->
+      <div class="flex-grow-1 p-4" style="overflow-y:auto; max-height:290px;">
+
+        <div *ngIf="loadingExplorador"
+             class="d-flex justify-content-center align-items-center py-10">
+          <div class="spinner-border text-primary"></div>
+        </div>
+
+        <div *ngIf="errorExplorador && !loadingExplorador">
+          <div class="alert alert-danger fs-8">{{ errorExplorador }}</div>
+        </div>
+
+        <div *ngIf="!loadingExplorador && !errorExplorador && contenidoCarpeta.length === 0"
+             class="text-center text-muted py-8">
+          <i class="ki-duotone ki-folder fs-4x text-gray-300 d-block mb-2">
+            <span class="path1"></span><span class="path2"></span>
+          </i>
+          <span class="fs-8">Esta carpeta está vacía</span>
+        </div>
+
+        <ng-container *ngIf="!loadingExplorador && !errorExplorador">
+          <div *ngFor="let doc of contenidoCarpeta"
+               class="doc-item d-flex align-items-center gap-3 p-3 rounded border mb-2 cursor-pointer"
+               [class.doc-item--seleccionado]="estaSeleccionado(doc)"
+               [class.doc-item--carpeta]="doc.type === 'folder'"
+               (click)="toggleSeleccion(doc)">
+
+            <i [class]="getFileIcon(doc) + ' fs-2x flex-shrink-0'">
+              <span class="path1"></span><span class="path2"></span>
+            </i>
+
+            <div class="flex-grow-1 min-w-0">
+              <p class="fw-semibold text-dark mb-0 text-truncate fs-7">{{ doc.name }}</p>
+              <span class="text-muted fs-9">
+                <ng-container *ngIf="doc.type === 'folder'">
+                  {{ doc.files_count ?? 0 }} archivo(s)
+                  <i class="ki-duotone ki-arrow-right fs-8 ms-1"><span class="path1"></span></i>
+                </ng-container>
+                <ng-container *ngIf="doc.type === 'file'">{{ formatSize(doc.size) }}</ng-container>
+              </span>
+            </div>
+
+            <div *ngIf="doc.type === 'file'" class="flex-shrink-0">
+              <span *ngIf="estaSeleccionado(doc)"
+                    class="badge badge-success d-flex align-items-center gap-1">
+                <i class="ki-duotone ki-check fs-7"><span class="path1"></span><span class="path2"></span></i>
+                Seleccionado
+              </span>
+              <span *ngIf="!estaSeleccionado(doc)" class="text-muted fs-9">Seleccionar</span>
+            </div>
+
+          </div>
+        </ng-container>
+
+      </div>
+
+      <!-- Barra de seleccionados -->
+      <div *ngIf="seleccionados.length > 0"
+           class="px-4 py-3 border-top bg-light-success flex-shrink-0">
+        <p class="fw-semibold text-success fs-8 mb-2">
+          <i class="ki-duotone ki-check-circle fs-5 me-1">
+            <span class="path1"></span><span class="path2"></span>
+          </i>
+          {{ seleccionados.length }} archivo(s) seleccionado(s)
+        </p>
+        <div class="d-flex flex-wrap gap-2">
+          <span *ngFor="let s of seleccionados; let i = index"
+                class="badge badge-light-success d-flex align-items-center gap-1 py-2 px-3">
+            <i class="ki-duotone ki-file fs-7"><span class="path1"></span><span class="path2"></span></i>
+            <span class="text-truncate" style="max-width:130px;">{{ s.nombre }}</span>
+            <button type="button" class="btn p-0 ms-1" style="line-height:1;"
+                    (click)="quitarExistente(i)">
+              <i class="ki-duotone ki-cross fs-7 text-danger">
+                <span class="path1"></span><span class="path2"></span>
+              </i>
+            </button>
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </ng-container>
+  <!-- FIN TAB 2 -->
+
+
+  <!-- ══════════════════════════════
+       TAB 3 — URL
+  ══════════════════════════════ -->
+  <ng-container *ngIf="tabActiva === 'url'">
+    <div class="p-6">
+
+      <div class="mb-5">
+        <label class="form-label fw-semibold fs-6 required">Dirección URL</label>
+        <div class="input-group">
+          <span class="input-group-text">
+            <i class="ki-duotone ki-link fs-4"><span class="path1"></span><span class="path2"></span></i>
+          </span>
+          <input type="url"
+                 class="form-control form-control-solid"
+                 placeholder="https://ejemplo.com/documento.pdf"
+                 [(ngModel)]="urlDireccion" />
+        </div>
+        <span *ngIf="urlDireccion && !urlValida"
+              class="text-danger fs-8 mt-1 d-block">
+          La URL no tiene un formato válido.
+        </span>
+      </div>
+
+      <div class="mb-5">
+        <label class="form-label fw-semibold fs-6">
+          Título <span class="text-muted">(opcional)</span>
+        </label>
+        <input type="text"
+               class="form-control form-control-solid"
+               placeholder="Nombre descriptivo del enlace"
+               [(ngModel)]="urlTitulo" />
+      </div>
+
+      <button type="button"
+              class="btn btn-light-primary w-100 mb-5"
+              [disabled]="!urlDireccion.trim() || !urlValida"
+              (click)="agregarUrl()">
+        <i class="ki-duotone ki-plus fs-4 me-1"><span class="path1"></span><span class="path2"></span></i>
+        Agregar enlace a la lista
+      </button>
+
+      <div *ngIf="urlsAgregadas.length === 0" class="text-center text-muted py-4">
+        <i class="ki-duotone ki-link fs-4x text-gray-300 d-block mb-2">
+          <span class="path1"></span><span class="path2"></span>
+        </i>
+        <span class="fs-8">Aún no has agregado ningún enlace</span>
+      </div>
+
+      <div *ngFor="let u of urlsAgregadas; let i = index"
+           class="d-flex align-items-start gap-3 p-3 bg-light rounded border mb-2">
+        <i class="ki-duotone ki-link fs-2 text-info flex-shrink-0 mt-1">
+          <span class="path1"></span><span class="path2"></span>
+        </i>
+        <div class="flex-grow-1 min-w-0">
+          <p class="fw-semibold text-dark mb-0 text-truncate fs-7">{{ u.titulo }}</p>
+          <a [href]="u.url" target="_blank"
+             class="text-muted fs-9 text-truncate d-block">{{ u.url }}</a>
+        </div>
+        <button type="button" class="btn btn-sm btn-icon btn-light-danger flex-shrink-0"
+                (click)="quitarUrl(i)">
+          <i class="ki-duotone ki-cross fs-4"><span class="path1"></span><span class="path2"></span></i>
+        </button>
+      </div>
+
+    </div>
+  </ng-container>
+  <!-- FIN TAB 3 -->
+
+
+</div>
+<!-- FIN modal-body -->
+
+
+<!-- FOOTER -->
+<div class="modal-footer py-3 border-top d-flex align-items-center justify-content-between">
+  <div>
+    <span *ngIf="totalAdjuntos === 0" class="text-muted fs-8">
+      Sin adjuntos seleccionados
+    </span>
+    <span *ngIf="totalAdjuntos > 0" class="text-success fw-semibold fs-8">
+      <i class="ki-duotone ki-check-circle fs-5 me-1">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+      {{ totalAdjuntos }} adjunto(s) listos para enviar
+    </span>
+  </div>
+  <div class="d-flex gap-2">
+    <button type="button" class="btn btn-light" (click)="modal.dismiss()">
+      Cancelar
+    </button>
+    <button type="button"
+            class="btn btn-primary d-flex align-items-center gap-2"
+            [disabled]="totalAdjuntos === 0"
+            (click)="confirmar()">
+      <i class="ki-duotone ki-check fs-4"><span class="path1"></span><span class="path2"></span></i>
+      Adjuntar ({{ totalAdjuntos }})
+    </button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     TEMPLATE RECURSIVO — árbol de carpetas
+     (Tab 1: selector de destino)
+══════════════════════════════════════════ -->
+<ng-template #arbolTpl let-nodos let-nivel="nivel" let-item="item">
+  <div *ngFor="let nodo of nodos" [style.padding-left.px]="nivel * 16">
+    <div class="carpeta-nodo d-flex align-items-center gap-2 p-2 rounded cursor-pointer mb-1"
+         [class.carpeta-nodo--activa]="item?.carpetaDestino === nodo.id"
+         (click)="seleccionarCarpeta(item, nodo.id)">
+      <i class="ki-duotone ki-folder fs-5 text-warning">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+      <span class="fs-7">{{ nodo.name }}</span>
+    </div>
+    <ng-container *ngIf="nodo.children?.length">
+      <ng-container *ngTemplateOutlet="arbolTpl; context: { $implicit: nodo.children, nivel: nivel + 1, item: item }">
+      </ng-container>
+    </ng-container>
+  </div>
+</ng-template>

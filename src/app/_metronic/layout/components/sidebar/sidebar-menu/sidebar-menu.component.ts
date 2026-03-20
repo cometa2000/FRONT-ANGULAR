@@ -44,9 +44,28 @@ export class SidebarMenuComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Cargar métricas de tickets si el usuario tiene permiso
+    // ================================================================
+    // MÉTRICAS REACTIVAS
+    // Nos suscribimos al BehaviorSubject del servicio.
+    // Cada vez que ListTicketsComponent actualiza las métricas
+    // (por polling o por acción del usuario), los badges del sidebar
+    // se actualizan automáticamente sin recargar la página.
+    // ================================================================
     if (this.showMenu(['register_ticket', 'edit_ticket'])) {
+      // 1. Carga inicial desde la API
       this.loadTicketMetricas();
+
+      // 2. Suscripción reactiva al stream compartido de métricas
+      this.ticketsService.metricas$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((metricas: TicketMetricas | null) => {
+          if (metricas) {
+            this.ngZone.run(() => {
+              this.ticketMetricas = metricas;
+              this.cdr.detectChanges();
+            });
+          }
+        });
     }
   }
 
@@ -56,8 +75,15 @@ export class SidebarMenuComponent implements OnInit, OnDestroy {
   }
 
   // ================================================================
-  // MÉTRICAS DE TICKETS (badges del sidebar)
+  // MÉTRICAS DE TICKETS — carga inicial
   // ================================================================
+
+  /**
+   * Carga inicial de métricas desde la API.
+   * Las actualizaciones posteriores llegan a través de metricas$
+   * (stream reactivo del servicio), sin necesidad de polling propio
+   * en el sidebar.
+   */
   loadTicketMetricas(): void {
     this.ticketsService.getMetricas().pipe(
       catchError(() => of(null)),
@@ -66,6 +92,9 @@ export class SidebarMenuComponent implements OnInit, OnDestroy {
       if (resp?.metricas) {
         this.ngZone.run(() => {
           this.ticketMetricas = resp.metricas;
+          // Sincronizar con el BehaviorSubject por si el sidebar
+          // se carga antes que el componente de lista
+          this.ticketsService.metricasSubject.next(resp.metricas);
           this.cdr.detectChanges();
         });
       }
@@ -89,6 +118,7 @@ export class SidebarMenuComponent implements OnInit, OnDestroy {
   // ================================================================
   // WORKSPACES
   // ================================================================
+
   loadWorkspaces() {
     if (!this.showMenu(['register_task', 'edit_task'])) return;
 

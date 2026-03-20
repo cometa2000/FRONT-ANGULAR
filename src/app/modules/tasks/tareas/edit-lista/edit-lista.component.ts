@@ -11,31 +11,23 @@ import Swal from 'sweetalert2';
 })
 export class EditListaComponent {
   @Output() ListaE: EventEmitter<any> = new EventEmitter();
-  @Input() LISTA_SELECTED:any;
-  @Input() users:any = [];
-  @Input() TAREAS:any = [];
-  @Input() sucursales:any = [];
+  @Input() LISTA_SELECTED: any;
+  @Input() users: any = [];
+  @Input() TAREAS: any = [];
+  @Input() sucursales: any = [];
 
-  
-  name:string = '';
-  
-  
+  name: string = '';
 
-  isLoading:any;
+  isLoading: any;
 
   constructor(
     public modal: NgbActiveModal,
     public tareaService: TareaService,
     public toast: ToastrService,
-  ) {
-    
-  }
+  ) {}
 
   ngOnInit(): void {
-    //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
-    //Add 'implements OnInit' to the class.
     this.name = this.LISTA_SELECTED.name;
-   
   }
 
   store() {
@@ -84,7 +76,11 @@ export class EditListaComponent {
             position: 'top-end'
           });
 
-          this.ListaE.emit(resp.tarea);
+          // ✅ CORRECCIÓN: emitir resp.lista si el backend lo devuelve,
+          // o construir el objeto fusionando LISTA_SELECTED con el nuevo nombre
+          // como fallback seguro. Nunca emitir resp.tarea (era undefined para listas).
+          const listaActualizada = resp.lista ?? { ...this.LISTA_SELECTED, name: this.name };
+          this.ListaE.emit(listaActualizada);
           this.modal.close();
         }
       },

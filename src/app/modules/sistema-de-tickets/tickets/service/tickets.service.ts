@@ -9,6 +9,32 @@ import { AuthService } from 'src/app/modules/auth';
 // INTERFACES
 // ================================================================
 
+export interface TicketTareaAdjunta {
+  id: number;
+  ticket_message_id: number | null;
+  tarea_id: number;
+  tarea_name: string;
+  tarea_status: 'pendiente' | 'en_progreso' | 'completada' | string;
+  tarea_priority: 'low' | 'medium' | 'high' | string;
+  tarea_due_date: string | null;
+  tarea_grupo_id: number;
+  tarea_progress: number;
+  created_at: string;
+}
+
+export interface TareaDisponible {
+  id: number;
+  name: string;
+  status: string;
+  priority: string;
+  due_date: string | null;
+  grupo_id: number;
+  grupo_name: string;
+  lista_id: number | null;
+  lista_name: string | null;
+  total_checklist_progress: number;
+}
+
 export interface Ticket {
   id: number;
   folio: string;
@@ -40,6 +66,8 @@ export interface Ticket {
     tiempo_primera_respuesta_min: number | null;
     tiempo_resolucion_horas: number | null;
   };
+  // ── TAREAS ADJUNTAS (evidencias opcionales) ──
+  tareas_adjuntas?: TicketTareaAdjunta[];
 }
 
 export interface TicketMessage {
@@ -49,6 +77,8 @@ export interface TicketMessage {
   user: { id: number; nombre: string; avatar: string } | null;
   adjuntos: TicketAttachment[];
   created_at: string;
+  // ── Tareas adjuntas a este mensaje del hilo ──
+  tareas_adjuntas?: TicketTareaAdjunta[];
 }
 
 export interface TicketAttachment {
@@ -84,7 +114,6 @@ export interface TicketConfig {
 
 export interface TicketMetricas {
   total: number;
-  // Conteos por vista del sidebar
   bandeja: number;
   enviados: number;
   en_proceso: number;
@@ -92,7 +121,6 @@ export interface TicketMetricas {
   archivados: number;
   favoritos: number;
   vencidos: number;
-  // Alias por estado (compatibilidad)
   pendientes: number;
   resueltos: number;
   cerrados: number;
@@ -110,6 +138,9 @@ export class TicketsService {
   isLoading$: Observable<boolean>;
   isLoadingSubject: BehaviorSubject<boolean>;
 
+  metricasSubject = new BehaviorSubject<TicketMetricas | null>(null);
+  metricas$ = this.metricasSubject.asObservable();
+
   private readonly BASE_URL = `${URL_SERVICIOS}/sistema-de-tickets`;
 
   constructor(
@@ -124,7 +155,6 @@ export class TicketsService {
   // HELPERS PRIVADOS
   // ================================================================
 
-  /** Headers JSON con token */
   private getHeaders(): HttpHeaders {
     return new HttpHeaders({
       'Authorization': 'Bearer ' + this.authservice.token,
@@ -133,17 +163,12 @@ export class TicketsService {
     });
   }
 
-  /** Headers solo con token — para FormData */
   private getFileHeaders(): HttpHeaders {
     return new HttpHeaders({
       'Authorization': 'Bearer ' + this.authservice.token,
     });
   }
 
-  /**
-   * Manejo de errores seguro — NO usa spread de HttpErrorResponse
-   * para evitar excepciones silenciosas dentro del catchError
-   */
   private handleError(error: HttpErrorResponse): Observable<never> {
     let msg = 'Ocurrió un error desconocido';
     if (error.status === 401) msg = 'No autorizado. Por favor, inicia sesión nuevamente.';
@@ -151,7 +176,6 @@ export class TicketsService {
     else if (error.status === 422) msg = 'Datos inválidos.';
     else if (error.status === 500) msg = 'Error interno del servidor.';
     console.error('❌ TicketsService error:', error.status, error.message, error.error);
-    // ✅ Retornamos el error original + mensaje, SIN spread de HttpErrorResponse
     return throwError(() => {
       return { status: error.status, error: error.error, userMessage: msg, originalError: error };
     });
@@ -184,13 +208,9 @@ export class TicketsService {
   }
 
   getTicket(id: number): Observable<{ message: number; ticket: Ticket }> {
-    this.isLoadingSubject.next(true);
     return this.http
       .get<any>(`${this.BASE_URL}/tickets/${id}`, { headers: this.getHeaders() })
-      .pipe(
-        catchError((e) => this.handleError(e)),
-        finalize(() => this.isLoadingSubject.next(false))
-      );
+      .pipe(catchError((e) => this.handleError(e)));
   }
 
   createTicket(data: FormData): Observable<{ message: number; ticket: Ticket }> {
@@ -282,10 +302,6 @@ export class TicketsService {
   // CONFIG Y MÉTRICAS
   // ================================================================
 
-  /**
-   * getConfig — SIN isLoadingSubject para evitar interferencia con otras peticiones.
-   * El component maneja su propio estado de carga (isLoadingConfig).
-   */
   getConfig(): Observable<TicketConfig> {
     return this.http
       .get<TicketConfig>(`${this.BASE_URL}/config`, { headers: this.getHeaders() })
@@ -302,9 +318,46 @@ export class TicketsService {
   }
 
   getMetricas(): Observable<{ message: number; metricas: TicketMetricas }> {
-    this.isLoadingSubject.next(true);
     return this.http
       .get<any>(`${this.BASE_URL}/metricas`, { headers: this.getHeaders() })
+      .pipe(catchError((e) => this.handleError(e)));
+  }
+
+  // ================================================================
+  // TAREAS — RELACIÓN CON TICKETS
+  // ================================================================
+
+  getTareasDisponibles(): Observable<{ message: number; tareas: TareaDisponible[] }> {
+    return this.http
+      .get<any>(`${this.BASE_URL}/tareas-disponibles`, { headers: this.getHeaders() })
+      .pipe(catchError((e) => this.handleError(e)));
+  }
+
+  adjuntarTarea(
+    ticketId: number,
+    tareaId: number,
+    mensajeId: number | null = null
+  ): Observable<{ message: number; ticket_tarea: TicketTareaAdjunta }> {
+    this.isLoadingSubject.next(true);
+    return this.http
+      .post<any>(
+        `${this.BASE_URL}/tickets/${ticketId}/adjuntar-tarea`,
+        { tarea_id: tareaId, ticket_message_id: mensajeId },
+        { headers: this.getHeaders() }
+      )
+      .pipe(
+        catchError((e) => this.handleError(e)),
+        finalize(() => this.isLoadingSubject.next(false))
+      );
+  }
+
+  quitarTarea(ticketId: number, ticketTareaId: number): Observable<{ message: number }> {
+    this.isLoadingSubject.next(true);
+    return this.http
+      .delete<any>(
+        `${this.BASE_URL}/tickets/${ticketId}/adjuntar-tarea/${ticketTareaId}`,
+        { headers: this.getHeaders() }
+      )
       .pipe(
         catchError((e) => this.handleError(e)),
         finalize(() => this.isLoadingSubject.next(false))
@@ -350,5 +403,28 @@ export class TicketsService {
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  getTareaStatusClass(status: string): string {
+    const map: Record<string, string> = {
+      pendiente:   'warning',
+      en_progreso: 'primary',
+      completada:  'success',
+    };
+    return map[status] ?? 'secondary';
+  }
+
+  getTareaStatusLabel(status: string): string {
+    const map: Record<string, string> = {
+      pendiente:   'Pendiente',
+      en_progreso: 'En progreso',
+      completada:  'Completada',
+    };
+    return map[status] ?? status;
+  }
+
+  getTareaPriorityClass(priority: string): string {
+    const map: Record<string, string> = { high: 'danger', medium: 'warning', low: 'success' };
+    return map[priority] ?? 'secondary';
   }
 }
