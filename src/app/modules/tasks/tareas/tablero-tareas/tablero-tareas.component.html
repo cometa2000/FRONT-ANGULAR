@@ -183,15 +183,15 @@
         <!-- HEADER DE LISTA -->
         <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
           
-          <h5 class="fw-bold text-dark mb-0" [ngClass]="{'cursor-move': hasWriteAccess}">
-            <i *ngIf="hasWriteAccess" class="fa-solid fa-grip-vertical text-muted me-2"></i>
-            <i *ngIf="!hasWriteAccess" class="fa-solid fa-list text-muted me-2"></i>
-            {{ LISTA.name }}
-            <span class="badge bg-secondary ms-2">{{ LISTA.tareas?.length || 0 }}</span>
+          <h5 class="fw-bold text-dark mb-0 lista-title" [ngClass]="{'cursor-move': hasWriteAccess}">
+            <i *ngIf="hasWriteAccess" class="fa-solid fa-grip-vertical text-muted me-2 flex-shrink-0"></i>
+            <i *ngIf="!hasWriteAccess" class="fa-solid fa-list text-muted me-2 flex-shrink-0"></i>
+            <span class="lista-name-text">{{ LISTA.name }}</span>
+            <span class="badge bg-secondary ms-2 flex-shrink-0">{{ LISTA.tareas?.length || 0 }}</span>
           </h5>
 
           <!-- ✅ Menú de opciones de lista - Solo mostrar si tiene permisos de escritura -->
-          <div class="card-toolbar position-relative" *ngIf="hasWriteAccess">
+          <div class="card-toolbar position-relative flex-shrink-0" *ngIf="hasWriteAccess">
               <button
                   class="btn btn-sm btn-icon btn-color-primary btn-active-light-primary"
                   (click)="toggleMenu(i, $event)">

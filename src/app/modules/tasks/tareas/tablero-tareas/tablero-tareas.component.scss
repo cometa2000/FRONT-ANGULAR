@@ -386,6 +386,29 @@
 }
 
 // ============================================
+// HEADER DE LISTA — NOMBRE TRUNCADO
+// ============================================
+.card-header {
+  // Garantizar que el flex container no desborde
+  min-width: 0;
+
+  .lista-title {
+    display: flex;
+    align-items: center;
+    min-width: 0;        // Permite que flex shrink funcione
+    flex: 1 1 0;         // Crece y encoge, pero nunca empuja al toolbar
+    overflow: hidden;
+
+    .lista-name-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+  }
+}
+
+// ============================================
 // ANIMACIONES
 // ============================================
 @keyframes expandDescription {

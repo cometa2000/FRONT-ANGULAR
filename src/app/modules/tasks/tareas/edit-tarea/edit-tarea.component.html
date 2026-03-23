@@ -303,13 +303,7 @@
                     <span class="adjunto-tiempo">{{ tiempoRelativo(archivo.tiempo_subida) }}</span>
                   </div>
                   <div class="adjunto-acciones">
-                    <button 
-                      class="btn-icon" 
-                      *ngIf="esArchivoVisualizable(archivo)"
-                      (click)="visualizarArchivo(archivo)"
-                      title="Visualizar archivo">
-                      <i class="fa-solid fa-eye"></i>
-                    </button>
+                    
                     <button 
                       class="btn-icon" 
                       (click)="descargarArchivo(archivo)"
