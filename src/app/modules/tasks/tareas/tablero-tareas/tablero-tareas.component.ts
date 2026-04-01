@@ -49,6 +49,9 @@ export class TableroTareasComponent implements OnInit {
   fromRoute: string = 'list-workspace';
   workspaceId?: number;
 
+  // 🆕 ID del usuario autenticado (para saber si una tarea está asignada a él)
+  currentUserId: number | null = null;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -62,6 +65,9 @@ export class TableroTareasComponent implements OnInit {
 
   ngOnInit(): void {
     this.isLoading$ = this.tareaService.isLoading$;
+
+    // 🆕 Obtener el ID del usuario autenticado al inicio
+    this.currentUserId = this.tareaService.authservice.user?.id ?? null;
 
     this.route.queryParams.subscribe(queryParams => {
       this.fromRoute = queryParams['from'] || 'list-workspace';
@@ -105,11 +111,19 @@ export class TableroTareasComponent implements OnInit {
               });
             }
 
-            this.cdr.detectChanges();
+            // ✅ FIX NG0100: usar setTimeout para que detectChanges ocurra
+            // DESPUÉS del ciclo de verificación actual de Angular.
+            // Sin este defer, el cambio de permissionsLoaded/hasWriteAccess
+            // modifica el árbol de expresiones mientras el padre (tablero)
+            // aún está evaluando `isLoading$ | async` en la misma pasada,
+            // lo que dispara ExpressionChangedAfterItHasBeenCheckedError.
+            setTimeout(() => {
+              this.cdr.detectChanges();
 
-            if (callback) {
-              callback();
-            }
+              if (callback) {
+                callback();
+              }
+            }, 0);
           }
         },
         error: (err: any) => {
@@ -376,7 +390,7 @@ export class TableroTareasComponent implements OnInit {
   }
 
   // ============================================================
-  // onTaskDrop — actualización optimista sin flash
+  // onTaskDrop — robusto para producción
   // ============================================================
   onTaskDrop(event: CdkDragDrop<any[]>, targetList: any) {
     if (!this.hasWriteAccess) {
@@ -386,41 +400,48 @@ export class TableroTareasComponent implements OnInit {
 
     if (event.previousContainer === event.container) {
       moveItemInArray(targetList.tareas, event.previousIndex, event.currentIndex);
-    } else {
-      const prevList = this.LISTAS.find(l => l.tareas === event.previousContainer.data);
-      if (!prevList) return;
-
-      const prevListSnapshot = [...prevList.tareas];
-      const targetListSnapshot = [...targetList.tareas];
-
-      transferArrayItem(
-        event.previousContainer.data,
-        event.container.data,
-        event.previousIndex,
-        event.currentIndex
-      );
-
-      const movedTask = targetList.tareas[event.currentIndex];
-      const newListId = targetList.id;
-
-      movedTask.lista_id = newListId;
-      movedTask.lista = { id: newListId, name: targetList.name };
-
-      this.tareaService.moveTarea(movedTask.id, newListId).subscribe({
-        next: () => {
-          console.log('✅ Tarea movida correctamente');
-        },
-        error: (err) => {
-          console.error('❌ Error al mover tarea:', err);
-          prevList.tareas = prevListSnapshot;
-          targetList.tareas = targetListSnapshot;
-          movedTask.lista_id = prevList.id;
-          movedTask.lista = { id: prevList.id, name: prevList.name };
-          this.cdr.detectChanges();
-          this.toastr.error('No se pudo mover la tarea', 'Error');
-        }
-      });
+      return;
     }
+
+    const prevContainerId: string = event.previousContainer.id;
+    const prevListId = parseInt(prevContainerId.replace('lista-', ''), 10);
+    const prevList = this.LISTAS.find((l: any) => l.id === prevListId);
+
+    if (!prevList) {
+      console.error('❌ No se encontró la lista origen. ID del contenedor:', prevContainerId);
+      return;
+    }
+
+    const prevListSnapshot = [...prevList.tareas];
+    const targetListSnapshot = [...targetList.tareas];
+
+    transferArrayItem(
+      prevList.tareas,
+      targetList.tareas,
+      event.previousIndex,
+      event.currentIndex
+    );
+
+    const movedTask = targetList.tareas[event.currentIndex];
+    const newListId = targetList.id;
+
+    movedTask.lista_id = newListId;
+    movedTask.lista = { id: newListId, name: targetList.name };
+
+    this.tareaService.moveTarea(movedTask.id, newListId).subscribe({
+      next: () => {
+        console.log('✅ Tarea movida correctamente');
+      },
+      error: (err) => {
+        console.error('❌ Error al mover tarea:', err);
+        prevList.tareas = prevListSnapshot;
+        targetList.tareas = targetListSnapshot;
+        movedTask.lista_id = prevList.id;
+        movedTask.lista = { id: prevList.id, name: prevList.name };
+        this.cdr.detectChanges();
+        this.toastr.error('No se pudo mover la tarea', 'Error');
+      }
+    });
   }
 
   createLista() {
@@ -438,7 +459,6 @@ export class TableroTareasComponent implements OnInit {
 
     modalRef.componentInstance.ListaC.subscribe((lista: any) => {
       this.LISTAS.push(lista);
-      // ✅ Sin toastr: create-lista ya muestra su propio Swal de éxito
     });
   }
 
@@ -458,14 +478,12 @@ export class TableroTareasComponent implements OnInit {
     modalRef.componentInstance.ListaE.subscribe((listaEditada: any) => {
       const index = this.LISTAS.findIndex((l: any) => l.id === lista.id);
       if (index !== -1) {
-        // ✅ Fusionar: conservar .tareas y todo lo existente en memoria
         this.LISTAS[index] = {
           ...this.LISTAS[index],
           ...listaEditada
         };
         this.cdr.detectChanges();
       }
-      // ✅ Sin toastr: edit-lista ya muestra su propio Swal de éxito
     });
   }
 
@@ -484,7 +502,6 @@ export class TableroTareasComponent implements OnInit {
 
     modalRef.componentInstance.ListaD.subscribe(() => {
       this.LISTAS = this.LISTAS.filter((l: any) => l.id !== lista.id);
-      // ✅ Sin toastr: delte-lista ya muestra su propio Swal de éxito
     });
   }
 
@@ -512,7 +529,6 @@ export class TableroTareasComponent implements OnInit {
         }
         lista.tareas.push(tarea);
       }
-      // ✅ Sin toastr: create-tarea ya muestra su propio Swal de éxito
     });
   }
 
@@ -536,7 +552,6 @@ export class TableroTareasComponent implements OnInit {
           break;
         }
       }
-      // ✅ Sin toastr: edit-tarea ya muestra sus propios Swal de éxito por cada acción
     });
   }
 
@@ -563,7 +578,6 @@ export class TableroTareasComponent implements OnInit {
           break;
         }
       }
-      // ✅ Sin toastr: delete-tarea ya muestra su propio Swal de éxito
     });
   }
 
@@ -571,34 +585,6 @@ export class TableroTareasComponent implements OnInit {
     this.tareaService.listListas(this.grupo_id).subscribe({
       next: (resp: any) => {
         console.log('📋 Listas cargadas del servidor:', resp);
-
-        if (resp.listas && resp.listas.length > 0) {
-          const primeraTarea = resp.listas[0]?.tareas?.[0];
-          console.log('🔍 DEBUG - Primera tarea para analizar estructura:', primeraTarea);
-
-          console.log('📊 Estructura de la primera tarea:', {
-            id: primeraTarea?.id,
-            name: primeraTarea?.name,
-            tiene_assigned_members: !!primeraTarea?.assigned_members,
-            assigned_members: primeraTarea?.assigned_members,
-            tipo_assigned_members: typeof primeraTarea?.assigned_members,
-            es_array: Array.isArray(primeraTarea?.assigned_members),
-            length: primeraTarea?.assigned_members?.length,
-            primer_miembro: primeraTarea?.assigned_members?.[0],
-            status: primeraTarea?.status,
-            priority: primeraTarea?.priority,
-            tiene_etiquetas: !!primeraTarea?.etiquetas,
-            num_etiquetas: primeraTarea?.etiquetas?.length || 0,
-            tiene_adjuntos: !!primeraTarea?.adjuntos,
-            estructura_adjuntos: primeraTarea?.adjuntos,
-            tiene_checklists: !!primeraTarea?.checklists,
-            num_checklists: primeraTarea?.checklists?.length || 0,
-            tiene_comentarios: primeraTarea?.comentarios !== undefined,
-            num_comentarios: primeraTarea?.comentarios?.length || primeraTarea?.comentarios_count || 0,
-            tiene_user: !!primeraTarea?.user,
-            user_data: primeraTarea?.user
-          });
-        }
 
         this.LISTAS = resp.listas.map((lista: any) => ({
           ...lista,
@@ -629,29 +615,6 @@ export class TableroTareasComponent implements OnInit {
             if (!Array.isArray(tarea.assigned_members)) {
               tarea.assigned_members = [];
             }
-
-            if (tarea.assigned_members.length > 0) {
-              console.log(`🔍 DEBUG - Tarea: "${tarea.name}" tiene ${tarea.assigned_members.length} miembro(s)`);
-              tarea.assigned_members.forEach((member: any, index: number) => {
-                console.log(`   👤 Miembro ${index + 1}:`, {
-                  id: member.id,
-                  name: member.name,
-                  surname: member.surname,
-                  email: member.email,
-                  avatar: member.avatar,
-                  avatar_type: typeof member.avatar,
-                  todas_las_propiedades: Object.keys(member)
-                });
-              });
-            }
-
-            console.log(`✅ Tarea procesada: ${tarea.name}`, {
-              etiquetas: tarea.etiquetas.length,
-              adjuntos: tarea.adjuntos.archivos.length + tarea.adjuntos.enlaces.length,
-              checklists: tarea.checklists.length,
-              comentarios: tarea.comentarios_count,
-              miembros: tarea.assigned_members.length
-            });
 
             return {
               ...tarea,
@@ -713,16 +676,13 @@ export class TableroTareasComponent implements OnInit {
 
   getTotalAdjuntos(tarea: any): number {
     if (!tarea.adjuntos) return 0;
-
     const archivos = tarea.adjuntos.archivos?.length || 0;
     const enlaces = tarea.adjuntos.enlaces?.length || 0;
-
     return archivos + enlaces;
   }
 
   getTotalChecklistItems(tarea: any): number {
     if (!tarea.checklists || !Array.isArray(tarea.checklists)) return 0;
-
     return tarea.checklists.reduce((total: number, checklist: any) => {
       return total + (checklist.items?.length || 0);
     }, 0);
@@ -730,10 +690,8 @@ export class TableroTareasComponent implements OnInit {
 
   getCompletedChecklistItems(tarea: any): number {
     if (!tarea.checklists || !Array.isArray(tarea.checklists)) return 0;
-
     return tarea.checklists.reduce((total: number, checklist: any) => {
       if (!checklist.items) return total;
-
       const completados = checklist.items.filter((item: any) => item.completed).length;
       return total + completados;
     }, 0);
@@ -742,7 +700,6 @@ export class TableroTareasComponent implements OnInit {
   getChecklistProgress(tarea: any): number {
     const total = this.getTotalChecklistItems(tarea);
     if (total === 0) return 0;
-
     const completados = this.getCompletedChecklistItems(tarea);
     return Math.round((completados / total) * 100);
   }
@@ -750,7 +707,6 @@ export class TableroTareasComponent implements OnInit {
   isChecklistCompleted(tarea: any): boolean {
     const total = this.getTotalChecklistItems(tarea);
     if (total === 0) return false;
-
     return this.getCompletedChecklistItems(tarea) === total;
   }
 
@@ -758,84 +714,56 @@ export class TableroTareasComponent implements OnInit {
     if (tarea.comentarios && Array.isArray(tarea.comentarios)) {
       return tarea.comentarios.length;
     }
-
     if (tarea.comentarios_count !== undefined) {
       return tarea.comentarios_count;
     }
-
     return 0;
   }
 
   onAvatarError(event: any): void {
-    const failedUrl = event.target.src;
-    console.error('❌ Error al cargar avatar:', {
-      url_fallida: failedUrl,
-      elemento: event.target
-    });
-    console.log('   → Cambiando a 1.png');
     event.target.src = 'assets/media/avatars/1.png';
   }
 
   public getMemberAvatar(member: any): string {
-    console.log('🎨 getMemberAvatar llamado con:', {
-      member_completo: member,
-      tiene_avatar: !!member?.avatar,
-      valor_avatar: member?.avatar,
-      tipo_avatar: typeof member?.avatar
-    });
-
     if (member?.avatar) {
-      const url = this.getAvatarUrl(member.avatar);
-      console.log('   ✅ Avatar URL generada:', url);
-      return url;
+      return this.getAvatarUrl(member.avatar);
     }
-
-    console.log('   ⚠️ Sin avatar, usando 1.png');
     return 'assets/media/avatars/1.png';
   }
 
   public getAvatarUrl(avatarValue: string): string {
-    console.log('🔧 getAvatarUrl recibió:', {
-      valor: avatarValue,
-      tipo: typeof avatarValue,
-      es_vacio: !avatarValue
-    });
-
-    if (!avatarValue) {
-      console.log('   → Retornando 1.png (valor vacío)');
-      return 'assets/media/avatars/1.png';
-    }
-
-    if (/^\d+$/.test(avatarValue)) {
-      const url = `assets/media/avatars/${avatarValue}.png`;
-      console.log('   → Caso: solo número. URL:', url);
-      return url;
-    }
-
-    if (/^\d+\.png$/.test(avatarValue)) {
-      const url = `assets/media/avatars/${avatarValue}`;
-      console.log('   → Caso: número.png. URL:', url);
-      return url;
-    }
-
-    if (avatarValue.includes('http') || avatarValue.includes('storage')) {
-      console.log('   → Caso: URL completa. URL:', avatarValue);
-      return avatarValue;
-    }
-
-    const url = `assets/media/avatars/${avatarValue}`;
-    console.log('   → Caso: general. URL:', url);
-    return url;
+    if (!avatarValue) return 'assets/media/avatars/1.png';
+    if (/^\d+$/.test(avatarValue)) return `assets/media/avatars/${avatarValue}.png`;
+    if (/^\d+\.png$/.test(avatarValue)) return `assets/media/avatars/${avatarValue}`;
+    if (avatarValue.includes('http') || avatarValue.includes('storage')) return avatarValue;
+    return `assets/media/avatars/${avatarValue}`;
   }
 
   getUserAvatar(): string {
     const userToCheck = this.selectedGrupo?.user;
-
     if (userToCheck?.avatar) {
       return this.getAvatarUrl(userToCheck.avatar);
     }
-
     return 'assets/media/avatars/1.png';
   }
 
+  // ============================================================
+  // 🆕 Indicadores visuales en tarjetas del Kanban
+  // ============================================================
+
+  /**
+   * Devuelve true si la tarea está vencida (borde rojo en la tarjeta).
+   */
+  isTareaOverdue(tarea: any): boolean {
+    return tarea?.is_overdue === true;
+  }
+
+  /**
+   * Devuelve true si el usuario autenticado está asignado a la tarea
+   * (borde azul + badge "Asignada a mí" en la tarjeta).
+   */
+  isAssignedToMe(tarea: any): boolean {
+    if (!this.currentUserId || !tarea.assigned_members) return false;
+    return tarea.assigned_members.some((m: any) => m.id === this.currentUserId);
+  }
 }

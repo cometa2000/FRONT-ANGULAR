@@ -1,41 +1,53 @@
 <!-- ============================================================
      CENTRO DE SOLICITUDES — 2 columnas: Lista | Detalle
-     La navegación (vistas) vive en el app-sidebar-menu.
-     ============================================================ -->
+============================================================ -->
 
 <div class="d-flex flex-row" style="height: 100vh; overflow: hidden;">
 
-  <!-- ════════════════════════════════════════════
+  <!-- ════════════════════════════════════
        COLUMNA 2: Lista de tickets
-  ════════════════════════════════════════════ -->
+  ════════════════════════════════════ -->
   <div class="ticket-list d-flex flex-column bg-light border-end"
        style="width: 380px; min-width: 300px; max-width: 420px; flex-shrink: 0; overflow: hidden;">
 
-    <!-- Header: Título de la vista + botón Nuevo Ticket — FIJO -->
-    <div class="px-5 py-4 bg-white border-bottom d-flex align-items-center justify-content-between flex-shrink-0">
-      <div>
-        <h5 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
-          {{ getVistaLabel() }}
-          <span class="badge badge-light-primary fs-8 fw-semibold">
-            {{ tickets.length }}
-          </span>
-        </h5>
-        <span *ngIf="metricas?.vencidos && metricas!.vencidos > 0"
-              class="badge badge-light-danger fs-9 mt-1">
-          {{ metricas!.vencidos }} vencidos
-        </span>
-      </div>
-      <button class="btn btn-primary btn-sm d-flex align-items-center gap-1"
-              (click)="createTicket()">
-        <i class="ki-duotone ki-plus fs-5">
-          <span class="path1"></span><span class="path2"></span>
-        </i>
-        Nuevo
-      </button>
-    </div>
-
-    <!-- Filtros — FIJO -->
+    <!-- Header: Título + botones — FIJO -->
     <div class="px-4 py-3 bg-white border-bottom flex-shrink-0">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <div>
+          <h5 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+            {{ getVistaLabel() }}
+            <span class="badge badge-light-primary fs-8 fw-semibold">{{ tickets.length }}</span>
+          </h5>
+          <span *ngIf="metricas?.vencidos && metricas!.vencidos > 0"
+                class="badge badge-light-danger fs-9 mt-1">
+            {{ metricas!.vencidos }} vencidos
+          </span>
+        </div>
+        <!-- Acciones del header -->
+        <div class="d-flex align-items-center gap-2">
+          <!-- Botón Nuevo Ticket -->
+          <button class="btn btn-primary btn-sm d-flex align-items-center gap-1"
+                  (click)="createTicket()">
+            <i class="ki-duotone ki-plus fs-5">
+              <span class="path1"></span><span class="path2"></span>
+            </i>
+            Nuevo
+          </button>
+          <!-- Botón Gestionar Áreas — solo Super-Admin -->
+          <button *ngIf="esSuperAdmin"
+                  class="btn btn-sm btn-light-warning d-flex align-items-center gap-1"
+                  title="Gestionar áreas de la sede"
+                  (click)="abrirGestionAreas()">
+            <i class="ki-duotone ki-element-11 fs-5">
+              <span class="path1"></span><span class="path2"></span>
+              <span class="path3"></span><span class="path4"></span>
+            </i>
+            Áreas
+          </button>
+        </div>
+      </div>
+
+      <!-- Filtros -->
       <div class="d-flex gap-2 align-items-center">
         <div class="position-relative flex-grow-1">
           <i class="ki-duotone ki-magnifier position-absolute fs-4 text-muted"
@@ -82,7 +94,8 @@
       <div *ngFor="let ticket of tickets; trackBy: trackById"
            class="ticket-item p-4 border-bottom bg-white"
            [class.ticket-item--active]="ticketSeleccionado?.id === ticket.id"
-           [style.border-left]="ticketSeleccionado?.id === ticket.id ? '3px solid #3E97FF' : '3px solid transparent'"
+           [style.border-left]="ticketSeleccionado?.id === ticket.id
+             ? '3px solid #3E97FF' : '3px solid transparent'"
            (click)="seleccionarTicket(ticket)"
            style="cursor:pointer; transition: background 0.15s;">
 
@@ -114,7 +127,7 @@
           {{ ticket.descripcion }}
         </p>
 
-        <!-- Fila 2: Estado + Prioridad + contador mensajes -->
+        <!-- Fila 2: Estado + Prioridad + mensajes -->
         <div class="d-flex justify-content-between align-items-center">
           <div class="d-flex align-items-center gap-2">
             <span class="badge badge-light-{{ getEstadoClass(ticket.estado) }} fs-9">
@@ -125,7 +138,9 @@
             </span>
           </div>
           <div class="d-flex align-items-center gap-1 text-muted fs-8">
-            <i class="ki-duotone ki-message-text fs-7"><span class="path1"></span><span class="path2"></span></i>
+            <i class="ki-duotone ki-message-text fs-7">
+              <span class="path1"></span><span class="path2"></span>
+            </i>
             {{ ticket.messages_count }}
           </div>
         </div>
@@ -133,8 +148,15 @@
         <!-- Fila 3: Destino + avatar asignado -->
         <div class="mt-2 d-flex align-items-center gap-2">
           <span class="text-muted fs-9 flex-grow-1">
-            <span *ngIf="ticket.tipo_destino === 'sucursal'">→ {{ ticket.sucursal_destino?.nombre ?? '—' }}</span>
-            <span *ngIf="ticket.tipo_destino === 'area_sede'">→ {{ ticket.rol_destino?.nombre ?? '—' }}</span>
+            <span *ngIf="ticket.tipo_destino === 'sucursal'">
+              → {{ ticket.sucursal_destino?.nombre ?? '—' }}
+            </span>
+            <span *ngIf="ticket.tipo_destino === 'area_sede'">
+              → {{ ticket.rol_destino?.nombre ?? '—' }}
+            </span>
+            <span *ngIf="ticket.tipo_destino === 'usuario_sucursal'">
+              → {{ ticket.asignado?.nombre ?? '—' }}
+            </span>
           </span>
           <img *ngIf="ticket.asignado"
                [src]="getAvatarUrl(ticket.asignado.avatar)"
@@ -152,9 +174,10 @@
   </div>
   <!-- FIN Columna 2 -->
 
-  <!-- ════════════════════════════════════════════
+
+  <!-- ════════════════════════════════════
        COLUMNA 3: Detalle + conversación
-  ════════════════════════════════════════════ -->
+  ════════════════════════════════════ -->
   <div class="ticket-detail flex-grow-1 d-flex flex-column bg-white" style="overflow: hidden;">
 
     <!-- Empty state sin ticket -->
@@ -168,14 +191,15 @@
     </div>
 
     <!-- Spinner detalle -->
-    <div *ngIf="isLoadingDetalle" class="flex-grow-1 d-flex justify-content-center align-items-center">
+    <div *ngIf="isLoadingDetalle"
+         class="flex-grow-1 d-flex justify-content-center align-items-center">
       <div class="spinner-border text-primary"></div>
     </div>
 
     <!-- ── Contenido del ticket ── -->
     <ng-container *ngIf="ticketSeleccionado && !isLoadingDetalle">
 
-      <!-- ── Header del detalle — FIJO al tope de la columna ── -->
+      <!-- ── Header del detalle — FIJO ── -->
       <div class="px-6 py-4 border-bottom d-flex align-items-start justify-content-between bg-white flex-shrink-0">
         <div class="flex-grow-1 me-3">
           <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
@@ -187,10 +211,8 @@
               {{ ticketSeleccionado.prioridad | titlecase }}
             </span>
             <span *ngIf="ticketSeleccionado.is_vencido" class="badge badge-danger">VENCIDO</span>
-
-            <!-- Indicador de tiempo real -->
-            <span class="badge badge-light-success fs-9 d-flex align-items-center gap-1"
-                  *ngIf="ticketSeleccionado.estado !== 'cerrado' && ticketSeleccionado.estado !== 'rechazado'">
+            <span *ngIf="ticketSeleccionado.estado !== 'cerrado' && ticketSeleccionado.estado !== 'rechazado'"
+                  class="badge badge-light-success fs-9 d-flex align-items-center gap-1">
               <span class="bullet bullet-dot bg-success" style="animation: blink 1.5s infinite;"></span>
               En vivo
             </span>
@@ -198,10 +220,10 @@
           <h4 class="fw-bold text-dark mb-0 lh-sm">{{ ticketSeleccionado.asunto }}</h4>
         </div>
 
-        <!-- Acciones del header -->
+        <!-- ── Acciones del header ── -->
         <div class="d-flex align-items-center gap-2 flex-shrink-0">
 
-          <!-- Botón Estado: SOLO visible para el usuario asignado al ticket -->
+          <!-- Botón cambiar estado (solo asignado) -->
           <button *ngIf="esElAsignado && !estaFinalizado"
                   class="btn btn-sm btn-light-primary d-flex align-items-center gap-1"
                   (click)="abrirPanelEstado()">
@@ -226,22 +248,43 @@
           <button class="btn btn-sm btn-icon btn-light"
                   (click)="archivar(ticketSeleccionado, $event)"
                   [title]="ticketSeleccionado.archivado ? 'Desarchivar' : 'Archivar'">
-            <i class="fa-solid fa-box-archive"></i>
+            <i class="ki-duotone ki-folder fs-5">
+              <span class="path1"></span><span class="path2"></span>
+            </i>
           </button>
 
-          <!-- Menú de acciones: SOLO visible para el CREADOR del ticket -->
-          <div class="dropdown" *ngIf="esElCreador">
+          <!-- ── Menú de opciones — dropdown Bootstrap 5 nativo ──
+               FIX: usa data-bs-toggle="dropdown" (no data-toggle) para BS5.
+               El botón usa (click).stop para no seleccionar el ticket al abrirlo.
+               Visible para: creador, Super-Admin, o usuarios de sede (reasignar). -->
+          <div class="dropdown"
+               *ngIf="esElCreador || esSuperAdmin || config?.es_sede">
             <button class="btn btn-sm btn-icon btn-light"
                     type="button"
-                    id="dropdownMenuTicket"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
                     (click)="$event.stopPropagation()">
-              <i class="fa-solid fa-ellipsis-vertical"></i>
+              <i class="ki-duotone ki-dots-vertical fs-4">
+                <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+              </i>
             </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow"
-                aria-labelledby="dropdownMenuTicket">
-              <li>
+            <ul class="dropdown-menu dropdown-menu-end shadow py-2"
+                style="min-width: 200px;">
+
+              <!-- Reasignar — solo sede y ticket no finalizado -->
+              <li *ngIf="config?.es_sede && !estaFinalizado">
+                <a class="dropdown-item d-flex align-items-center gap-2 py-2"
+                   style="cursor:pointer"
+                   (click)="abrirPanelReasignar()">
+                  <i class="ki-duotone ki-arrow-right-left fs-5 text-warning">
+                    <span class="path1"></span><span class="path2"></span>
+                  </i>
+                  Reasignar ticket
+                </a>
+              </li>
+
+              <!-- Editar — solo creador -->
+              <li *ngIf="esElCreador">
                 <a class="dropdown-item d-flex align-items-center gap-2 py-2"
                    style="cursor:pointer"
                    (click)="editTicket(ticketSeleccionado!, $event)">
@@ -251,19 +294,28 @@
                   Editar ticket
                 </a>
               </li>
-              <li><hr class="dropdown-divider my-1"></li>
-              <li>
+
+              <!-- Separador si ambos grupos tienen ítems -->
+              <li *ngIf="(esElCreador) && (config?.es_sede && !estaFinalizado)">
+                <hr class="dropdown-divider my-1">
+              </li>
+
+              <!-- Eliminar — creador o Super-Admin -->
+              <li *ngIf="esElCreador || esSuperAdmin">
                 <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
                    style="cursor:pointer"
                    (click)="deleteTicket(ticketSeleccionado!, $event)">
                   <i class="ki-duotone ki-trash fs-5">
-                    <span class="path1"></span><span class="path2"></span>
+                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                    <span class="path4"></span><span class="path5"></span>
                   </i>
                   Eliminar ticket
                 </a>
               </li>
+
             </ul>
           </div>
+          <!-- FIN dropdown -->
 
           <!-- Cerrar detalle -->
           <button class="btn btn-sm btn-icon btn-light" (click)="cerrarDetalle()">
@@ -271,11 +323,12 @@
               <span class="path1"></span><span class="path2"></span>
             </i>
           </button>
+
         </div>
       </div>
       <!-- FIN header fijo -->
 
-      <!-- ── Área de contenido scrollable ── -->
+      <!-- ── Área scrollable ── -->
       <div class="ticket-content-scroll flex-grow-1 overflow-y-auto" #chatContainer>
 
         <!-- Panel cambio de estado -->
@@ -307,16 +360,98 @@
                     [disabled]="!nuevoEstado">
               Confirmar
             </button>
-            <button class="btn btn-sm btn-light" (click)="showEstadoPanel = false">Cancelar</button>
+            <button class="btn btn-sm btn-light"
+                    (click)="showEstadoPanel = false">
+              Cancelar
+            </button>
           </div>
         </div>
+
+        <!-- ════════════════════════════════════════════════
+             PANEL DE REASIGNACIÓN — solo sede, no finalizado
+        ════════════════════════════════════════════════ -->
+        <div *ngIf="showReasignarPanel"
+             class="mx-6 mt-4 card border border-warning">
+          <div class="card-header d-flex justify-content-between align-items-center py-3 bg-light-warning">
+            <h6 class="mb-0 fw-bold text-warning d-flex align-items-center gap-2">
+              <i class="ki-duotone ki-arrow-right-left fs-5">
+                <span class="path1"></span><span class="path2"></span>
+              </i>
+              Reasignar Ticket
+            </h6>
+            <button class="btn btn-sm btn-icon btn-light" (click)="cerrarReasignarPanel()">
+              <i class="ki-duotone ki-cross fs-5">
+                <span class="path1"></span><span class="path2"></span>
+              </i>
+            </button>
+          </div>
+          <div class="card-body pt-4 pb-3">
+
+            <div *ngIf="isLoadingReasignar" class="text-center py-4">
+              <div class="spinner-border text-warning"></div>
+            </div>
+
+            <div *ngIf="!isLoadingReasignar">
+
+              <!-- Selector de área -->
+              <div class="mb-4">
+                <label class="form-label required fw-semibold fs-7">Área destino</label>
+                <select class="form-select form-select-sm form-select-solid"
+                        [(ngModel)]="reasignarAreaId"
+                        (ngModelChange)="onAreaReasignarChange()">
+                  <option [ngValue]="null">-- Selecciona un área --</option>
+                  <option *ngFor="let area of areasParaReasignar" [value]="area.id">
+                    {{ area.nombre }}
+                    <ng-container *ngIf="area.responsable">
+                      — {{ area.responsable.nombre }}
+                    </ng-container>
+                  </option>
+                </select>
+                <div class="text-muted fs-8 mt-1">
+                  El ticket se asignará al responsable del área seleccionada.
+                </div>
+              </div>
+
+              <!-- Motivo -->
+              <div class="mb-4">
+                <label class="form-label fw-semibold fs-7">
+                  Motivo <span class="text-muted">(opcional)</span>
+                </label>
+                <textarea class="form-control form-control-sm form-control-solid"
+                          rows="2"
+                          placeholder="Ej: El ticket fue enviado al área incorrecta..."
+                          [(ngModel)]="reasignarMotivo"></textarea>
+              </div>
+
+              <!-- Acciones -->
+              <div class="d-flex gap-2 justify-content-end">
+                <button class="btn btn-sm btn-light"
+                        (click)="cerrarReasignarPanel()">
+                  Cancelar
+                </button>
+                <button class="btn btn-sm btn-warning d-flex align-items-center gap-2"
+                        [disabled]="!reasignarUserId"
+                        (click)="aplicarReasignar()">
+                  <i class="ki-duotone ki-arrow-right-left fs-6">
+                    <span class="path1"></span><span class="path2"></span>
+                  </i>
+                  Reasignar
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+        <!-- FIN panel reasignación -->
 
         <!-- Metadata del ticket -->
         <div class="px-6 py-4 border-bottom">
           <div class="row g-4">
             <div class="col-md-7">
               <p class="text-muted fs-8 fw-semibold text-uppercase mb-1">Descripción</p>
-              <p class="text-dark fs-6 lh-lg" style="white-space:pre-wrap;">{{ ticketSeleccionado.descripcion }}</p>
+              <p class="text-dark fs-6 lh-lg" style="white-space:pre-wrap;">
+                {{ ticketSeleccionado.descripcion }}
+              </p>
             </div>
             <div class="col-md-5">
               <div class="d-flex flex-column gap-3">
@@ -332,23 +467,22 @@
                        class="rounded-circle" style="width:24px;height:24px;object-fit:cover;" />
                   <span class="fs-7">{{ ticketSeleccionado.asignado.nombre }}</span>
                 </div>
-                <div *ngIf="ticketSeleccionado.sucursal_destino" class="d-flex align-items-center gap-2">
-                  <span class="text-muted fs-8 fw-semibold" style="width:75px">Para:</span>
-                  <span class="fs-7">{{ ticketSeleccionado.sucursal_destino.nombre }}</span>
-                </div>
-                <div *ngIf="ticketSeleccionado.rol_destino" class="d-flex align-items-center gap-2">
-                  <span class="text-muted fs-8 fw-semibold" style="width:75px">Área:</span>
-                  <span class="fs-7 badge badge-light-secondary">{{ ticketSeleccionado.rol_destino.nombre }}</span>
+                <div *ngIf="ticketSeleccionado.sucursal_origen" class="d-flex align-items-center gap-2">
+                  <span class="text-muted fs-8 fw-semibold" style="width:75px">Origen:</span>
+                  <span class="fs-7">{{ ticketSeleccionado.sucursal_origen.nombre }}</span>
                 </div>
                 <div *ngIf="ticketSeleccionado.fecha_limite" class="d-flex align-items-center gap-2">
                   <span class="text-muted fs-8 fw-semibold" style="width:75px">Límite:</span>
-                  <span class="fs-7" [class.text-danger]="ticketSeleccionado.is_vencido">
+                  <span class="fs-7"
+                        [class.text-danger]="ticketSeleccionado.is_vencido">
                     {{ ticketSeleccionado.fecha_limite | date:'dd/MM/yyyy' }}
                   </span>
                 </div>
                 <div *ngIf="ticketSeleccionado.categoria" class="d-flex align-items-center gap-2">
                   <span class="text-muted fs-8 fw-semibold" style="width:75px">Categoría:</span>
-                  <span class="badge badge-light-secondary fs-8">{{ ticketSeleccionado.categoria }}</span>
+                  <span class="badge badge-light-secondary fs-8">
+                    {{ ticketSeleccionado.categoria }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -372,14 +506,9 @@
           </div>
         </div>
 
-        <!-- ══════════════════════════════════════════════════
-             TAREAS ADJUNTAS AL TICKET (EVIDENCIAS)
-             Ubicación: después de adjuntos, antes de mensajes.
-             Solo se muestra si hay al menos una tarea adjunta.
-        ══════════════════════════════════════════════════ -->
+        <!-- Tareas adjuntas al ticket (evidencias) -->
         <div *ngIf="ticketSeleccionado.tareas_adjuntas && ticketSeleccionado.tareas_adjuntas.length > 0"
              class="px-6 py-4 border-bottom">
-
           <p class="text-muted fs-8 fw-semibold text-uppercase mb-3 d-flex align-items-center gap-2">
             <i class="ki-duotone ki-abstract-26 fs-6 text-success">
               <span class="path1"></span><span class="path2"></span>
@@ -389,25 +518,22 @@
               {{ ticketSeleccionado.tareas_adjuntas.length }}
             </span>
           </p>
-
           <div class="d-flex flex-column gap-3">
             <div *ngFor="let ta of ticketSeleccionado.tareas_adjuntas"
                  class="border rounded p-3 bg-light-success"
-                 style="cursor: pointer; transition: box-shadow 0.15s;"
+                 style="cursor:pointer;"
                  (click)="abrirTarea(ta)"
                  title="Ver tarea (solo lectura)">
-
               <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
-                <!-- Nombre + icono -->
                 <div class="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
                   <i class="ki-duotone ki-abstract-26 fs-6 text-success flex-shrink-0">
                     <span class="path1"></span><span class="path2"></span>
                   </i>
                   <span class="fw-semibold fs-7 text-gray-800 text-truncate">{{ ta.tarea_name }}</span>
                 </div>
-                <!-- Estado + botón quitar -->
                 <div class="d-flex align-items-center gap-1 flex-shrink-0">
-                  <span class="badge badge-sm" [class]="'badge-light-' + getTareaStatusClass(ta.tarea_status)">
+                  <span class="badge badge-sm"
+                        [class]="'badge-light-' + getTareaStatusClass(ta.tarea_status)">
                     {{ getTareaStatusLabel(ta.tarea_status) }}
                   </span>
                   <button type="button"
@@ -421,8 +547,6 @@
                   </button>
                 </div>
               </div>
-
-              <!-- Barra de progreso de checklists -->
               <div class="d-flex align-items-center gap-2 mb-1">
                 <div class="flex-grow-1 bg-white rounded" style="height:5px;">
                   <div class="rounded"
@@ -431,12 +555,10 @@
                        style="height:5px; transition: width 0.3s;">
                   </div>
                 </div>
-                <span class="text-muted fs-9 fw-semibold" style="min-width:30px; text-align:right;">
+                <span class="text-muted fs-9 fw-semibold" style="min-width:30px;text-align:right;">
                   {{ ta.tarea_progress }}%
                 </span>
               </div>
-
-              <!-- Fecha límite + etiqueta solo lectura -->
               <div class="d-flex align-items-center justify-content-between mt-1">
                 <span *ngIf="ta.tarea_due_date" class="text-muted fs-9 d-flex align-items-center gap-1">
                   <i class="ki-duotone ki-calendar fs-9">
@@ -451,51 +573,41 @@
                   Solo vista
                 </span>
               </div>
-
             </div>
           </div>
         </div>
-        <!-- FIN tareas adjuntas al ticket -->
 
-        <!-- ─────────────────────────────────────────────
-             CONVERSACIÓN ESTILO MENSAJERÍA
-        ───────────────────────────────────────────── -->
+        <!-- ─────────────────────────────────────────
+             CONVERSACIÓN
+        ───────────────────────────────────────── -->
         <div class="px-6 py-4">
           <div class="d-flex align-items-center gap-2 mb-4">
-            <span class="text-muted fs-8 fw-semibold text-uppercase">
-              Conversación
-            </span>
+            <span class="text-muted fs-8 fw-semibold text-uppercase">Conversación</span>
             <span class="badge badge-light-secondary fs-9">
               {{ ticketSeleccionado.messages?.length || 0 }} mensajes
             </span>
           </div>
 
-          <!-- Sin mensajes -->
           <div *ngIf="!ticketSeleccionado.messages || ticketSeleccionado.messages.length === 0"
                class="text-center py-6">
             <p class="text-muted fs-7">No hay mensajes aún. ¡Sé el primero en responder!</p>
           </div>
 
-          <!-- Lista de mensajes -->
           <div class="chat-thread d-flex flex-column gap-3">
-
             <div *ngFor="let msg of ticketSeleccionado.messages"
                  class="d-flex align-items-end gap-2"
                  [class.flex-row-reverse]="esMiMensaje(msg)">
 
-              <!-- Avatar del remitente -->
               <img [src]="getAvatarUrl(msg.user?.avatar)"
                    class="rounded-circle flex-shrink-0"
                    style="width:30px;height:30px;object-fit:cover;margin-bottom:2px;"
                    [title]="msg.user?.nombre ?? ''" />
 
-              <!-- Burbuja -->
               <div class="d-flex flex-column"
                    [class.align-items-end]="esMiMensaje(msg)"
                    [class.align-items-start]="!esMiMensaje(msg)"
                    style="max-width:70%;">
 
-                <!-- Nombre (solo mensajes ajenos) -->
                 <span *ngIf="!esMiMensaje(msg)"
                       class="fs-9 fw-semibold text-muted mb-1 px-2">
                   {{ msg.user?.nombre ?? 'Usuario' }}
@@ -503,7 +615,6 @@
                         class="badge badge-light-warning ms-1 fs-9">Nota interna</span>
                 </span>
 
-                <!-- Texto de la burbuja -->
                 <div class="chat-bubble px-4 py-3 fs-7 lh-lg"
                      [class.chat-bubble--sent]="esMiMensaje(msg)"
                      [class.chat-bubble--received]="!esMiMensaje(msg)"
@@ -512,7 +623,6 @@
                   {{ msg.contenido }}
                 </div>
 
-                <!-- Hora -->
                 <span class="fs-9 text-muted mt-1 px-2">
                   {{ msg.created_at | date:'dd/MM HH:mm' }}
                 </span>
@@ -531,27 +641,27 @@
                   </a>
                 </div>
 
-                <!-- ── Tareas adjuntas a ESTE MENSAJE del hilo ── -->
+                <!-- Tareas adjuntas en este mensaje del hilo -->
                 <div *ngIf="msg.tareas_adjuntas && msg.tareas_adjuntas.length > 0"
                      class="mt-2 d-flex flex-column gap-1 w-100">
                   <div *ngFor="let ta of msg.tareas_adjuntas"
                        class="d-flex align-items-center gap-2 p-2 rounded border border-success bg-light-success"
-                       style="cursor: pointer;"
+                       style="cursor:pointer;"
                        (click)="abrirTarea(ta)"
                        title="Ver tarea (solo lectura)">
                     <i class="ki-duotone ki-abstract-26 fs-6 text-success flex-shrink-0">
                       <span class="path1"></span><span class="path2"></span>
                     </i>
                     <div class="flex-grow-1 min-w-0">
-                      <span class="fw-semibold fs-8 text-gray-700 text-truncate d-block">{{ ta.tarea_name }}</span>
-                      <!-- Mini barra progreso -->
+                      <span class="fw-semibold fs-8 text-gray-700 text-truncate d-block">
+                        {{ ta.tarea_name }}
+                      </span>
                       <div class="d-flex align-items-center gap-2 mt-1">
                         <div class="bg-light rounded flex-grow-1" style="height:3px;">
                           <div class="rounded"
                                [class]="getTareaProgressColor(ta.tarea_progress)"
                                [style.width.%]="ta.tarea_progress"
-                               style="height:3px;">
-                          </div>
+                               style="height:3px;"></div>
                         </div>
                         <span class="text-muted fs-9">{{ ta.tarea_progress }}%</span>
                       </div>
@@ -565,7 +675,6 @@
 
               </div>
             </div>
-
           </div>
           <!-- fin chat-thread -->
 
@@ -586,7 +695,9 @@
                   <span class="bullet bullet-dot bg-primary"></span>
                 </div>
                 <div>
-                  <div class="fs-8 text-muted">{{ h.created_at | date:'dd/MM/yyyy HH:mm' }} · {{ h.usuario }}</div>
+                  <div class="fs-8 text-muted">
+                    {{ h.created_at | date:'dd/MM/yyyy HH:mm' }} · {{ h.usuario }}
+                  </div>
                   <div class="fs-7 fw-semibold">
                     <span class="text-muted">{{ h.estado_anterior ?? '—' }}</span>
                     <i class="ki-duotone ki-right mx-2 fs-8">
@@ -635,18 +746,14 @@
 
           <div class="d-flex align-items-center justify-content-between mt-2">
             <div class="d-flex align-items-center gap-2">
-
-              <!-- Botón adjuntar archivos -->
               <button type="button"
                       class="btn btn-sm btn-icon btn-light"
-                      title="Adjuntar (nuevo archivo, del sistema o URL)"
+                      title="Adjuntar (nuevo, del sistema o URL)"
                       (click)="abrirModalAdjuntos()">
                 <i class="ki-duotone ki-paper-clip fs-5">
                   <span class="path1"></span><span class="path2"></span>
                 </i>
               </button>
-
-              <!-- Botón adjuntar tarea como evidencia en el HILO -->
               <button type="button"
                       class="btn btn-sm btn-icon btn-light-success"
                       title="Adjuntar tarea como evidencia"
@@ -655,7 +762,6 @@
                   <span class="path1"></span><span class="path2"></span>
                 </i>
               </button>
-
             </div>
             <button class="btn btn-primary btn-sm d-flex align-items-center gap-2"
                     [disabled]="(!nuevoMensaje.trim() && adjuntosPendientes.length === 0) || isSendingMessage"
@@ -686,4 +792,3 @@
   <!-- FIN Columna 3 -->
 
 </div>
-<!-- Los modales de create, edit y delete se abren via NgbModal desde el .ts -->

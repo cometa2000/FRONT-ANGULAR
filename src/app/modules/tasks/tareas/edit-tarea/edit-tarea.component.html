@@ -4,7 +4,7 @@
        ======================================== -->
   <div class="trello-header">
     <!-- ✅ Solo mostrar dropdown de estado si tiene permisos -->
-    <div class="status-dropdown" *ngIf="hasWriteAccess">
+    <div class="status-dropdown" *ngIf="canEditTaskContent">
       <select [(ngModel)]="tarea.status" (change)="updateStatus()">
         <option value="pendiente">Pendiente</option>
         <option value="en_progreso">En proceso</option>
@@ -13,7 +13,7 @@
     </div>
 
     <!-- ✅ NUEVO: Badge de solo lectura si no tiene permisos -->
-    <div *ngIf="!hasWriteAccess" class="read-only-badge">
+    <div *ngIf="!canEditTaskContent && !isBlockedByOverdue" class="read-only-badge">
       <i class="fa-solid fa-eye me-2"></i>
       <span>Solo lectura</span>
     </div>
@@ -38,6 +38,36 @@
          ======================================== -->
     <div class="trello-main">
 
+      <!-- 🔴 Banner de tarea vencida para usuarios compartidos -->
+      <div *ngIf="isBlockedByOverdue" class="alert alert-danger d-flex align-items-center gap-3 mb-4">
+        <i class="fa-solid fa-circle-exclamation fs-3"></i>
+        <div class="flex-grow-1">
+          <div class="fw-bold">Esta tarea está vencida</div>
+          <div class="text-muted fs-7">
+            No puedes realizar cambios. El propietario del grupo puede reactivarla eliminando o modifica fecha de vencimiento.
+          </div>
+        </div>
+        <button
+          class="btn btn-sm btn-outline-danger"
+          [disabled]="solicitudEnviada"
+          (click)="solicitarReactivacion()">
+          <i class="fa-solid fa-paper-plane me-1"></i>
+          {{ solicitudEnviada ? 'Solicitud enviada' : 'Solicitar reactivación' }}
+        </button>
+      </div>
+
+      <!-- 🟡 Banner informativo para el dueño cuando la tarea está vencida -->
+      <div *ngIf="tarea?.is_overdue && (isOwner || currentUserId === grupoOwnerId)"
+           class="alert alert-warning d-flex align-items-center gap-3 mb-4">
+        <i class="fa-solid fa-triangle-exclamation fs-3"></i>
+        <div>
+          <div class="fw-bold">Tarea vencida</div>
+          <div class="text-muted fs-7">
+            Los miembros compartidos no pueden editar esta tarea. Para reactivarla, elimina o modifica la fecha de vencimiento.
+          </div>
+        </div>
+      </div>
+
       <!-- HEADER DE TAREA -->
       <div class="tarea-header-section">
         <!-- 🔄 MODO VISUALIZACIÓN -->
@@ -45,7 +75,7 @@
           *ngIf="!editingTaskName" 
           class="tarea-title editable-title" 
           (dblclick)="startEditingTaskName()"
-          [title]="hasWriteAccess ? 'Doble click para editar' : 'Solo lectura'">
+          [title]="canEditTaskContent ? 'Doble click para editar' : 'Solo lectura'">
           {{ tarea.name || 'Sin título' }}
         </h2>
         
@@ -69,8 +99,8 @@
           </div>
         </div>
 
-        <!-- ✅ ACCIONES LATERALES - Solo mostrar si tiene permisos -->
-        <div class="tarea-actions" *ngIf="hasWriteAccess">
+        <!-- ✅ ACCIONES LATERALES - Solo mostrar si puede editar contenido de tarea -->
+        <div class="tarea-actions" *ngIf="canEditTaskContent">
           <div class="mb-3">
                <app-etiquetas [tareaId]="tarea.id" (etiquetasChanged)="onEtiquetasChanged()"></app-etiquetas>
           </div>
@@ -85,7 +115,8 @@
                 <i class="fa-solid fa-paperclip"></i> Adjuntar
               </button>
           </div>
-          <div class="mb-3">
+          <!-- ✅ Botón de Miembros — solo visible para el propietario del grupo -->
+          <div class="mb-3" *ngIf="canManageMembers">
               <button class="btn-light" (click)="abrirModalMiembros()">
                 <i class="fa-solid fa-user-plus"></i> Miembros
               </button>
@@ -124,8 +155,8 @@
                     <div class="miembro-email">{{ miembro.email }}</div>
                   </div>
                 </div>
-                <!-- ✅ Solo mostrar botón de desasignar si tiene permisos -->
-                <div class="miembro-actions" *ngIf="hasWriteAccess">
+                <!-- ✅ Solo el propietario del grupo puede desasignar -->
+                <div class="miembro-actions" *ngIf="canManageMembers">
                   <button 
                     class="btn-icon btn-danger-soft" 
                     (click)="desasignarMiembro(miembro.id)"
@@ -153,8 +184,8 @@
                   {{ etiqueta.name }}
                 </span>
 
-                <!-- ✅ Solo mostrar acciones si tiene permisos -->
-                <div class="etiqueta-actions" *ngIf="hasWriteAccess">
+                <!-- ✅ Solo mostrar acciones si puede editar contenido de tarea -->
+                <div class="etiqueta-actions" *ngIf="canEditTaskContent">
                   <button 
                     class="etiqueta-action-btn" 
                     (click)="openEditEtiquetaModal(etiqueta)"
@@ -179,8 +210,8 @@
             <i class="fa-regular fa-calendar"></i>
             <h3>Fechas</h3>
             
-            <!-- 🆕 Botones de acción para editar y eliminar - Solo si tiene permisos -->
-            <div class="section-actions" *ngIf="hasWriteAccess">
+            <!-- 🆕 Botones de acción para editar y eliminar - Solo propietario puede eliminar fecha -->
+            <div class="section-actions" *ngIf="isOwner || currentUserId === grupoOwnerId">
               <button class="btn-action-icon" (click)="abrirModalEditarFechas()" title="Editar fechas">
                 <i class="fa-solid fa-pen"></i>
               </button>
@@ -193,14 +224,14 @@
           <div class="section-body">
             <div class="info-row" *ngIf="tarea.start_date">
               <i class="fa-regular fa-calendar-check"></i>
-              <span>Inicio: {{ tarea.start_date | date: 'dd MMM yyyy' }}</span>
+              <span>Inicio: {{ formatFechaSafe(tarea.start_date) }}</span>
             </div>
 
             <div class="info-row" 
                 *ngIf="tarea.due_date"
                 [ngClass]="{'overdue': tarea.is_overdue, 'due-soon': tarea.is_due_soon && !tarea.is_overdue}">
               <i class="fa-regular fa-calendar"></i>
-              <span>Vencimiento: {{ tarea.due_date | date: 'dd MMM yyyy' }}</span>
+              <span>Vencimiento: {{ formatFechaSafe(tarea.due_date) }}</span>
             </div>
 
             <!-- 🆕 Mostrar info de notificaciones si están habilitadas -->
@@ -216,30 +247,30 @@
           <div class="section-header">
             <i class="fa-solid fa-bars"></i>
             <h3>Descripción</h3>
-            <!-- ✅ Solo mostrar botón editar si tiene permisos -->
-            <button *ngIf="hasWriteAccess && !editingDescription && tarea.description" class="link-btn" (click)="toggleEditDescription()">Editar</button>
+            <!-- ✅ Solo mostrar botón editar si puede editar contenido -->
+            <button *ngIf="canEditTaskContent && !editingDescription && tarea.description" class="link-btn" (click)="toggleEditDescription()">Editar</button>
           </div>
 
           <div class="section-body">
             <!-- ✅ Permitir edición solo con permisos -->
             <p *ngIf="tarea.description && !editingDescription" 
                class="desc-text" 
-               [class.cursor-pointer]="hasWriteAccess"
-               (click)="hasWriteAccess ? toggleEditDescription() : null">
+               [class.cursor-pointer]="canEditTaskContent"
+               (click)="canEditTaskContent ? toggleEditDescription() : null">
               {{ tarea.description }}
             </p>
             
-            <p *ngIf="!tarea.description && !editingDescription && hasWriteAccess" 
+            <p *ngIf="!tarea.description && !editingDescription && canEditTaskContent" 
                class="desc-placeholder" 
                (click)="toggleEditDescription()">
               Añadir descripción…
             </p>
 
-            <p *ngIf="!tarea.description && !hasWriteAccess" class="text-muted">
+            <p *ngIf="!tarea.description && !canEditTaskContent" class="text-muted">
               Sin descripción
             </p>
 
-            <div *ngIf="editingDescription && hasWriteAccess" class="edit-area">
+            <div *ngIf="editingDescription && canEditTaskContent" class="edit-area">
               <textarea [(ngModel)]="tarea.description" placeholder="Añadir una descripción más detallada..." rows="4"></textarea>
 
               <div class="action-row">
@@ -278,8 +309,8 @@
                     <button class="btn-icon" (click)="abrirEnlace(enlace.url)" title="Abrir enlace">
                       <i class="fa-solid fa-external-link-alt"></i>
                     </button>
-                    <!-- ✅ Solo mostrar botón eliminar si tiene permisos -->
-                    <button *ngIf="hasWriteAccess && enlace.id" class="btn-icon delete" (click)="eliminarEnlace(enlace.id)" title="Eliminar enlace">
+                    <!-- ✅ Solo mostrar botón eliminar si puede editar -->
+                    <button *ngIf="canEditTaskContent && enlace.id" class="btn-icon delete" (click)="eliminarEnlace(enlace.id)" title="Eliminar enlace">
                       <i class="fa-solid fa-trash"></i>
                     </button>
                   </div>
@@ -310,9 +341,9 @@
                       title="Descargar archivo">
                       <i class="fa-solid fa-download"></i>
                     </button>
-                    <!-- ✅ Solo mostrar botón eliminar si tiene permisos -->
+                    <!-- ✅ Solo mostrar botón eliminar si puede editar -->
                     <button 
-                      *ngIf="hasWriteAccess && archivo.id"
+                      *ngIf="canEditTaskContent && archivo.id"
                       class="btn-icon delete" 
                       (click)="eliminarArchivo(archivo.id)"
                       title="Eliminar archivo">
@@ -326,22 +357,56 @@
         </div>
 
         <!-- 🆕 CHECKLISTS - Solo mostrar si hay checklists -->
-        <div class="section" *ngIf="tarea.checklists && tarea.checklists.length > 0">
+        <div class="section mt-3" *ngIf="tarea.checklists && tarea.checklists.length > 0">
           <div class="section-header">
             <i class="fa-solid fa-check-square"></i>
             <h3>Checklists</h3>
+            <!-- Indicador visual cuando hay más de 1 checklist -->
+            <span 
+              *ngIf="canEditTaskContent && tarea.checklists.length > 1" 
+              class="drag-hint-badge"
+              title="Arrastra los checklists para reordenarlos">
+              <i class="fa-solid fa-grip-vertical"></i>
+            </span>
           </div>
 
-          <div class="section-body">
-            <div *ngFor="let checklist of tarea.checklists" class="checklist-block">
-              
+          <div 
+            class="section-body"
+            cdkDropList
+            (cdkDropListDropped)="onChecklistDrop($event)"
+            [cdkDropListDisabled]="!canEditTaskContent">
+
+            <div 
+              *ngFor="let checklist of tarea.checklists" 
+              class="checklist-block"
+              cdkDrag
+              [cdkDragDisabled]="!canEditTaskContent">
+
+              <!-- Handle de arrastre: solo visible si puede editar y hay más de 1 checklist -->
+              <div 
+                *ngIf="canEditTaskContent && tarea.checklists.length > 1"
+                class="checklist-drag-handle"
+                cdkDragHandle
+                title="Arrastra para reordenar">
+                <i class="fa-solid fa-grip-vertical"></i>
+              </div>
+
+              <!-- Placeholder visual mientras se arrastra -->
+              <div *cdkDragPlaceholder class="checklist-drag-placeholder"></div>
+
+              <!-- Preview mientras arrastra (clon del bloque) -->
+              <div *cdkDragPreview class="checklist-drag-preview">
+                <i class="fa-solid fa-grip-vertical me-2"></i>
+                {{ checklist.name }}
+              </div>
+
               <div class="checklist-header">
                 <!-- 🔄 MODO VISUALIZACIÓN DEL CHECKLIST -->
                 <h4 
                   *ngIf="editingChecklistId !== checklist.id" 
                   class="checklist-name editable-checklist-name"
                   (dblclick)="startEditingChecklist(checklist)"
-                  [title]="hasWriteAccess ? 'Doble click para editar' : 'Solo lectura'">
+                  [title]="canEditTaskContent ? 'Doble click para editar' : 'Solo lectura'">
                   {{ checklist.name }}
                 </h4>
                 
@@ -365,8 +430,8 @@
                   </div>
                 </div>
 
-                <!-- ✅ Solo mostrar acciones si tiene permisos -->
-                <div class="checklist-actions" *ngIf="hasWriteAccess">
+                <!-- ✅ Solo mostrar acciones si puede editar contenido -->
+                <div class="checklist-actions" *ngIf="canEditTaskContent">
                   <button 
                     class="btn-icon-sm"
                     (click)="startEditingChecklist(checklist)"
@@ -389,7 +454,6 @@
                 <span class="progress-text">{{ checklist.progress || 0 }}%</span>
               </div>
 
-              
               <div class="checklist-items">
                 <div 
                   *ngFor="let item of checklist.items" 
@@ -397,11 +461,11 @@
                   [class.item-overdue]="item.is_overdue"
                   [class.item-due-soon]="item.is_due_soon">
 
-                  <!-- ✅ Checkbox solo editable si tiene permisos -->
+                  <!-- ✅ Checkbox solo editable si puede editar contenido -->
                   <input 
                     type="checkbox" 
                     [checked]="item.completed" 
-                    [disabled]="!hasWriteAccess"
+                    [disabled]="!canEditTaskContent"
                     (change)="toggleChecklistItem(checklist.id, item.id)">
 
                   <div class="item-content">
@@ -411,7 +475,7 @@
                       class="item-name editable-item-name" 
                       [ngClass]="{'completed': item.completed}"
                       (dblclick)="startEditingItem(checklist.id, item)"
-                      [title]="hasWriteAccess ? 'Doble click para editar' : 'Solo lectura'">
+                      [title]="canEditTaskContent ? 'Doble click para editar' : 'Solo lectura'">
                       {{ item.name }}
                     </span>
                     
@@ -454,7 +518,7 @@
                         <span>{{ formatDateBadge(item.due_date) }}</span>
                       </div>
 
-                      <!-- ✅ Miembros asignados - VERSIÓN CORREGIDA -->
+                      <!-- ✅ Miembros asignados -->
                       <div *ngIf="item.assigned_users && item.assigned_users.length > 0" class="item-members-container">
                         
                         <!-- CASO 1: 1-2 miembros → Mostrar avatar + nombre -->
@@ -464,7 +528,6 @@
                             class="item-member-card"
                             [title]="user.name + (user.surname ? ' ' + user.surname : '')">
                             <div class="item-member-avatar-full">
-                              <!-- ✅ CORRECCIÓN CRÍTICA: Usar getAvatarUrl() -->
                               <img 
                                 [src]="getAvatarUrl(user.avatar)" 
                                 [alt]="user.name"
@@ -483,7 +546,6 @@
                             class="item-member-avatar-compact"
                             [title]="user.name + (user.surname ? ' ' + user.surname : '')"
                             [style.z-index]="item.assigned_users.length - i">
-                            <!-- ✅ CORRECCIÓN CRÍTICA: Usar getAvatarUrl() -->
                             <img 
                               [src]="getAvatarUrl(user.avatar)" 
                               [alt]="user.name"
@@ -493,8 +555,8 @@
                       </div>
                     </div>
 
-                    <!-- ✅ Solo mostrar acciones si tiene permisos y no está editando -->
-                    <div class="item-actions" *ngIf="hasWriteAccess && editingItemId !== item.id">
+                    <!-- ✅ Solo mostrar acciones si puede editar y no está editando -->
+                    <div class="item-actions" *ngIf="canEditTaskContent && editingItemId !== item.id">
                       <!-- Botón para asignar fecha -->
                       <button 
                         class="btn-icon-xs"
@@ -532,31 +594,31 @@
 
               </div>
 
-                <!-- ✅ Solo permitir agregar items si tiene permisos -->
-                <div class="add-item-container" *ngIf="hasWriteAccess && checklist.addingItem">
-                  <input 
-                    type="text" 
-                    #addItemInput
-                    placeholder="Añadir un elemento" 
-                    class="add-item-input"
-                    (keyup.enter)="addChecklistItem(checklist.id, addItemInput.value); addItemInput.value = ''; checklist.addingItem = false"
-                    (keyup.escape)="cancelAddItem(checklist)">
+              <!-- ✅ Solo permitir agregar items si puede editar -->
+              <div class="add-item-container" *ngIf="canEditTaskContent && checklist.addingItem">
+                <input 
+                  type="text" 
+                  #addItemInput
+                  placeholder="Añadir un elemento" 
+                  class="add-item-input"
+                  (keyup.enter)="addChecklistItem(checklist.id, addItemInput.value); addItemInput.value = ''; checklist.addingItem = false"
+                  (keyup.escape)="cancelAddItem(checklist)">
 
-                  <div class="item-actions-inline">
-                    <button 
-                      class="btn-blue" 
-                      (click)="addChecklistItem(checklist.id, addItemInput.value); addItemInput.value = ''; checklist.addingItem = false">
-                      Añadir
-                    </button>
-                    <button 
-                      class="btn-light" 
-                      (click)="cancelAddItem(checklist)">
-                      Cancelar
-                    </button>
-                  </div>
+                <div class="item-actions-inline">
+                  <button 
+                    class="btn-blue" 
+                    (click)="addChecklistItem(checklist.id, addItemInput.value); addItemInput.value = ''; checklist.addingItem = false">
+                    Añadir
+                  </button>
+                  <button 
+                    class="btn-light" 
+                    (click)="cancelAddItem(checklist)">
+                    Cancelar
+                  </button>
                 </div>
+              </div>
 
-              <button *ngIf="hasWriteAccess && !checklist.addingItem" class="add-checklist-btn" (click)="showAddItemInput(checklist)">
+              <button *ngIf="canEditTaskContent && !checklist.addingItem" class="add-checklist-btn" (click)="showAddItemInput(checklist)">
                 <i class="fa-solid fa-plus"></i> Añade un elemento
               </button>
 
@@ -711,15 +773,20 @@
       <div class="sidebar-section">
         <h3><i class="fa-regular fa-comments"></i> Comentarios y Actividad</h3>
 
-        <!-- ✅ Solo mostrar caja de comentarios si tiene permisos -->
-        <div class="comment-box" *ngIf="hasWriteAccess">
+        <!-- ✅ Mostrar caja de comentarios si tiene permisos de escritura (comentarios permitidos a todos con escritura) -->
+        <div class="comment-box" *ngIf="hasWriteAccess && !isBlockedByOverdue">
           <textarea [(ngModel)]="newComment" placeholder="Escribe un comentario..." rows="3"></textarea>
           <button class="btn-blue" (click)="addComment()" [disabled]="!newComment.trim()">Comentar</button>
         </div>
 
-        <div *ngIf="!hasWriteAccess" class="alert alert-info">
+        <div *ngIf="!hasWriteAccess && !isBlockedByOverdue" class="alert alert-info">
           <i class="fa-solid fa-info-circle me-2"></i>
           No puedes agregar comentarios con permisos de solo lectura
+        </div>
+
+        <div *ngIf="isBlockedByOverdue" class="alert alert-warning">
+          <i class="fa-solid fa-lock me-2"></i>
+          La tarea está vencida. No se pueden agregar comentarios.
         </div>
 
         <div class="activity-feed" *ngIf="timeline.length > 0; else noActivity">
@@ -822,8 +889,8 @@
   </div>
 </div>
 
-<!-- MODAL EDITAR ETIQUETA - Solo accesible si tiene permisos -->
-<div class="modal-overlay" *ngIf="hasWriteAccess && showEtiquetaModal" (click)="closeEtiquetaModal()">
+<!-- MODAL EDITAR ETIQUETA - Solo accesible si puede editar -->
+<div class="modal-overlay" *ngIf="canEditTaskContent && showEtiquetaModal" (click)="closeEtiquetaModal()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3>Editar Etiqueta</h3>

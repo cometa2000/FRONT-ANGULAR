@@ -2840,3 +2840,123 @@ button:disabled {
     margin-left: -10px;
   }
 }
+
+
+// ========================================
+// 🔀 CHECKLIST DRAG & DROP (Angular CDK)
+// Estos estilos se SUMAN a los existentes
+// sin modificar la estructura actual
+// ========================================
+
+// Handle de arrastre: flota a la izquierda con margin negativo
+// para no empujar el contenido interno
+.checklist-drag-handle {
+  position: absolute;
+  left: -22px;
+  top: 14px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  color: #c1c7d0;
+  font-size: 13px;
+  border-radius: 3px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  opacity: 0;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+// El checklist-block necesita position:relative para el handle absoluto
+// y overflow:visible para que el handle no se corte
+.checklist-block {
+  position: relative;
+  margin-bottom: 24px;
+
+  // Mostrar el handle al hacer hover sobre el bloque
+  &:hover .checklist-drag-handle {
+    opacity: 1;
+  }
+
+  // Mientras se arrastra, el bloque original se pone transparente
+  &.cdk-drag-animating {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+// La lista drop: añade overflow:visible para que el handle no quede cortado
+.section-body[cdkDropList] {
+  overflow: visible;
+}
+
+// Placeholder: el hueco que aparece mientras arrastras
+.checklist-drag-placeholder {
+  background: #f0f4ff;
+  border: 2px dashed #93b4ff;
+  border-radius: 6px;
+  min-height: 52px;
+  margin-bottom: 16px;
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+// Preview: el elemento visual que sigue al cursor
+.checklist-drag-preview {
+  background: #ffffff;
+  border: 1px solid #d0d9e8;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #172b4d;
+  box-shadow:
+    0 8px 20px rgba(9, 30, 66, 0.18),
+    0 2px 6px rgba(9, 30, 66, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 360px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  i {
+    color: #93b4ff;
+    flex-shrink: 0;
+  }
+}
+
+// Mientras el drop-list está en modo arrastre, animar los otros bloques
+.cdk-drop-list-dragging .checklist-block:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+// Badge indicador en el header de la sección
+.drag-hint-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: #c1c7d0;
+  font-size: 12px;
+  transition: color 0.15s ease;
+  cursor: default;
+  flex-shrink: 0;
+
+  &:hover {
+    color: #7c9eff;
+  }
+}
+
+// Responsive: en móvil el handle siempre visible (no depende de hover)
+@media (max-width: 768px) {
+  .checklist-drag-handle {
+    left: -18px;
+    opacity: 1;
+  }
+}

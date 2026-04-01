@@ -666,23 +666,44 @@
 
 
 // ============================================
-// 🆕 ENCABEZADO DE ETIQUETAS
+// 🆕 PIE DE ETIQUETAS — CHIPS
 // ============================================
-.etiquetas-header {
+.etiquetas-footer {
   display: flex;
-  height: 8px;
-  border-radius: 8px 8px 0 0;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.etiqueta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 6px;
+  border-radius: 20px;
+  border: 1px solid;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  max-width: 120px;
   overflow: hidden;
-  
-  .etiqueta-line {
-    flex: 1;
-    min-width: 2px;
-    transition: all 0.2s ease;
-    
-    &:hover {
-      flex: 1.5;
-    }
+  text-overflow: ellipsis;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: default;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
   }
+}
+
+.etiqueta-chip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 // ============================================
@@ -783,9 +804,9 @@
 // 🆕 MEJORAS VISUALES ADICIONALES
 // ============================================
 
-// Animación suave para las líneas de etiquetas
-.etiquetas-header .etiqueta-line {
-  animation: slideIn 0.3s ease;
+// Animación suave para los chips de etiquetas
+.etiqueta-chip {
+  animation: slideIn 0.25s ease;
 }
 
 @keyframes slideIn {
@@ -861,8 +882,10 @@
     }
   }
   
-  .etiquetas-header {
-    height: 6px;
+  .etiqueta-chip {
+    font-size: 0.65rem;
+    padding: 2px 7px 2px 5px;
+    max-width: 100px;
   }
 }
 
@@ -1234,4 +1257,64 @@
   border-radius: 12px;
   padding: 1rem; 
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+// ============================================================
+// 🆕 INDICADORES VISUALES EN TARJETAS DEL KANBAN
+// Agregar al final del archivo existente
+// ============================================================
+
+.tarea-card {
+  position: relative; // necesario para ::before y ::after
+
+  // 🔴 Tarea vencida — borde rojo
+  &.task-overdue {
+    border: 2px solid #f1416c !important;
+    box-shadow: 0 0 0 1px rgba(241, 65, 108, 0.2);
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background-color: #f1416c;
+      border-radius: 4px 0 0 4px;
+    }
+  }
+
+  // 🔵 Tarea asignada al usuario — borde azul + badge
+  &.task-assigned-to-me {
+    border-left: 4px solid #009ef7 !important;
+    background-color: rgba(0, 158, 247, 0.04);
+
+    &::after {
+      content: 'Asignada a mí';
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: #009ef7;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      pointer-events: none;
+    }
+  }
+
+  // Cuando una tarjeta es vencida Y asignada al usuario,
+  // el rojo (vencido) tiene prioridad visual
+  &.task-overdue.task-assigned-to-me {
+    border: 2px solid #f1416c !important;
+    border-left: 4px solid #f1416c !important;
+    background-color: rgba(241, 65, 108, 0.03);
+
+    &::after {
+      background: #f1416c; // badge también en rojo
+    }
+  }
 }

@@ -14,6 +14,7 @@ import { NgbModule, NgbModalModule, NgbPaginationModule } from '@ng-bootstrap/ng
 import { InlineSVGModule } from 'ng-inline-svg-2';
 import { ModalAdjuntosTicketsComponent } from './modal-adjuntos-tickets/modal-adjuntos-tickets.component';
 import { ModalTareasTicketsComponent } from './modal-tareas-tickets/modal-tareas-tickets.component';
+import { ManageAreasTicketsComponent } from './manage-areas-tickets/manage-areas-tickets.component';
 
 @NgModule({
   declarations: [
@@ -23,7 +24,8 @@ import { ModalTareasTicketsComponent } from './modal-tareas-tickets/modal-tareas
     EditTicketsComponent,
     DeleteTicketsComponent,
     ModalAdjuntosTicketsComponent,
-    ModalTareasTicketsComponent
+    ModalTareasTicketsComponent,
+    ManageAreasTicketsComponent
   ],
   imports: [
     CommonModule,

@@ -541,4 +541,31 @@ export class TareaService {
       })
     );
   }
+
+  // =============================
+  // 🆕 SOLICITAR REACTIVACIÓN DE TAREA VENCIDA
+  // =============================
+  /**
+   * Envía una solicitud al propietario del grupo para reactivar una tarea vencida.
+   * Solo pueden usar este método los usuarios compartidos (no el propietario).
+   * @param tareaId ID de la tarea vencida
+   */
+  solicitarReactivacion(tareaId: number): Observable<any> {
+    console.log('🌐 TareaService.solicitarReactivacion - Solicitando reactivación:', tareaId);
+
+    this.isLoadingSubject.next(true);
+    const headers = this.getHeaders();
+    const URL = `${URL_SERVICIOS}/tareas/${tareaId}/solicitar-reactivacion`;
+
+    return this.http.post(URL, {}, { headers }).pipe(
+      tap((response: any) => {
+        console.log('✅ TareaService.solicitarReactivacion - Solicitud enviada:', response);
+      }),
+      catchError((error) => {
+        console.error('❌ TareaService.solicitarReactivacion - Error:', error);
+        return this.handleError(error);
+      }),
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
 }

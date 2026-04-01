@@ -31,7 +31,7 @@ export class EditGrupoComponent implements OnInit {
     { url: 'assets/media/fondos/fondo9.png', name: 'fondo9.png' },
     { url: 'assets/media/fondos/fondo10.png', name: 'fondo10.png' },
     { url: 'assets/media/fondos/fondo11.png', name: 'fondo11.png' },
-    { url: 'assets/media/fondos/fondo12.png', name: 'fondo12.png' },
+    { url: 'assets/media/fondos/fondo12.jpg', name: 'fondo12.jpg' },
     { url: 'assets/media/fondos/fondo13.png', name: 'fondo13.png' },
   ];
   

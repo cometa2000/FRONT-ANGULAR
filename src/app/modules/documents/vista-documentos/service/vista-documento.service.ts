@@ -135,7 +135,7 @@ export class VistaDocumentoService {
   }
 
   /**
-   * Subir archivo(s) - ahora soporta múltiples archivos y sucursales
+   * Subir archivo(s) - soporta múltiples archivos y sucursales
    */
   uploadFile(data: FormData): Observable<any> {
     this.isLoadingSubject.next(true);
@@ -213,7 +213,7 @@ export class VistaDocumentoService {
   }
 
   /**
-   * Descargar documento
+   * Descargar documento (fuerza descarga en disco)
    */
   downloadDocument(documentId: number): Observable<Blob> {
     this.isLoadingSubject.next(true);
@@ -236,6 +236,23 @@ export class VistaDocumentoService {
     
     return this.http.get(URL, {
       headers: this.getHeaders()
+    }).pipe(
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
+
+  /**
+   * Servir archivo como Blob para visualización segura en el modal.
+   * Evita exponer la URL directa del storage y resuelve problemas
+   * de CORS / symlink en producción al enviar el token en el header.
+   */
+  serveDocument(documentId: number): Observable<Blob> {
+    this.isLoadingSubject.next(true);
+    let URL = URL_SERVICIOS + `/documentos/${documentId}/serve`;
+    
+    return this.http.get(URL, {
+      headers: this.getHeaders(),
+      responseType: 'blob'   // recibir binario, no JSON
     }).pipe(
       finalize(() => this.isLoadingSubject.next(false))
     );

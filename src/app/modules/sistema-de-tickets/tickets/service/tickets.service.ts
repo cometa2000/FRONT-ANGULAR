@@ -44,7 +44,7 @@ export interface Ticket {
   prioridad: 'baja' | 'media' | 'alta';
   estado: 'pendiente' | 'en_proceso' | 'en_espera' | 'resuelto' | 'cerrado' | 'rechazado';
   tipo_origen: 'sede' | 'sucursal';
-  tipo_destino: 'area_sede' | 'sucursal';
+  tipo_destino: 'area_sede' | 'sucursal' | 'usuario_sucursal';
   es_favorito: boolean;
   archivado: boolean;
   fecha_limite?: string;
@@ -66,7 +66,6 @@ export interface Ticket {
     tiempo_primera_respuesta_min: number | null;
     tiempo_resolucion_horas: number | null;
   };
-  // ── TAREAS ADJUNTAS (evidencias opcionales) ──
   tareas_adjuntas?: TicketTareaAdjunta[];
 }
 
@@ -77,7 +76,6 @@ export interface TicketMessage {
   user: { id: number; nombre: string; avatar: string } | null;
   adjuntos: TicketAttachment[];
   created_at: string;
-  // ── Tareas adjuntas a este mensaje del hilo ──
   tareas_adjuntas?: TicketTareaAdjunta[];
 }
 
@@ -106,10 +104,60 @@ export interface TicketAssignmentItem {
   created_at: string;
 }
 
+// ── Área de sede principal (tabla ticket_areas) ──────────────────
+export interface TicketArea {
+  id: number;
+  nombre: string;
+  descripcion: string | null;
+  activo: boolean;
+  deleted_at: string | null;
+  responsable: {
+    id: number;
+    nombre: string;
+    avatar: string;
+  } | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ── Destinos disponibles en el config ────────────────────────────
+export interface DestinoArea {
+  id: number;
+  name: string;
+  tipo: 'area';
+  responsable_id?: number;
+  responsable_nombre?: string;
+  responsable_avatar?: string;
+}
+
+export interface DestinoSucursal {
+  id: number;
+  name: string;
+  tipo: 'sucursal';
+}
+
+export interface DestinoUsuario {
+  id: number;
+  name: string;
+  tipo: 'usuario_sucursal';
+  rol?: string;
+}
+
+export type Destino = DestinoArea | DestinoSucursal | DestinoUsuario;
+
+// ── Config unificado ─────────────────────────────────────────────
 export interface TicketConfig {
-  tipo_usuario: 'sede' | 'sucursal';
+  tipo_usuario: 'sede' | 'franquiciatario' | 'equipo_sucursal';
   es_sede: boolean;
-  destinos: { id: number; name: string }[];
+  es_super_admin: boolean;
+  // sede
+  destinos_areas?: DestinoArea[];
+  destinos_sucursales?: DestinoSucursal[];
+  areas_del_usuario?: number[];
+  // franquiciatario
+  destinos_equipo?: DestinoUsuario[];
+  // equipo_sucursal
+  destinos?: DestinoUsuario[];
 }
 
 export interface TicketMetricas {
@@ -124,6 +172,14 @@ export interface TicketMetricas {
   pendientes: number;
   resueltos: number;
   cerrados: number;
+}
+
+// ── Usuario de sede (para el modal de gestión de áreas) ──────────
+export interface UsuarioSede {
+  id: number;
+  nombre: string;
+  avatar: string;
+  rol: string;
 }
 
 // ================================================================
@@ -258,10 +314,13 @@ export class TicketsService {
       );
   }
 
-  reasignar(id: number, asignado_id: number, motivo?: string): Observable<any> {
+  reasignar(id: number, asignado_id: number, motivo?: string, ticket_area_id?: number | null): Observable<any> {
     this.isLoadingSubject.next(true);
     return this.http
-      .patch(`${this.BASE_URL}/tickets/${id}/reasignar`, { asignado_id, motivo }, { headers: this.getHeaders() })
+      .patch(`${this.BASE_URL}/tickets/${id}/reasignar`,
+        { asignado_id, motivo, ticket_area_id: ticket_area_id ?? null },
+        { headers: this.getHeaders() }
+      )
       .pipe(
         catchError((e) => this.handleError(e)),
         finalize(() => this.isLoadingSubject.next(false))
@@ -320,6 +379,40 @@ export class TicketsService {
   getMetricas(): Observable<{ message: number; metricas: TicketMetricas }> {
     return this.http
       .get<any>(`${this.BASE_URL}/metricas`, { headers: this.getHeaders() })
+      .pipe(catchError((e) => this.handleError(e)));
+  }
+
+  // ================================================================
+  // ÁREAS — CRUD (Solo Super-Admin)
+  // ================================================================
+
+  getAreas(): Observable<{ message: number; areas: TicketArea[] }> {
+    return this.http
+      .get<any>(`${this.BASE_URL}/areas`, { headers: this.getHeaders() })
+      .pipe(catchError((e) => this.handleError(e)));
+  }
+
+  createArea(data: { nombre: string; descripcion?: string; responsable_id: number; activo: boolean }): Observable<{ message: number; area: TicketArea }> {
+    return this.http
+      .post<any>(`${this.BASE_URL}/areas`, data, { headers: this.getHeaders() })
+      .pipe(catchError((e) => this.handleError(e)));
+  }
+
+  updateArea(id: number, data: Partial<{ nombre: string; descripcion: string; responsable_id: number; activo: boolean }>): Observable<{ message: number; area: TicketArea }> {
+    return this.http
+      .put<any>(`${this.BASE_URL}/areas/${id}`, data, { headers: this.getHeaders() })
+      .pipe(catchError((e) => this.handleError(e)));
+  }
+
+  deleteArea(id: number): Observable<{ message: number }> {
+    return this.http
+      .delete<any>(`${this.BASE_URL}/areas/${id}`, { headers: this.getHeaders() })
+      .pipe(catchError((e) => this.handleError(e)));
+  }
+
+  getUsuariosSede(): Observable<{ message: number; usuarios: UsuarioSede[] }> {
+    return this.http
+      .get<any>(`${this.BASE_URL}/areas-usuarios-sede`, { headers: this.getHeaders() })
       .pipe(catchError((e) => this.handleError(e)));
   }
 

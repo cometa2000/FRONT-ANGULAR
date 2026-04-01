@@ -10,6 +10,7 @@ import { AssignMembersTareaComponent } from '../assign-members-tarea/assign-memb
 import { GrupoService } from '../../grupos/service/grupo.service';
 import { ToastrService } from 'ngx-toastr';
 import { FechasComponent } from '../fechas/fechas.component';
+import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 
 
 export interface Tarea {
@@ -42,6 +43,9 @@ export interface Tarea {
     archivos: Archivo[];
   };
   assigned_members?: any[];
+  // 🆕 Nuevos campos del backend
+  is_assigned?: boolean;
+  grupo_owner_id?: number;
 }
 
 @Component({
@@ -132,6 +136,12 @@ export class EditTareaComponent implements OnInit {
   permissionLevel: string = 'write';
   isReadOnly: boolean = false;  
 
+  // 🆕 NUEVAS PROPIEDADES para el sistema de permisos ampliado
+  isAssignedToTask: boolean = false;
+  grupoOwnerId: number | null = null;
+  currentUserId: number | null = null;
+  solicitudEnviada: boolean = false;
+
   @ViewChild(FechasComponent) fechasComponent?: FechasComponent;
 
   showEditarFechasModal: boolean = false;
@@ -171,6 +181,9 @@ export class EditTareaComponent implements OnInit {
   ngOnInit(): void {
     console.log('🎯 Iniciando EditTareaComponent');
     
+    // 🆕 Obtener el ID del usuario autenticado al inicio
+    this.currentUserId = this.tareaService.authservice.user?.id ?? null;
+
     if (this.TAREA_SELECTED?.id) {
       this.tareaId = Number(this.TAREA_SELECTED.id);
       console.log('📌 ID desde @Input:', this.tareaId);
@@ -194,7 +207,58 @@ export class EditTareaComponent implements OnInit {
     console.log('✅ ID válido, cargando tarea:', this.tareaId);
     this.loadTarea();
     this.loadTimeline();
-    this.checkWritePermissions();
+
+    // Si TAREA_SELECTED viene del padre, los permisos ya fueron pasados como @Input.
+    // No hacer la petición HTTP en ese caso: evita activar isLoading$ del servicio
+    // compartido durante el ciclo de detección de cambios del padre, que era la
+    // causa del NG0100 (ExpressionChangedAfterItHasBeenCheckedError) en línea 10
+    // del tablero (el spinner *ngIf="isLoading$ | async" cambiaba de false a true
+    // después de que Angular ya había verificado ese valor en el mismo ciclo).
+    if (!this.TAREA_SELECTED) {
+      this.checkWritePermissions();
+    }
+
+    // Estabilizar el estado del componente al final de la inicialización
+    this.cdr.detectChanges();
+  }
+
+  // =============================
+  // 🆕 GETTERS DE PERMISOS AMPLIADOS
+  // =============================
+
+  /**
+   * Indica si la tarea está vencida Y el usuario actual NO es el dueño del grupo.
+   * Cuando es true, el usuario queda completamente bloqueado para editar.
+   */
+  get isBlockedByOverdue(): boolean {
+    // El propietario del grupo nunca queda bloqueado por vencimiento
+    if (this.isOwner || this.currentUserId === this.grupoOwnerId) return false;
+    return this.tarea?.is_overdue === true;
+  }
+
+  /**
+   * Determina si el usuario actual puede editar el contenido INTERNO de la tarea
+   * (elementos, checklists, etiquetas, adjuntos, descripción, etc.).
+   *
+   * Reglas:
+   *  1. Si la tarea está vencida y no es el dueño → BLOQUEADO.
+   *  2. Si es el propietario del grupo → siempre puede editar.
+   *  3. Si tiene permiso de escritura → solo puede editar si está asignado a la tarea.
+   *  4. Solo lectura → nunca puede editar.
+   */
+  get canEditTaskContent(): boolean {
+    if (this.isBlockedByOverdue) return false;
+    if (this.isOwner || this.currentUserId === this.grupoOwnerId) return true;
+    if (this.hasWriteAccess) return this.isAssignedToTask;
+    return false;
+  }
+
+  /**
+   * Determina si el usuario actual puede gestionar miembros de la tarea
+   * (asignar / desasignar). Solo el propietario del grupo puede hacerlo.
+   */
+  get canManageMembers(): boolean {
+    return this.isOwner || this.currentUserId === this.grupoOwnerId;
   }
 
   // =============================
@@ -205,7 +269,7 @@ export class EditTareaComponent implements OnInit {
    * Activar modo de edición del nombre con doble click
    */
   startEditingTaskName(): void {
-    if (this.isReadOnly || !this.hasWriteAccess) {
+    if (!this.canEditTaskContent) {
       this.toastr.warning('No tienes permisos para editar esta tarea', 'Permiso denegado');
       return;
     }
@@ -295,7 +359,7 @@ export class EditTareaComponent implements OnInit {
   }
 
   toggleDescriptionEdit(): void {
-    if (this.isReadOnly) {
+    if (!this.canEditTaskContent) {
       this.toastr.warning('No tienes permisos para editar esta tarea', 'Permiso denegado');
       return;
     }
@@ -418,6 +482,13 @@ export class EditTareaComponent implements OnInit {
         
         if (resp.message === 200 && resp.tarea) {
           this.tarea = resp.tarea;
+
+          // 🆕 Leer los nuevos campos del backend
+          this.isAssignedToTask = resp.tarea.is_assigned ?? false;
+          this.grupoOwnerId     = resp.tarea.grupo_owner_id ?? null;
+
+          // Resetear solicitud al recargar (por si el dueño eliminó la fecha)
+          this.solicitudEnviada = false;
           
           // ✅ CORREGIR: Calcular progreso de checklists
           if (this.tarea && this.tarea.checklists && Array.isArray(this.tarea.checklists)) {
@@ -435,6 +506,14 @@ export class EditTareaComponent implements OnInit {
           this.cdr.detectChanges();
           
           console.log('📋 Tarea completa:', this.tarea);
+          console.log('🔑 Permisos de tarea:', {
+            isAssignedToTask: this.isAssignedToTask,
+            grupoOwnerId: this.grupoOwnerId,
+            currentUserId: this.currentUserId,
+            canEditTaskContent: this.canEditTaskContent,
+            canManageMembers: this.canManageMembers,
+            isBlockedByOverdue: this.isBlockedByOverdue
+          });
         }
       },
       error: (error: any) => {
@@ -476,6 +555,15 @@ export class EditTareaComponent implements OnInit {
   // =============================
   updateStatus(): void {
     if (!this.tarea) return;
+
+    // El cambio de status lo puede hacer el dueño siempre,
+    // y los usuarios con escritura que estén asignados (a menos que esté vencida)
+    if (!this.canEditTaskContent) {
+      this.toastr.warning('No puedes cambiar el estado de esta tarea', 'Permiso denegado');
+      // Revertir el valor del select
+      this.loadTarea();
+      return;
+    }
 
     this.tareaService.updateTarea(this.tareaId, { status: this.tarea.status }).subscribe({
       next: () => {
@@ -868,7 +956,7 @@ export class EditTareaComponent implements OnInit {
    * Iniciar edición del nombre del checklist
    */
   startEditingChecklist(checklist: any): void {
-    if (this.isReadOnly || !this.hasWriteAccess) {
+    if (!this.canEditTaskContent) {
       this.toastr.warning('No tienes permisos para editar', 'Permiso denegado');
       return;
     }
@@ -1007,7 +1095,7 @@ export class EditTareaComponent implements OnInit {
    * Mostrar el input para agregar un nuevo item
    */
   showAddItemInput(checklist: any): void {
-    if (this.isReadOnly || !this.hasWriteAccess) {
+    if (!this.canEditTaskContent) {
       this.toastr.warning('No tienes permisos para agregar items', 'Permiso denegado');
       return;
     }
@@ -1098,7 +1186,7 @@ export class EditTareaComponent implements OnInit {
    * Iniciar edición del nombre del item
    */
   startEditingItem(checklistId: number, item: any): void {
-    if (this.isReadOnly || !this.hasWriteAccess) {
+    if (!this.canEditTaskContent) {
       this.toastr.warning('No tienes permisos para editar', 'Permiso denegado');
       return;
     }
@@ -1185,7 +1273,7 @@ export class EditTareaComponent implements OnInit {
    * Alternar el estado de completado de un item del checklist
    */
   toggleChecklistItem(checklistId: number, itemId: number): void {
-    if (this.isReadOnly || !this.hasWriteAccess) {
+    if (!this.canEditTaskContent) {
       this.toastr.warning('No tienes permisos para editar', 'Permiso denegado');
       return;
     }
@@ -1372,7 +1460,7 @@ export class EditTareaComponent implements OnInit {
    * ✅ Iniciar edición de un comentario
    */
   editComment(comentarioId: number): void {
-    if (this.isReadOnly || !this.hasWriteAccess) {
+    if (!this.canEditTaskContent) {
       this.toastr.warning('No tienes permisos para editar comentarios', 'Permiso denegado');
       return;
     }
@@ -1545,6 +1633,11 @@ export class EditTareaComponent implements OnInit {
   // =============================
   
   abrirModalAdjuntar(): void {
+    if (!this.canEditTaskContent) {
+      this.toastr.warning('No tienes permisos para adjuntar archivos en esta tarea', 'Permiso denegado');
+      return;
+    }
+
     const modalRef = this.modalService.open(AdjuntarModalComponent, {
       centered: true,
       size: 'lg',
@@ -1849,6 +1942,12 @@ export class EditTareaComponent implements OnInit {
   }
 
   abrirModalMiembros(): void {
+    // 🆕 Solo el propietario del grupo puede asignar miembros
+    if (!this.canManageMembers) {
+      this.toastr.warning('Solo el propietario del grupo puede asignar miembros a las tareas', 'Permiso denegado');
+      return;
+    }
+
     const modalRef = this.modalService.open(AssignMembersTareaComponent, {
       centered: true,
       size: 'lg',
@@ -1872,6 +1971,12 @@ export class EditTareaComponent implements OnInit {
    * Desasignar un miembro de la tarea
    */
   desasignarMiembro(userId: number): void {
+    // 🆕 Solo el propietario del grupo puede desasignar miembros
+    if (!this.canManageMembers) {
+      this.toastr.warning('Solo el propietario del grupo puede desasignar miembros', 'Permiso denegado');
+      return;
+    }
+
     const miembro = this.miembrosAsignados.find(m => m.id === userId);
     const nombreMiembro = miembro ? `${miembro.name} ${miembro.surname || ''}` : 'este miembro';
 
@@ -1931,6 +2036,46 @@ export class EditTareaComponent implements OnInit {
 
       }
 
+    });
+  }
+
+  // =============================
+  // 🆕 SOLICITAR REACTIVACIÓN (tarea vencida)
+  // =============================
+
+  /**
+   * Envía una solicitud al propietario del grupo para reactivar la tarea vencida.
+   * Solo disponible para usuarios compartidos cuando la tarea está vencida.
+   */
+  solicitarReactivacion(): void {
+    if (this.solicitudEnviada) return;
+
+    this.tareaService.solicitarReactivacion(this.tareaId).subscribe({
+      next: () => {
+        this.solicitudEnviada = true;
+        this.cdr.detectChanges();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Solicitud enviada',
+          text: 'Se notificó al propietario del grupo para reactivar esta tarea.',
+          timer: 3000,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+      },
+      error: () => {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo enviar la solicitud. Intenta de nuevo.',
+          timer: 3500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+      }
     });
   }
 
@@ -2143,7 +2288,7 @@ export class EditTareaComponent implements OnInit {
    * Abrir modal para asignar miembros a un item de checklist
    */
   openItemMembersModal(checklistId: number, item: any): void {
-    if (!this.hasWriteAccess) return;
+    if (!this.canEditTaskContent) return;
     
     this.editingItemForMembers = item;
     this.editingChecklistForMembers = this.tarea?.checklists?.find(c => c.id === checklistId);
@@ -2333,7 +2478,7 @@ export class EditTareaComponent implements OnInit {
    * Abrir modal para asignar fecha a un item de checklist
    */
   openItemDatePicker(checklistId: number, item: any): void {
-    if (!this.hasWriteAccess) return;
+    if (!this.canEditTaskContent) return;
     
     this.editingItem = item;
     this.editingChecklistForDate = this.tarea?.checklists?.find(c => c.id === checklistId);
@@ -2350,13 +2495,6 @@ export class EditTareaComponent implements OnInit {
     this.editingChecklistForDate = null;
     this.selectedItemDate = '';
   }
-
-  /**
-   * Obtener fecha de hoy en formato YYYY-MM-DD
-   */
-  // getTodayDate(): string {
-  //   return new Date().toISOString().split('T')[0];
-  // }
 
   /**
    * Establecer fecha rápida (mañana, 1 semana, 1 mes)
@@ -2547,6 +2685,41 @@ export class EditTareaComponent implements OnInit {
   }
 
   /**
+   * 🔧 Formatear fecha de forma segura sin desfase UTC→local.
+   *
+   * El pipe `date` de Angular y `new Date('YYYY-MM-DD')` interpretan el string
+   * como UTC medianoche. En México (UTC-6) eso retrocede la fecha un día al
+   * mostrarse. Este método extrae las partes directamente del string y construye
+   * la fecha con el constructor LOCAL, eliminando el desfase.
+   *
+   * Soporta:
+   *   - "2026-03-20"                  → YYYY-MM-DD  (respuesta de show)
+   *   - "2026-03-20T06:00:00.000000Z" → ISO con TZ  (respuesta de update sin fix)
+   */
+  formatFechaSafe(dateStr: string | null | undefined): string {
+    if (!dateStr) return '';
+
+    // Extraer YYYY-MM-DD del inicio del string (funciona para ambos formatos)
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) return dateStr;
+
+    const year  = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1; // 0-indexed
+    const day   = parseInt(match[3], 10);
+
+    // Constructor con partes locales — nunca aplica offset UTC
+    const d = new Date(year, month, day);
+    if (isNaN(d.getTime())) return dateStr;
+
+    // Formato "20 mar 2026"
+    return d.toLocaleDateString('es-MX', {
+      day:   '2-digit',
+      month: 'short',
+      year:  'numeric'
+    });
+  }
+
+  /**
    * 🆕 Obtener fecha de hoy en formato YYYY-MM-DD
    */
   getTodayDate(): string {
@@ -2558,7 +2731,38 @@ export class EditTareaComponent implements OnInit {
   }
 
   
+  // =============================
+  // 🔀 REORDENAR CHECKLISTS (CDK DnD)
+  // =============================
 
+  /**
+   * Manejar el drop de un checklist arrastrado.
+   * Actualiza el array localmente (optimistic) y persiste el nuevo orden en el backend.
+   */
+  onChecklistDrop(event: CdkDragDrop<any[]>): void {
+    if (!this.tarea?.checklists || event.previousIndex === event.currentIndex) return;
+
+    // Actualización optimista: mover en el array local
+    moveItemInArray(this.tarea.checklists, event.previousIndex, event.currentIndex);
+
+    // Construir payload con el nuevo orden (índice base 1)
+    const payload = this.tarea.checklists.map((cl: any, index: number) => ({
+      id: cl.id,
+      orden: index + 1
+    }));
+
+    this.checklistsService.reorderChecklists(this.tareaId, payload).subscribe({
+      next: () => {
+        this.toastr.success('Orden de checklists actualizado', 'Éxito');
+      },
+      error: (error: any) => {
+        console.error('❌ Error al reordenar checklists:', error);
+        this.toastr.error('No se pudo guardar el nuevo orden', 'Error');
+        // Revertir: recargar desde el servidor
+        this.loadTarea();
+      }
+    });
+  }
 
 
   // -------------------------------------------------------------

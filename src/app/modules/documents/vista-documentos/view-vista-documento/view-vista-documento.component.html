@@ -1,26 +1,113 @@
 <div class="modal-header">
-  <h5 class="modal-title">Vista de Documento - {{ DOCUMENTO_SELECTED?.name }}</h5>
-  <button type="button" class="btn-close" aria-label="Close" (click)="activeModal.dismiss()"></button>
+  <h5 class="modal-title d-flex align-items-center gap-2">
+    <!-- Ícono dinámico según mime_type -->
+    <ng-container [ngSwitch]="true">
+      <i *ngSwitchCase="DOCUMENTO_SELECTED?.mime_type?.includes('pdf')"
+         class="ki-duotone ki-file-pdf fs-2x text-danger">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+      <i *ngSwitchCase="DOCUMENTO_SELECTED?.mime_type?.includes('image')"
+         class="ki-duotone ki-file-jpg fs-2x text-success">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+      <i *ngSwitchDefault
+         class="ki-duotone ki-file fs-2x text-primary">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+    </ng-container>
+    <span>{{ DOCUMENTO_SELECTED?.name }}</span>
+  </h5>
+
+  <div class="d-flex align-items-center gap-2">
+    <!-- Botón descargar (siempre visible para archivos) -->
+    <button
+      *ngIf="!isLoading && !hasError"
+      type="button"
+      class="btn btn-icon btn-light btn-sm"
+      title="Descargar"
+      (click)="downloadFile()">
+      <i class="ki-duotone ki-file-down fs-2">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+    </button>
+
+    <button type="button" class="btn-close" aria-label="Cerrar" (click)="activeModal.dismiss()"></button>
+  </div>
 </div>
 
-<div class="modal-body">
-  <ng-container *ngIf="DOCUMENTO_SELECTED?.mime_type">
-    <!-- Si es PDF -->
-    <iframe *ngIf="DOCUMENTO_SELECTED.mime_type.includes('pdf')"
-            [src]="DOCUMENTO_SELECTED.file_path | safeUrl"
-            width="100%" height="600px"></iframe>
+<div class="modal-body p-0">
 
-    <!-- Si es imagen -->
-    <img *ngIf="DOCUMENTO_SELECTED.mime_type.includes('image')"
-         [src]="DOCUMENTO_SELECTED.file_path"
-         class="img-fluid" />
+  <!-- ── Estado: Cargando ── -->
+  <div
+    *ngIf="isLoading"
+    class="d-flex flex-column justify-content-center align-items-center"
+    style="min-height: 500px;">
+    <span class="spinner-border spinner-border-lg text-primary mb-4" role="status"></span>
+    <p class="text-muted fs-6">Cargando documento...</p>
+  </div>
 
-    <!-- Para otros tipos de archivo -->
-    <a *ngIf="!DOCUMENTO_SELECTED.mime_type.includes('pdf') 
-             && !DOCUMENTO_SELECTED.mime_type.includes('image')"
-       [href]="DOCUMENTO_SELECTED.file_path" 
-       target="_blank" class="btn btn-primary">
-      Descargar documento
-    </a>
+  <!-- ── Estado: Error ── -->
+  <div
+    *ngIf="hasError && !isLoading"
+    class="d-flex flex-column justify-content-center align-items-center"
+    style="min-height: 400px;">
+    <i class="ki-duotone ki-cross-circle fs-5x text-danger mb-4">
+      <span class="path1"></span><span class="path2"></span>
+    </i>
+    <h4 class="text-gray-700 mb-2">No se pudo cargar el archivo</h4>
+    <p class="text-muted mb-5">Verifica tu conexión o intenta de nuevo.</p>
+    <button class="btn btn-light-primary" (click)="loadFile()">
+      <i class="ki-duotone ki-arrows-circle fs-2 me-2">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+      Reintentar
+    </button>
+  </div>
+
+  <!-- ── Estado: Contenido listo ── -->
+  <ng-container *ngIf="!isLoading && !hasError && blobUrl">
+
+    <!-- PDF → iframe con blob URL -->
+    <iframe
+      *ngIf="DOCUMENTO_SELECTED?.mime_type?.includes('pdf')"
+      [src]="blobUrl"
+      width="100%"
+      height="680px"
+      style="border: none; display: block;">
+    </iframe>
+
+    <!-- Imagen → centrada con scroll si es muy grande -->
+    <div
+      *ngIf="DOCUMENTO_SELECTED?.mime_type?.includes('image')"
+      class="d-flex justify-content-center align-items-center p-6"
+      style="min-height: 400px; max-height: 680px; overflow: auto; background: #f5f5f5;">
+      <img
+        [src]="blobUrl"
+        [alt]="DOCUMENTO_SELECTED?.name"
+        class="img-fluid rounded shadow-sm"
+        style="max-height: 640px; object-fit: contain;" />
+    </div>
+
+    <!-- Otros tipos → no hay vista previa, solo descarga -->
+    <div
+      *ngIf="!DOCUMENTO_SELECTED?.mime_type?.includes('pdf')
+           && !DOCUMENTO_SELECTED?.mime_type?.includes('image')"
+      class="d-flex flex-column justify-content-center align-items-center p-10"
+      style="min-height: 350px;">
+      <i class="ki-duotone ki-file fs-5x text-gray-400 mb-5">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+      <h4 class="text-gray-600 mb-2">Vista previa no disponible</h4>
+      <p class="text-muted mb-6">
+        Este tipo de archivo no puede mostrarse en el navegador.
+      </p>
+      <button class="btn btn-primary" (click)="downloadFile()">
+        <i class="ki-duotone ki-file-down fs-2 me-2">
+          <span class="path1"></span><span class="path2"></span>
+        </i>
+        Descargar {{ DOCUMENTO_SELECTED?.name }}
+      </button>
+    </div>
+
   </ng-container>
 </div>

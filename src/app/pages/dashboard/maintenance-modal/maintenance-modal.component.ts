@@ -24,13 +24,13 @@ export class MaintenanceModalComponent implements OnInit {
    */
   maintenanceInfo = {
     // Fecha de la actualización
-    date: '10 de Febrero de 2026',
+    date: '29 de Marzo de 2026',
     
     // Hora de inicio del mantenimiento
-    startTime: '10:00 PM',
+    startTime: '05:00 AM',
     
     // Hora de fin del mantenimiento
-    endTime: '12:00 AM',
+    endTime: '10:00 AM',
     
     // Título del aviso
     title: '🔧 Actualización del Sistema Programada',
@@ -39,13 +39,13 @@ export class MaintenanceModalComponent implements OnInit {
     message: 'Se realizará una actualización importante del sistema para mejorar el rendimiento y agregar nuevas funcionalidades.',
     
     // Contacto para reportes
-    contactArea: 'Área Académica',
+    contactArea: 'Área De Sistemas',
     
     // Recomendaciones específicas
     recommendations: [
       'Guarda todos tus documentos e información antes del horario de mantenimiento',
       'No inicies sesión durante el periodo de actualización',
-      'Cierra todas las sesiones activas antes de las 10:00 PM',
+      'Cierra todas las sesiones activas antes de las 12:00 PM',
       'Asegúrate de completar y guardar cualquier tarea en progreso'
     ]
   };
@@ -54,7 +54,7 @@ export class MaintenanceModalComponent implements OnInit {
   showModal = false;
 
   // Clave para LocalStorage (evita mostrar múltiples veces en la misma sesión)
-  private readonly STORAGE_KEY = 'maintenance_modal_shown_2026_02_10';
+  private readonly STORAGE_KEY = 'maintenance_modal_shown_2026_03_28';
 
   constructor() {}
 

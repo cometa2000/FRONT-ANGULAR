@@ -14,6 +14,7 @@ import { VistaDocumentoService } from 'src/app/modules/documents/vista-documento
 import { ModalTareasTicketsComponent } from '../modal-tareas-tickets/modal-tareas-tickets.component';
 import { TareaDisponible, TicketTareaAdjunta } from '../service/tickets.service';
 import { EditTareaComponent } from 'src/app/modules/tasks/tareas/edit-tarea/edit-tarea.component';
+import { ManageAreasTicketsComponent } from '../manage-areas-tickets/manage-areas-tickets.component';
 
 
 @Component({
@@ -60,6 +61,17 @@ export class ListTicketsComponent implements OnInit, OnDestroy, AfterViewChecked
   showEstadoPanel: boolean = false;
   nuevoEstado: string = '';
   comentarioEstado: string = '';
+
+  showReasignarPanel: boolean = false;
+  reasignarAreaId: number | null = null;
+  reasignarUserId: number | null = null;
+  reasignarMotivo: string = '';
+  areasParaReasignar: any[] = [];   // DestinoArea[]
+  usuariosDeArea: any[] = [];       // usuarios de la sede para reasignar
+  isLoadingReasignar: boolean = false;
+
+  // ── Es Super-Admin (se popula desde el config) ──
+  esSuperAdmin: boolean = false;
 
   readonly todosLosEstados = [
     { value: 'pendiente',  label: 'Pendiente',  class: 'warning' },
@@ -111,6 +123,7 @@ export class ListTicketsComponent implements OnInit, OnDestroy, AfterViewChecked
       next: (cfg: any) => {
         this.ngZone.run(() => {
           this.config = cfg;
+          this.esSuperAdmin = cfg.es_super_admin ?? false;
           this.cdr.detectChanges();
         });
       },
@@ -730,6 +743,88 @@ export class ListTicketsComponent implements OnInit, OnDestroy, AfterViewChecked
   }
 
   trackById(_: number, item: Ticket): number { return item.id; }
+
+
+
+  
+  abrirGestionAreas(): void {
+    this.modalService.open(ManageAreasTicketsComponent, {
+      centered: true,
+      size: 'lg',
+      backdrop: 'static',
+    });
+  }
+
+  abrirPanelReasignar(): void {
+    if (!this.ticketSeleccionado) return;
+    this.showReasignarPanel = true;
+    this.reasignarAreaId = null;
+    this.reasignarUserId = null;
+    this.reasignarMotivo = '';
+    this.isLoadingReasignar = true;
+ 
+    // Cargar áreas disponibles para reasignar
+    this.ticketsService.getAreas().subscribe({
+      next: (resp: any) => {
+        this.ngZone.run(() => {
+          this.areasParaReasignar = resp.areas.filter((a: any) => a.activo);
+          this.isLoadingReasignar = false;
+          this.cdr.detectChanges();
+        });
+      },
+      error: () => {
+        this.ngZone.run(() => {
+          this.isLoadingReasignar = false;
+          this.cdr.detectChanges();
+        });
+      },
+    });
+  }
+ 
+  onAreaReasignarChange(): void {
+    if (!this.reasignarAreaId) {
+      this.usuariosDeArea = [];
+      this.reasignarUserId = null;
+      return;
+    }
+    // Filtrar todas las opciones del área seleccionada (pueden ser varias personas)
+    const area = this.areasParaReasignar.find((a: any) => a.id === this.reasignarAreaId);
+    if (area?.responsable) {
+      this.reasignarUserId = area.responsable.id;
+    }
+  }
+ 
+  aplicarReasignar(): void {
+    if (!this.ticketSeleccionado || !this.reasignarUserId) return;
+    const ticketSnapshot = this.ticketSeleccionado;
+ 
+    this.ticketsService.reasignar(
+      ticketSnapshot.id,
+      this.reasignarUserId,
+      this.reasignarMotivo || undefined,
+      this.reasignarAreaId,
+    ).subscribe({
+      next: () => {
+        this.ngZone.run(() => {
+          this.showReasignarPanel = false;
+          this.cdr.detectChanges();
+          this.seleccionarTicket(ticketSnapshot);
+          this.cargarTickets();
+          this.cargarMetricas();
+        });
+      },
+      error: () => {
+        this.ngZone.run(() => {
+          this.showReasignarPanel = false;
+          this.cdr.detectChanges();
+        });
+      },
+    });
+  }
+ 
+  cerrarReasignarPanel(): void {
+    this.showReasignarPanel = false;
+  }
 
   
 }

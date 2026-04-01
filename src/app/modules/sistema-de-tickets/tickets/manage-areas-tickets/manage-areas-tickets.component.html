@@ -1,0 +1,238 @@
+<!-- MODAL: Gestión de Áreas de la Sede -->
+<div class="modal-header py-4">
+  <div>
+    <h4 class="modal-title fw-bold mb-0">
+      <i class="ki-duotone ki-element-11 fs-2 me-2 text-primary">
+        <span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span>
+      </i>
+      <span *ngIf="esModoLista">Gestión de Áreas</span>
+      <span *ngIf="esModoNew">Nueva Área</span>
+      <span *ngIf="esModoFormulario && !esModoNew">Editar Área</span>
+    </h4>
+    <span class="text-muted fs-7">Configura las áreas de la sede principal y sus responsables</span>
+  </div>
+  <button type="button" class="btn btn-sm btn-icon btn-light" (click)="modal.dismiss()">
+    <i class="ki-duotone ki-cross fs-3"><span class="path1"></span><span class="path2"></span></i>
+  </button>
+</div>
+
+<div class="modal-body py-4" style="min-height: 400px;">
+
+  <!-- Confirmación de eliminación -->
+  <div *ngIf="confirmarEliminar" class="alert alert-danger d-flex align-items-start gap-3 mb-4">
+    <i class="ki-duotone ki-trash fs-2x text-danger mt-1">
+      <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+      <span class="path4"></span><span class="path5"></span>
+    </i>
+    <div class="flex-grow-1">
+      <p class="fw-bold mb-1">¿Eliminar el área "{{ confirmarEliminar.nombre }}"?</p>
+      <p class="mb-2 fs-7 text-muted">Los tickets existentes no se verán afectados.</p>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-danger" (click)="eliminar()">Sí, eliminar</button>
+        <button class="btn btn-sm btn-light"  (click)="cancelarEliminar()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error global -->
+  <div *ngIf="errorMsg" class="alert alert-danger py-2 fs-7 mb-3">
+    <i class="ki-duotone ki-information-5 fs-6 me-1">
+      <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+    </i>
+    {{ errorMsg }}
+  </div>
+
+  <!-- ============================================================
+       LISTA
+  ============================================================ -->
+  <ng-container *ngIf="esModoLista">
+
+    <div *ngIf="isLoading" class="d-flex justify-content-center py-6">
+      <div class="spinner-border text-primary me-3"></div>
+      <span class="text-muted align-self-center">Cargando áreas...</span>
+    </div>
+
+    <div *ngIf="!isLoading && areas.length === 0" class="text-center py-8">
+      <i class="ki-duotone ki-element-plus fs-3x text-muted mb-3">
+        <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+        <span class="path4"></span><span class="path5"></span>
+      </i>
+      <p class="text-muted mb-0 fw-semibold">No hay áreas creadas aún.</p>
+      <p class="text-muted fs-8">Crea la primera área para que aparezca como destinatario al crear tickets.</p>
+    </div>
+
+    <div *ngIf="!isLoading && areas.length > 0" class="table-responsive">
+      <table class="table table-hover align-middle gs-0 gy-3">
+        <thead>
+          <tr class="text-muted fw-semibold fs-8 text-uppercase border-bottom">
+            <th class="ps-2">Área</th>
+            <th>Responsable</th>
+            <th class="text-center">Estado</th>
+            <th class="text-end pe-2">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let area of areas" [class.opacity-50]="area.deleted_at">
+            <td class="ps-2">
+              <div class="fw-semibold">{{ area.nombre }}</div>
+              <div *ngIf="area.descripcion"
+                   class="text-muted fs-8 text-truncate"
+                   style="max-width:200px;">
+                {{ area.descripcion }}
+              </div>
+            </td>
+            <td>
+              <div *ngIf="area.responsable; else sinResponsable"
+                   class="d-flex align-items-center gap-2">
+                <img [src]="getAvatarUrl(area.responsable.avatar)"
+                     class="w-30px h-30px rounded-circle object-fit-cover"
+                     alt="avatar" />
+                <span class="fs-7">{{ area.responsable.nombre }}</span>
+              </div>
+              <ng-template #sinResponsable>
+                <span class="text-muted fs-8">Sin responsable</span>
+              </ng-template>
+            </td>
+            <td class="text-center">
+              <span class="badge"
+                    [ngClass]="area.activo ? 'badge-light-success' : 'badge-light-danger'">
+                {{ area.activo ? 'Activa' : 'Inactiva' }}
+              </span>
+            </td>
+            <td class="text-end pe-2">
+              <button class="btn btn-sm btn-icon btn-light-primary me-1"
+                      title="Editar"
+                      (click)="abrirEditar(area)">
+                <i class="ki-duotone ki-pencil fs-5">
+                  <span class="path1"></span><span class="path2"></span>
+                </i>
+              </button>
+              <button class="btn btn-sm btn-icon btn-light-danger"
+                      title="Eliminar"
+                      (click)="solicitarEliminar(area, $event)">
+                <i class="ki-duotone ki-trash fs-5">
+                  <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                  <span class="path4"></span><span class="path5"></span>
+                </i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </ng-container>
+
+  <!-- ============================================================
+       FORMULARIO (crear o editar)
+  ============================================================ -->
+  <ng-container *ngIf="esModoFormulario">
+    <form [formGroup]="form" (ngSubmit)="guardar()">
+
+      <!-- Nombre -->
+      <div class="mb-5">
+        <label class="form-label required fw-semibold fs-6">Nombre del Área</label>
+        <input type="text"
+               class="form-control form-control-solid"
+               placeholder="Ej: Subdirección Académica, Sistemas, Contabilidad..."
+               formControlName="nombre"
+               [class.is-invalid]="form.get('nombre')?.invalid && form.get('nombre')?.touched" />
+        <div class="invalid-feedback">El nombre es obligatorio (máx. 150 caracteres).</div>
+      </div>
+
+      <!-- Descripción -->
+      <div class="mb-5">
+        <label class="form-label fw-semibold fs-6">
+          Descripción <span class="text-muted fs-8">(opcional)</span>
+        </label>
+        <textarea class="form-control form-control-solid"
+                  rows="2"
+                  placeholder="Breve descripción de las funciones de esta área..."
+                  formControlName="descripcion"></textarea>
+      </div>
+
+      <!-- Responsable -->
+      <div class="mb-5">
+        <label class="form-label required fw-semibold fs-6">Responsable</label>
+        <div *ngIf="isLoadingUsuarios" class="text-muted fs-8">
+          <span class="spinner-border spinner-border-sm me-2"></span> Cargando usuarios...
+        </div>
+        <select *ngIf="!isLoadingUsuarios"
+                class="form-select form-select-solid"
+                formControlName="responsable_id"
+                [class.is-invalid]="form.get('responsable_id')?.invalid && form.get('responsable_id')?.touched">
+          <option [ngValue]="null" disabled>-- Selecciona un responsable --</option>
+          <option *ngFor="let usr of usuarios" [value]="usr.id">
+            {{ usr.nombre }} — {{ usr.rol }}
+          </option>
+        </select>
+        <div class="invalid-feedback">Debes asignar un responsable.</div>
+        <div class="text-muted fs-8 mt-1">Solo se muestran usuarios de la sede principal.</div>
+      </div>
+
+      <!-- Activo -->
+      <div class="mb-5">
+        <div class="form-check form-switch">
+          <input class="form-check-input"
+                 type="checkbox"
+                 formControlName="activo"
+                 id="areaActivo" />
+          <label class="form-check-label fw-semibold" for="areaActivo">
+            Área activa (visible como destinatario al crear tickets)
+          </label>
+        </div>
+      </div>
+
+      <!-- Nota informativa solo al crear -->
+      <div *ngIf="esModoNew" class="alert alert-info py-2 fs-8">
+        <i class="ki-duotone ki-information-5 fs-6 me-1">
+          <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+        </i>
+        Puedes crear múltiples áreas con el mismo nombre y distintos responsables.
+        Al crear un ticket, si hay varias personas en la misma área, el sistema permitirá elegir a quién dirigirlo.
+      </div>
+
+    </form>
+  </ng-container>
+
+</div><!-- /modal-body -->
+
+<!-- Footer -->
+<div class="modal-footer py-3 d-flex justify-content-between">
+
+  <!-- Lista → Nueva Área + Cerrar -->
+  <ng-container *ngIf="esModoLista">
+    <button type="button"
+            class="btn btn-primary d-flex align-items-center gap-2"
+            (click)="abrirCrear()">
+      <i class="ki-duotone ki-plus fs-5">
+        <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+      </i>
+      Nueva Área
+    </button>
+    <button type="button" class="btn btn-light" (click)="modal.dismiss()">
+      Cerrar
+    </button>
+  </ng-container>
+
+  <!-- Formulario → Volver + Guardar -->
+  <ng-container *ngIf="esModoFormulario">
+    <button type="button" class="btn btn-light" (click)="cancelar()">
+      <i class="ki-duotone ki-arrow-left fs-5 me-1">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+      Volver
+    </button>
+    <button type="button"
+            class="btn btn-primary d-flex align-items-center gap-2"
+            [disabled]="form.invalid || isSaving"
+            (click)="guardar()">
+      <span *ngIf="isSaving" class="spinner-border spinner-border-sm"></span>
+      <i *ngIf="!isSaving" class="ki-duotone ki-check fs-5">
+        <span class="path1"></span><span class="path2"></span>
+      </i>
+      {{ isSaving ? 'Guardando...' : (esModoNew ? 'Crear Área' : 'Guardar Cambios') }}
+    </button>
+  </ng-container>
+
+</div>

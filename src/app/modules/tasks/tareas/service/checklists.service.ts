@@ -201,4 +201,16 @@ export class ChecklistsService {
       finalize(() => this.isLoadingSubject.next(false))
     );
   }
+
+  /**
+   * Reordenar checklists de una tarea
+   */
+  reorderChecklists(tareaId: number, checklists: { id: number; orden: number }[]): Observable<any> {
+    this.isLoadingSubject.next(true);
+    let headers = new HttpHeaders({ 'Authorization': 'Bearer ' + this.authservice.token });
+    let URL = URL_SERVICIOS + "/tareas/" + tareaId + "/checklists/reorder";
+    return this.http.post(URL, { checklists }, { headers: headers }).pipe(
+      finalize(() => this.isLoadingSubject.next(false))
+    );
+  }
 }

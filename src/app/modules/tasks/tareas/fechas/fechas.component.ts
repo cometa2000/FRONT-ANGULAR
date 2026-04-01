@@ -63,8 +63,8 @@ export class FechasComponent implements OnInit, OnChanges {
           this.enableDates = this.hasDates;
           
           // Cargar estado de notificaciones
-          this.currentNotificationsEnabled = resp.tarea.notifications_enabled || false;
-          this.currentNotificationDaysBefore = resp.tarea.notification_days_before || 1;
+          this.currentNotificationsEnabled = resp.tarea.notifications_enabled === true;
+          this.currentNotificationDaysBefore = resp.tarea.notification_days_before ?? 1;
           this.enableNotifications = this.currentNotificationsEnabled;
           this.notificationDaysBefore = this.currentNotificationDaysBefore;
           
@@ -118,34 +118,47 @@ export class FechasComponent implements OnInit, OnChanges {
 
   formatDate(dateStr?: string): string {
     if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString();
+    // Parsear manualmente para evitar el desfase UTC→local.
+    // new Date('YYYY-MM-DD') se trata como UTC medianoche; en México (UTC-6)
+    // eso retrocede al día anterior. Extraer las partes directamente evita ese bug.
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const year  = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1; // 0-indexed
+      const day   = parseInt(parts[2], 10);
+      const d = new Date(year, month, day);      // constructor LOCAL, sin UTC
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString();
+      }
+    }
+    return dateStr;
   }
 
   /**
-   * Convertir fecha a formato YYYY-MM-DD para inputs type="date"
+   * Convertir fecha a formato YYYY-MM-DD para inputs type="date".
+   *
+   * Laravel puede devolver las fechas de dos formas dependiendo del endpoint:
+   *   - "2026-03-20"                    → formato show()   (correcto, pasar directo)
+   *   - "2026-03-19T06:00:00.000000Z"   → formato update() cuando Carbon serializa
+   *                                        con cast 'date' y timezone UTC-6 de México,
+   *                                        lo que provoca el desfase de un día.
+   *
+   * En ambos casos extraemos SOLO la parte de fecha (YYYY-MM-DD) sin construir
+   * ningún objeto Date para evitar el offset UTC→local.
    */
   private convertToInputFormat(dateStr: string): string {
     if (!dateStr) return '';
-    
+
     try {
-      // Crear objeto Date desde la cadena
-      const date = new Date(dateStr);
-      
-      // Verificar si es una fecha válida
-      if (isNaN(date.getTime())) {
-        console.warn('Fecha inválida:', dateStr);
-        return '';
+      // Caso 1: ya viene como YYYY-MM-DD (respuesta de show/update corregido)
+      // Extraer directo con regex sin tocar ningún Date.
+      const isoDate = dateStr.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (isoDate) {
+        return isoDate[1]; // retorna "YYYY-MM-DD" tal cual
       }
-      
-      // Obtener año, mes y día
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      
-      // Retornar en formato YYYY-MM-DD
-      return `${year}-${month}-${day}`;
+
+      console.warn('Fecha en formato no reconocido:', dateStr);
+      return '';
     } catch (error) {
       console.error('Error al convertir fecha:', error);
       return '';
@@ -203,11 +216,11 @@ export class FechasComponent implements OnInit, OnChanges {
     }
 
     const updateData: any = this.enableDates
-      ? {
+      ? { 
           start_date: this.startDate || null,
           due_date: this.dueDate || null,
           notifications_enabled: this.enableNotifications,
-          notification_days_before: this.enableNotifications ? this.notificationDaysBefore : null
+          notification_days_before: this.enableNotifications ? Number(this.notificationDaysBefore) : null
         }
       : {
           start_date: null,

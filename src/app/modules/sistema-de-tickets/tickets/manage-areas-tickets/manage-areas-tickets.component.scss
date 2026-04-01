@@ -1,0 +1,32 @@
+// Estilos del modal de gestión de áreas
+// Complementa los estilos del tema Metronic 8
+
+.table {
+  th {
+    border-top: none;
+    padding-bottom: 0.5rem;
+  }
+
+  tr {
+    transition: background-color 0.15s ease;
+  }
+}
+
+// Hover para botones de área en el selector
+.hover-border-primary {
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--bs-primary) !important;
+    background-color: var(--bs-light-primary);
+  }
+}
+
+.hover-border-info {
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--bs-info) !important;
+    background-color: var(--bs-light-info);
+  }
+}
