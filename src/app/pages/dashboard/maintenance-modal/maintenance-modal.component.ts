@@ -16,7 +16,7 @@ export class MaintenanceModalComponent implements OnInit {
    * true = El modal se mostrará a todos los usuarios
    * false = El modal NO se mostrará (actualización completada)
    */
-  private readonly SHOW_MAINTENANCE_MODAL = false; // ⬅️ CAMBIAR A false  o true según el estado de la actualización
+  private readonly SHOW_MAINTENANCE_MODAL = false; 
 
   /**
    * 📋 CONFIGURACIÓN DE LA ACTUALIZACIÓN
