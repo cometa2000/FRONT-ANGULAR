@@ -10,7 +10,7 @@ export interface Notification {
   from_user?: {
     id: number;
     name: string;
-    avatar: string;
+    avatar: string; 
   };
   tarea?: {
     id: number;

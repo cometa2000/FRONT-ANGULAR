@@ -92,6 +92,15 @@ export const SIDEBAR:any = [
       ]
     },
     {
+      'name': 'Calendario',
+      'permisos': [
+        {
+          name:'Acceder',
+          permiso: 'cronograma',
+        }
+      ]
+    },
+    {
       'name': 'Centro de Solicitudes',
       'permisos': [
         {

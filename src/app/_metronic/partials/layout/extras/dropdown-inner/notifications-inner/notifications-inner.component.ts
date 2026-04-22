@@ -27,7 +27,6 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
 
   user: any = null;
 
-  
   private subscription: Subscription = new Subscription();
 
   constructor(
@@ -37,13 +36,9 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // console.log('🚀 Inicializando componente de notificaciones');
-    
-    // ✅ CRÍTICO: Suscribirse ANTES de cargar para capturar todos los eventos
     this.subscription.add(
       this.notificationService.notifications$.subscribe({
         next: (notifications: Notification[]) => {
-          // console.log('📥 Notificaciones recibidas en componente:', notifications.length);
           this.notifications = notifications;
           this.updateNotificationLists();
           this.cdr.detectChanges();
@@ -60,7 +55,6 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.notificationService.unreadCount$.subscribe({
         next: (count: number) => {
-          // console.log('📊 Contador actualizado:', count);
           this.unreadCount = count;
           this.cdr.detectChanges();
         },
@@ -70,7 +64,6 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
       })
     );
 
-    // ✅ Cargar notificaciones DESPUÉS de suscribirse
     this.loadNotifications();
   }
 
@@ -78,27 +71,17 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
     this.subscription.unsubscribe();
   }
 
-  /**
-   * ✅ Cargar notificaciones con detección de cambios forzada
-   */
   loadNotifications(): void {
-    // console.log('⏳ Iniciando carga de notificaciones...');
     this.isLoading = true;
     this.error = '';
     this.cdr.detectChanges();
-    
+
     this.notificationService.getAllNotifications(20).subscribe({
       next: (response: any) => {
-        // console.log('✅ Respuesta recibida en componente:', response);
         this.isLoading = false;
-        
-        if (response.success) {
-          // console.log('✅ Notificaciones cargadas exitosamente:', response.total);
-        } else {
+        if (!response.success) {
           this.error = response.error || response.message || 'Error al cargar las notificaciones';
-          console.warn('⚠️ Respuesta sin éxito:', this.error);
         }
-        
         this.cdr.detectChanges();
       },
       error: (error: any) => {
@@ -110,56 +93,27 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * ✅ Actualizar listas de notificaciones con detección de cambios
-   */
   updateNotificationLists(): void {
-    // ✅ Crear NUEVOS arrays para forzar detección de cambios
     this.unreadNotifications = [...this.notifications.filter(n => !n.is_read)];
-    this.readNotifications = [...this.notifications.filter(n => n.is_read)];
-    
-    // console.log('📊 Listas actualizadas:', {
-    //   total: this.notifications.length,
-    //   unread: this.unreadNotifications.length,
-    //   read: this.readNotifications.length,
-    //   tab: this.activeTabId
-    // });
-    
-    // ✅ Forzar detección de cambios
+    this.readNotifications   = [...this.notifications.filter(n => n.is_read)];
     this.cdr.detectChanges();
   }
 
-  /**
-   * Cambiar tab activo y actualizar listas
-   */
   setActiveTabId(tabId: NotificationsTabsType): void {
-    // console.log('🔄 Cambiando a tab:', tabId);
     this.activeTabId = tabId;
-    // ✅ Actualizar listas al cambiar de tab
     this.updateNotificationLists();
   }
 
-  /**
-   * ✅ Marcar notificación como leída con detección de cambios
-   */
   markAsRead(notification: Notification, event?: Event): void {
-    if (event) {
-      event.stopPropagation();
-    }
-    
+    if (event) event.stopPropagation();
+
     if (!notification.is_read) {
-      // console.log('📖 Marcando notificación como leída:', notification.id);
-      
       this.notificationService.markAsRead(notification.id).subscribe({
         next: (response: any) => {
-          if (response.success) {
-            // console.log('✅ Notificación marcada como leída exitosamente:', notification.id);
-            // Las listas se actualizarán automáticamente vía la suscripción
-            // Pero forzamos la detección por si acaso
-            this.cdr.detectChanges();
-          } else {
+          if (!response.success) {
             console.error('⚠️ Respuesta sin éxito al marcar como leída:', response);
           }
+          this.cdr.detectChanges();
         },
         error: (error: any) => {
           console.error('❌ Error al marcar notificación:', error);
@@ -167,31 +121,18 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         }
       });
-    } else {
-      // console.log('ℹ️ Notificación ya estaba marcada como leída:', notification.id);
     }
   }
 
-  /**
-   * ✅ Marcar todas como leídas con detección de cambios
-   */
   markAllAsRead(): void {
-    if (this.unreadCount === 0) {
-      // console.log('ℹ️ No hay notificaciones sin leer');
-      return;
-    }
-    
-    // console.log('📖 Marcando todas las notificaciones como leídas...');
-    
+    if (this.unreadCount === 0) return;
+
     this.notificationService.markAllAsRead().subscribe({
       next: (response: any) => {
-        if (response.success) {
-          // console.log('✅ Todas las notificaciones marcadas como leídas exitosamente');
-          // Las listas se actualizarán automáticamente vía la suscripción
-          this.cdr.detectChanges();
-        } else {
+        if (!response.success) {
           console.error('⚠️ Respuesta sin éxito al marcar todas:', response);
         }
+        this.cdr.detectChanges();
       },
       error: (error: any) => {
         console.error('❌ Error al marcar todas las notificaciones:', error);
@@ -201,19 +142,13 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Eliminar notificación
-   */
   deleteNotification(notificationId: number, event: Event): void {
     event.stopPropagation();
-    
+
     if (confirm('¿Estás seguro de eliminar esta notificación?')) {
       this.notificationService.deleteNotification(notificationId).subscribe({
         next: (response: any) => {
-          if (response.success) {
-            // console.log('✅ Notificación eliminada');
-            this.cdr.detectChanges();
-          }
+          if (response.success) this.cdr.detectChanges();
         },
         error: (error: any) => {
           console.error('Error al eliminar notificación:', error);
@@ -222,19 +157,13 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Eliminar todas las leídas
-   */
   deleteAllRead(): void {
     if (this.readNotifications.length === 0) return;
-    
+
     if (confirm('¿Estás seguro de eliminar todas las notificaciones leídas?')) {
       this.notificationService.deleteAllRead().subscribe({
         next: (response: any) => {
-          if (response.success) {
-            // console.log('✅ Notificaciones leídas eliminadas');
-            this.cdr.detectChanges();
-          }
+          if (response.success) this.cdr.detectChanges();
         },
         error: (error: any) => {
           console.error('Error al eliminar notificaciones:', error);
@@ -243,54 +172,107 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Ir a la tarea de la notificación
-   */
-  goToTarea(notification: Notification): void {
-    // Marcar como leída
-    if (!notification.is_read) {
-      this.markAsRead(notification);
-    }
-    
-    // Navegar si tiene tarea
-    if (notification.tarea) {
-      this.router.navigate(['/tasks/tareas', notification.tarea.id]);
-    }
-  }
-
-  /**
-   * Refrescar notificaciones
-   */
   refresh(): void {
-    // console.log('🔄 Refrescando notificaciones manualmente...');
     this.loadNotifications();
   }
 
-  /**
-   * Método de depuración para ver el estado actual
-   */
-  debugState(): void {
-    // console.log('🔍 Estado actual del componente:', {
-    //   isLoading: this.isLoading,
-    //   error: this.error,
-    //   totalNotifications: this.notifications.length,
-    //   unreadNotifications: this.unreadNotifications.length,
-    //   readNotifications: this.readNotifications.length,
-    //   unreadCount: this.unreadCount,
-    //   activeTab: this.activeTabId
-    // });
-  }
+  // ===========================================================================
+  // REDIRECCIÓN SEGÚN TIPO DE NOTIFICACIÓN
+  // ===========================================================================
 
   /**
-   * Obtener clase del ícono
+   * Determina la ruta de destino y navega al hacer clic en una notificación.
+   *
+   * Lógica de redirección:
+   *   - Notificaciones de tarea/checklist/reactivación → tablero del grupo
+   *       /tasks/tareas/tablero/:grupoId
+   *   - Notificaciones de grupo (creado/compartido) → lista de grupos del workspace
+   *       /tasks/grupos/:workspaceId
+   *   - Notificaciones de workspace → lista de workspaces
+   *       /tasks/workspaces/list
+   *
+   * El campo `data` del objeto notificación (JSON almacenado en DB) contiene
+   * grupo_id y workspace_id para construir la URL sin consultas adicionales.
+   * Como fallback se usan los campos directos tarea.id, grupo.id de la notif.
    */
+  goToNotification(notification: Notification, event?: Event): void {
+    if (event) event.stopPropagation();
+
+    // Marcar como leída si aplica
+    if (!notification.is_read) {
+      this.notificationService.markAsRead(notification.id).subscribe();
+    }
+
+    const type = notification.type;
+    const data = notification.data || {};
+
+    // ── 1. Tipos que redirigen al TABLERO DE TAREAS ──────────────────────────
+    const tiposTarea = [
+      'task_assigned',
+      'task_completed',
+      'task_overdue',
+      'task_due_soon',
+      'checklist_item_assigned',
+      'checklist_item_assigned_owner',
+      'checklist_item_due',
+      'reactivacion_solicitante',
+      'reactivacion_propietario',
+      'tarea_reactivada',
+      'reactivacion_confirmada',
+    ];
+
+    if (tiposTarea.includes(type)) {
+      // Prioridad: data.grupo_id → notification.grupo?.id → notification.tarea?.id (fallback)
+      const grupoId = data['grupo_id'] ?? notification.grupo?.id ?? null;
+
+      if (grupoId) {
+        this.router.navigate(['/tasks/tareas/tablero', grupoId]);
+      } else {
+        // No hay grupo disponible, ir a la lista general de tareas
+        this.router.navigate(['/tasks/tareas/list']);
+      }
+      return;
+    }
+
+    // ── 2. Tipos que redirigen a GRUPOS DEL WORKSPACE ────────────────────────
+    const tiposGrupo = [
+      'group_created',
+      'group_shared_invited',
+      'group_shared_owner',
+    ];
+
+    if (tiposGrupo.includes(type)) {
+      // Prioridad: data.workspace_id → ruta de grupos del workspace
+      const workspaceId = data['workspace_id'] ?? null;
+
+      if (workspaceId) {
+        this.router.navigate(['/tasks/grupos', workspaceId]);
+      } else {
+        // Si el grupo no tiene workspace (grupos sin workspace_id en BD),
+        // navegar a la lista de workspaces como fallback
+        this.router.navigate(['/tasks/workspaces/list']);
+      }
+      return;
+    }
+
+    // ── 3. Tipos que redirigen a WORKSPACES ──────────────────────────────────
+    if (type === 'workspace_created') {
+      this.router.navigate(['/tasks/workspaces/list']);
+      return;
+    }
+
+    // ── 4. Tipo desconocido: no navegar ──────────────────────────────────────
+    console.warn('⚠️ Tipo de notificación sin ruta definida:', type);
+  }
+
+  // ===========================================================================
+  // UTILIDADES DE VISTA
+  // ===========================================================================
+
   getIconClass(notification: Notification): string {
     return `bg-light-${notification.color}`;
   }
 
-  /**
-   * Obtener clase del badge
-   */
   getBadgeClass(notification: Notification): string {
     return notification.is_read ? 'badge-light' : `badge-light-${notification.color}`;
   }
@@ -298,43 +280,17 @@ export class NotificationsInnerComponent implements OnInit, OnDestroy {
   getUserAvatar(): string {
     if (this.user?.avatar) {
       const avatar = this.user.avatar;
-
-      // Si ya es un archivo tipo "3.png"
-      if (/^\d+\.png$/.test(avatar)) {
-        return `assets/media/avatars/${avatar}`;
-      }
-
-      // Si viene con URL completa (storage o externa)
-      if (avatar.includes('http') || avatar.includes('storage')) {
-        return avatar;
-      }
-
-      // Cualquier otro caso, construir ruta local
+      if (/^\d+\.png$/.test(avatar)) return `assets/media/avatars/${avatar}`;
+      if (avatar.includes('http') || avatar.includes('storage')) return avatar;
       return `assets/media/avatars/${avatar}`;
     }
-
-    // Avatar por defecto
     return 'assets/media/avatars/1.png';
   }
 
   getAvatar(path: string | null | undefined): string {
-    if (!path) {
-      return 'assets/media/avatars/1.png';
-    }
-
-    // Si es como "3.png"
-    if (/^\d+\.png$/.test(path)) {
-      return `assets/media/avatars/${path}`;
-    }
-
-    // URL completa o storage
-    if (path.includes('http') || path.includes('storage')) {
-      return path;
-    }
-
-    // Caso general
+    if (!path) return 'assets/media/avatars/1.png';
+    if (/^\d+\.png$/.test(path)) return `assets/media/avatars/${path}`;
+    if (path.includes('http') || path.includes('storage')) return path;
     return `assets/media/avatars/${path}`;
   }
-
-
 }

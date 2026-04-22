@@ -107,11 +107,11 @@
     <!-- Lista de notificaciones -->
     <div *ngIf="!isLoading && notifications.length > 0" class="scroll-y mh-325px my-5 px-8">
 
-      <!-- 🔜 TODO: agregar (click)="goToTarea(notification)" y clase cursor-pointer cuando se integre redirección -->
       <div
         *ngFor="let notification of notifications"
-        class="d-flex flex-stack py-4 rounded px-3 mb-1"
+        class="d-flex flex-stack py-4 rounded px-3 mb-1 cursor-pointer"
         [ngClass]="{'bg-light-primary': !notification.is_read}"
+        (click)="goToNotification(notification, $event)"
       >
         <div class="d-flex align-items-start flex-grow-1">
 
@@ -201,10 +201,10 @@
     <!-- Lista de notificaciones no leídas -->
     <div *ngIf="unreadNotifications.length > 0" class="scroll-y mh-325px my-5 px-8">
 
-      <!-- 🔜 TODO: agregar (click)="goToTarea(notification)" y clase cursor-pointer cuando se integre redirección -->
       <div
         *ngFor="let notification of unreadNotifications"
-        class="d-flex flex-stack py-4 rounded px-3 mb-1 bg-light-primary"
+        class="d-flex flex-stack py-4 rounded px-3 mb-1 bg-light-primary cursor-pointer"
+        (click)="goToNotification(notification, $event)"
       >
         <div class="d-flex align-items-start flex-grow-1">
 
@@ -284,10 +284,10 @@
     <!-- Lista de notificaciones leídas -->
     <div *ngIf="readNotifications.length > 0" class="scroll-y mh-325px my-5 px-8">
 
-      <!-- 🔜 TODO: agregar (click)="goToTarea(notification)" y clase cursor-pointer cuando se integre redirección -->
       <div
         *ngFor="let notification of readNotifications"
-        class="d-flex flex-stack py-4 rounded px-3 mb-1"
+        class="d-flex flex-stack py-4 rounded px-3 mb-1 cursor-pointer"
+        (click)="goToNotification(notification, $event)"
       >
         <div class="d-flex align-items-start flex-grow-1">
 
